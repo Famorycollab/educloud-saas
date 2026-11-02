@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block title %}{{ 'Modifier la classe' if cls else 'Nouvelle classe' }}{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('classes') }}">← Retour aux classes</a><h1 class="h2 mt-3">{{ 'Modifier la classe' if cls else 'Créer une classe' }}</h1></div>
+<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-6"><label class="form-label">Nom de la classe *</label><input class="form-control" name="name" value="{{ cls.name if cls else '' }}" placeholder="Ex. CP-A" required></div>
+<div class="col-md-6"><label class="form-label">Niveau *</label><input class="form-control" name="level" value="{{ cls.level if cls else '' }}" placeholder="Ex. CP, CE1" required></div>
+<div class="col-md-4"><label class="form-label">Section</label><input class="form-control" name="section" value="{{ cls.section if cls else '' }}" placeholder="Ex. A, B"></div>
+<div class="col-md-4"><label class="form-label">Capacité maximale *</label><input class="form-control" type="number" min="1" name="capacity" value="{{ cls.capacity if cls else 30 }}" required></div>
+<div class="col-md-4"><label class="form-label">Année scolaire *</label><input class="form-control" name="school_year" value="{{ cls.school_year if cls else '2026-2027' }}" required></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('classes') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+

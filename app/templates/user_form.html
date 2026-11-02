@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% block title %}Modifier l’utilisateur{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('users') }}">← Retour aux utilisateurs</a><h1 class="h2 mt-3">Modifier l’utilisateur : {{ user.username }}</h1></div>
+<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-6"><label class="form-label">Identifiant (lecture seule)</label><input class="form-control bg-light" value="{{ user.username }}" readonly></div>
+<div class="col-md-6"><label class="form-label">Nom complet *</label><input class="form-control" name="full_name" value="{{ user.full_name }}" required></div>
+<div class="col-md-6"><label class="form-label">Adresse e-mail</label><input class="form-control" name="email" type="email" value="{{ user.email }}"></div>
+<div class="col-md-6"><label class="form-label">Rôle *</label><select class="form-select" name="role" {% if user.id == session.get('user_id') or user.role == 'admin' %}disabled{% endif %}>
+<option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Administrateur</option>
+<option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Enseignant</option>
+<option value="parent" {% if user.role == 'parent' %}selected{% endif %}>Parent</option>
+<option value="accountant" {% if user.role == 'accountant' %}selected{% endif %}>Comptable</option>
+<option value="secretary" {% if user.role == 'secretary' %}selected{% endif %}>Secrétariat</option>
+<option value="student" {% if user.role == 'student' %}selected{% endif %}>Élève</option>
+</select>{% if user.id == session.get('user_id') or user.role == 'admin' %}<div class="form-text">Le rôle administrateur ne peut être modifié ici.</div><input type="hidden" name="role" value="{{ user.role }}">{% endif %}</div>
+<div class="col-md-12"><hr class="my-2"><h2 class="h6">Changer le mot de passe (laisser vide pour ne pas modifier)</h2></div>
+<div class="col-md-6"><label class="form-label">Nouveau mot de passe (8 caractères minimum)</label><input class="form-control" name="new_password" type="password" minlength="8" placeholder="••••••••"></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('users') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}Modifier le paiement{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('payments') }}">← Retour aux paiements</a><h1 class="h2 mt-3">Modifier le paiement</h1></div>
+<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-6"><label class="form-label">Élève *</label><select class="form-select" name="student_id" required><option value="">Choisir un élève</option>{% for s in students %}<option value="{{ s.id }}" {% if payment and payment.student_id == s.id %}selected{% endif %}>{{ s.first_name }} {{ s.last_name }}</option>{% endfor %}</select></div>
+<div class="col-md-6"><label class="form-label">Montant *</label><input class="form-control" type="number" min="0.01" step="0.01" name="amount" value="{{ payment.amount if payment else '' }}" required></div>
+<div class="col-md-6"><label class="form-label">Mode de règlement *</label><select class="form-select" name="method"><option value="Espèces" {% if payment and payment.method == 'Espèces' %}selected{% endif %}>Espèces</option><option value="Virement" {% if payment and payment.method == 'Virement' %}selected{% endif %}>Virement</option><option value="Mobile money" {% if payment and payment.method == 'Mobile money' %}selected{% endif %}>Mobile money</option></select></div>
+<div class="col-md-6"><label class="form-label">Référence</label><input class="form-control" name="reference" value="{{ payment.reference if payment else '' }}" placeholder="Ex. N° transaction ou reçu"></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('payments') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+

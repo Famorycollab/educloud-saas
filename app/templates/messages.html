@@ -1,0 +1,44 @@
+{% extends 'base.html' %}{% block title %}Messagerie{% endblock %}{% block content %}
+<h1 class="h2">Messagerie</h1><p class="text-secondary mb-4">Échanges directs entre membres de la communauté scolaire.</p>
+<form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm mb-4"><div class="card-body">
+<div class="row g-2">
+<div class="col-md-3"><select class="form-select" name="recipient_id" required><option value="">Destinataire</option>{% for u in users %}<option value="{{ u.id }}">{{ u.username }} · {{ u.role }}</option>{% endfor %}</select></div>
+<div class="col-md-3"><input class="form-control" name="subject" placeholder="Sujet" required></div>
+<div class="col-md-4"><input class="form-control" name="body" placeholder="Votre message" required></div>
+<div class="col-md-2"><input class="form-control" type="file" name="attachment" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.odt" title="Pièce jointe facultative"></div>
+<div class="col-12 d-flex justify-content-end gap-2 mt-2">
+<button class="btn btn-outline-secondary" name="action" value="draft" type="submit">Enregistrer en brouillon</button>
+<button class="btn btn-primary" name="action" value="send" type="submit">Envoyer</button>
+</div>
+</div></div></form>
+<div class="card border-0 shadow-sm"><div class="list-group list-group-flush">
+{% for m in messages %}
+<article class="list-group-item p-4">
+<div class="d-flex justify-content-between align-items-center">
+<div class="d-flex align-items-center gap-2">
+<strong>{{ m.subject }}</strong>
+{% if m.is_draft %}<span class="badge text-bg-warning">Brouillon</span>{% endif %}
+</div>
+<div class="d-flex align-items-center gap-2">
+<time class="small text-secondary">{{ m.sent_at }}</time>
+{% if m.is_draft and m.sender_id == session.get('user_id') %}
+<form class="d-inline" method="post" action="{{ url_for('message_send_draft', message_id=m.id) }}">
+<button class="btn btn-sm btn-outline-primary" type="submit">Envoyer</button>
+</form>
+{% endif %}
+<form class="d-inline" method="post" action="{{ url_for('message_hide', message_id=m.id) }}" onsubmit="return confirm('Masquer ce message ?')">
+<button class="btn btn-sm btn-outline-danger py-0 px-2" title="Masquer / Supprimer">✕</button>
+</form>
+</div>
+</div>
+<div class="small text-secondary mb-2">{{ 'De ' + m.sender_name if m.sender_id == session.get('user_id') else 'À ' + m.recipient_name }}</div>
+<p class="mb-2">{{ m.body }}</p>
+{% if m.attachment_path %}
+<div><a class="btn btn-sm btn-outline-primary" href="{{ url_for('message_attachment', message_id=m.id) }}">📎 Pièce jointe</a></div>
+{% endif %}
+</article>
+{% else %}
+<div class="text-center text-secondary p-5">Aucun message pour le moment.</div>
+{% endfor %}
+</div></div>
+{% endblock %}

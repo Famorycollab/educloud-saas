@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}{{ 'Modifier le tarif' if fee else 'Nouveau tarif' }}{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('fee_schedules') }}">← Retour aux tarifs</a><h1 class="h2 mt-3">{{ 'Modifier le tarif scolaire' if fee else 'Ajouter un tarif' }}</h1></div>
+<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-6"><label class="form-label">Libellé du tarif *</label><input class="form-control" name="label" value="{{ fee.label if fee else '' }}" placeholder="Ex. Frais de scolarité T1" required></div>
+<div class="col-md-6"><label class="form-label">Montant *</label><input class="form-control" type="number" step="0.01" min="0.01" name="amount" value="{{ fee.amount if fee else '' }}" required></div>
+<div class="col-md-6"><label class="form-label">Date limite d’échéance</label><input class="form-control" type="date" name="due_date" value="{{ fee.due_date if fee else '' }}"></div>
+<div class="col-md-6"><label class="form-label">Année scolaire *</label><input class="form-control" name="school_year" value="{{ fee.school_year if fee else '2026-2027' }}" required></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('fee_schedules') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+

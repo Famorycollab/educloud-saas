@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+school.db
+private_uploads/*
+!private_uploads/.gitkeep
+.env
+.DS_Store
+Thumbs.db

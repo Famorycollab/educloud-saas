@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}Modifier l’absence{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('absences') }}">← Retour aux absences</a><h1 class="h2 mt-3">Modifier l’absence</h1></div>
+<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-6"><label class="form-label">Élève *</label><select class="form-select" name="student_id" required><option value="">Choisir un élève</option>{% for s in students %}<option value="{{ s.id }}" {% if absence and absence.student_id == s.id %}selected{% endif %}>{{ s.first_name }} {{ s.last_name }} ({{ s.class_name or 'Sans classe' }})</option>{% endfor %}</select></div>
+<div class="col-md-6"><label class="form-label">Date de l’absence *</label><input class="form-control" type="date" name="absence_date" value="{{ absence.absence_date if absence else '' }}" required></div>
+<div class="col-md-8"><label class="form-label">Motif / justification</label><input class="form-control" name="reason" value="{{ absence.reason if absence else '' }}" placeholder="Ex. Raison médicale"></div>
+<div class="col-md-4"><label class="form-label">Statut justification</label><select class="form-select" name="justified"><option value="0" {% if absence and not absence.justified %}selected{% endif %}>Non justifiée</option><option value="1" {% if absence and absence.justified %}selected{% endif %}>Justifiée</option></select></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('absences') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+

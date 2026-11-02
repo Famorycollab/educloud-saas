@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}{{ 'Modifier la salle' if room else 'Nouvelle salle' }}{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('rooms') }}">← Retour aux salles</a><h1 class="h2 mt-3">{{ 'Modifier la salle' if room else 'Ajouter une salle' }}</h1></div>
+<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-6"><label class="form-label">Nom ou numéro de salle *</label><input class="form-control" name="name" value="{{ room.name if room else '' }}" placeholder="Ex. Salle 1" required></div>
+<div class="col-md-6"><label class="form-label">Capacité *</label><input class="form-control" type="number" min="1" name="capacity" value="{{ room.capacity if room else 30 }}" required></div>
+<div class="col-md-6"><label class="form-label">Disponibilité</label><input class="form-control" name="availability" value="{{ room.availability if room else '' }}" placeholder="Ex. Lundi-vendredi, 08:00-16:00"></div>
+<div class="col-md-6"><label class="form-label">Année scolaire *</label><input class="form-control" name="school_year" value="{{ room.school_year if room else '2026-2027' }}" required></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('rooms') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+

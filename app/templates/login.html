@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% block title %}Connexion{% endblock %}{% block content %}
+<div class="login-screen">
+  <section class="login-promo" aria-label="Présentation du portail scolaire">
+    <a class="login-brand" href="{{ url_for('login') }}"><span class="login-brand-icon">É</span><span><strong>École Primaire</strong><small>PORTAIL DE GESTION SCOLAIRE</small></span></a>
+    <div class="login-promo-copy"><span class="login-eyebrow"><i></i> UN ESPACE, TOUTE L’ÉCOLE</span><h1>La réussite scolaire<br>commence ici.</h1><p>Une plateforme pensée pour simplifier le quotidien de l’établissement, des équipes pédagogiques et des familles.</p>
+      <div class="login-feature-list"><div class="login-feature"><span class="feature-icon">01</span><span><strong>Une école mieux organisée</strong><small>Élèves, classes et emplois du temps réunis.</small></span></div><div class="login-feature"><span class="feature-icon">02</span><span><strong>Un suivi scolaire clair</strong><small>Notes, absences et devoirs accessibles au bon rôle.</small></span></div><div class="login-feature"><span class="feature-icon">03</span><span><strong>Une communication fluide</strong><small>Gardez les familles et les équipes informées.</small></span></div></div>
+    </div>
+    <div class="login-promo-footer"><span class="secure-dot"></span> Accès sécurisé selon votre profil <span class="footer-divider">·</span> Espace scolaire</div>
+    <span class="login-decoration login-decoration-one"></span><span class="login-decoration login-decoration-two"></span>
+  </section>
+  <section class="login-panel"><div class="login-card">
+    <div class="login-card-heading"><span class="login-card-mark">É</span><div><span class="login-card-overline">VOTRE ESPACE</span><h2>Ravi de vous revoir</h2></div></div>
+    <p class="login-subtitle">Connectez-vous avec les identifiants fournis par votre établissement.</p>
+    <form method="post" class="login-form"><div class="login-field"><label for="username">Identifiant</label><div class="login-input-wrap"><span aria-hidden="true">♙</span><input id="username" name="username" autocomplete="username" placeholder="Votre identifiant" required autofocus></div></div><div class="login-field"><label for="password">Mot de passe</label><div class="login-input-wrap"><span aria-hidden="true">▣</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required></div></div><button class="login-submit" type="submit">Se connecter <span aria-hidden="true">→</span></button></form>
+    <div class="login-divider"><span></span><small>OU</small><span></span></div>
+    <a class="login-enrollment" href="{{ url_for('pre_enrollment') }}"><span class="enrollment-icon">＋</span><span><strong>Première inscription ?</strong><small>Déposer une demande de pré-inscription</small></span><span class="enrollment-arrow">→</span></a>
+    <div class="login-security"><span aria-hidden="true">◈</span> Vos informations restent protégées par votre accès personnel.</div>
+  </div><div class="login-copyright">© {{ 2026 }} Espace École <span>·</span> Gestion scolaire</div></section>
+</div>
+{% endblock %}
+</strong></small>

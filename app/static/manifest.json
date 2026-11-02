@@ -1,0 +1,11 @@
+{
+  "name": "Gestion de l'école primaire",
+  "short_name": "Espace École",
+  "description": "Portail scolaire pour les familles et l'équipe éducative.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#165dce"
+}

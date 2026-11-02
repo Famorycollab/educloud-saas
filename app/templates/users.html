@@ -1,0 +1,51 @@
+{% extends 'base.html' %}{% block title %}Utilisateurs{% endblock %}{% block content %}<h1 class="h2">Comptes et
+    utilisateurs</h1>
+<p class="text-secondary mb-4">Créez et gérez les comptes des enseignants, parents et équipes administratives.</p>
+<form method="post" class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-2"><input class="form-control" name="username" placeholder="Identifiant" required></div>
+            <div class="col-md-2"><input class="form-control" name="full_name" placeholder="Nom complet" required></div>
+            <div class="col-md-2"><input class="form-control" name="email" type="email" placeholder="E-mail"></div>
+            <div class="col-md-2"><select class="form-select" name="role">
+                    <option value="teacher">Enseignant</option>
+                    <option value="parent">Parent</option>
+                    <option value="accountant">Comptable</option>
+                    <option value="secretary">Secrétariat</option>
+                    <option value="student">Élève</option>
+                </select></div>
+            <div class="col-md-2"><input class="form-control" name="password" type="password" minlength="8"
+                    placeholder="Mot de passe (8+)" required></div>
+            <div class="col-md-2 d-grid"><button class="btn btn-primary">Créer le compte</button></div>
+        </div>
+    </div>
+</form>
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Identifiant</th>
+                    <th>Nom complet</th>
+                    <th>E-mail</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>{% for u in users %}<tr>
+                    <td class="fw-semibold">{{ u.username }}</td>
+                    <td>{{ u.full_name or '—' }}</td>
+                    <td>{{ u.email or '—' }}</td>
+                    <td>{{ u.role }}</td>
+                    <td>{{ 'Actif' if u.active else 'Désactivé' }}</td>
+                    <td class="text-nowrap"><a class="btn btn-sm btn-outline-primary me-1"
+                            href="{{ url_for('user_edit', user_id=u.id) }}">Modifier</a>
+                        <form class="d-inline" method="post" action="{{ url_for('user_toggle',user_id=u.id) }}"><button
+                                class="btn btn-sm {{ 'btn-outline-danger' if u.active else 'btn-outline-success' }}">{{
+                                'Désactiver' if u.active else 'Réactiver' }}</button></form>
+                    </td>
+                </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>{% endblock %}

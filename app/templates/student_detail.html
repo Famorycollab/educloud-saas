@@ -1,0 +1,127 @@
+{% extends 'base.html' %}{% block title %}Dossier Élève - {{ student.first_name }} {{ student.last_name }}{% endblock %}{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+  <div>
+    <a class="text-decoration-none" href="{{ url_for('students') }}">← Retour à la liste des élèves</a>
+    <h1 class="h2 mt-2">{{ student.first_name }} {{ student.last_name }}</h1>
+    <span class="badge text-bg-primary fs-6">{{ student.class_name or 'Non affecté' }}</span>
+    <span class="badge text-bg-light border ms-1 fs-6">Année {{ student.school_year }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('bulletin_pdf', student_id=student.id) }}">↓ Bulletin PDF</a>
+    {% if session.get('role') in ('admin','secretary') %}
+    <a class="btn btn-primary" href="{{ url_for('student_edit', student_id=student.id) }}">Modifier le dossier</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Colonne gauche : État civil & Santé -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body text-center p-4">
+        {% if student.photo_path %}
+        <img src="{{ url_for('student_photo', student_id=student.id) }}" alt="Photo de {{ student.first_name }}" class="rounded-circle mb-3 border shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+        {% else %}
+        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3 border" style="width: 120px; height: 120px; font-size: 2.5rem; color: #167d82;">
+          {{ student.first_name[:1] }}{{ student.last_name[:1] }}
+        </div>
+        {% endif %}
+        <h2 class="h5 mb-1">{{ student.first_name }} {{ student.last_name }}</h2>
+        <p class="text-secondary small mb-3">Né(e) le {{ student.birth_date or 'Non renseignée' }}</p>
+        
+        <div class="text-start border-top pt-3">
+          <div class="small fw-bold text-muted text-uppercase mb-1">Parent / Tuteur</div>
+          <div class="fw-semibold">{{ student.parent_name or '—' }}</div>
+          {% if student.parent_phone %}<div class="small text-secondary">{{ student.parent_phone }}</div>{% endif %}
+          {% if student.parent_email %}<div class="small text-secondary">{{ student.parent_email }}</div>{% endif %}
+        </div>
+
+        {% if student.medical_notes %}
+        <div class="text-start border-top pt-3 mt-3">
+          <div class="small fw-bold text-danger text-uppercase mb-1">⚕️ Informations médicales</div>
+          <p class="small text-secondary mb-0">{{ student.medical_notes }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Synthèse financière pour l'élève -->
+    {% if session.get('role') in ('admin','accountant','parent') %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h2 class="h6 fw-bold text-uppercase text-muted mb-3">Situation financière</h2>
+        <div class="d-flex justify-content-between mb-2"><span>Total dû :</span> <strong>{{ '%.2f'|format(finance.due) }}</strong></div>
+        <div class="d-flex justify-content-between mb-2"><span>Total réglé :</span> <strong class="text-success">{{ '%.2f'|format(finance.paid) }}</strong></div>
+        <div class="d-flex justify-content-between border-top pt-2"><span>Solde restant :</span> <strong class="text-{{ 'danger' if finance.remaining > 0 else 'success' }}">{{ '%.2f'|format(finance.remaining) }}</strong></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Colonne droite : Onglets Notes, Absences, Devoirs, Paiements -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h2 class="h5 mb-3">Notes & Évaluations récentes</h2>
+        <div class="table-responsive mb-4">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Matière</th><th>Évaluation</th><th>Note</th><th>Commentaire</th></tr></thead>
+            <tbody>
+              {% for g in grades %}
+              <tr>
+                <td class="fw-semibold">{{ g.subject_name }}</td>
+                <td>{{ g.evaluation_title }}</td>
+                <td><span class="badge text-bg-{{ 'success' if g.score >= 10 else 'warning' }} fs-6">{{ g.score }}/{{ g.max_score }}</span></td>
+                <td class="text-secondary small">{{ g.comment or '—' }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-center py-3 text-secondary">Aucune note enregistrée.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h2 class="h5 mb-3">Historique des Absences</h2>
+        <div class="table-responsive mb-4">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Date</th><th>Motif</th><th>Statut</th></tr></thead>
+            <tbody>
+              {% for a in absences %}
+              <tr>
+                <td>{{ a.absence_date }}</td>
+                <td>{{ a.reason or 'Non précisé' }}</td>
+                <td><span class="badge text-bg-{{ 'success' if a.justified else 'danger' }}">{{ 'Justifiée' if a.justified else 'Non justifiée' }}</span></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-center py-3 text-secondary">Aucune absence enregistrée.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if session.get('role') in ('admin','accountant','parent') %}
+        <h2 class="h5 mb-3">Historique des Règlements</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Date</th><th>Montant</th><th>Mode</th><th>Reçu</th></tr></thead>
+            <tbody>
+              {% for p in payments %}
+              <tr>
+                <td>{{ p.paid_at }}</td>
+                <td class="fw-semibold">{{ '%.2f'|format(p.amount) }}</td>
+                <td>{{ p.method }}</td>
+                <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('payment_receipt', payment_id=p.id) }}">Reçu PDF</a></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-center py-3 text-secondary">Aucun paiement enregistré.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

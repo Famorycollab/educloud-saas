@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% block title %}Modifier le devoir{% endblock %}{% block content %}
+<div class="mb-4"><a class="text-decoration-none" href="{{ url_for('homework') }}">← Retour aux devoirs</a><h1 class="h2 mt-3">Modifier le devoir</h1></div>
+<form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<div class="col-md-12"><label class="form-label">Titre du devoir *</label><input class="form-control" name="title" value="{{ homework.title if homework else '' }}" required></div>
+<div class="col-md-6"><label class="form-label">Matière *</label><select class="form-select" name="subject_id" required><option value="">Choisir une matière</option>{% for s in subjects %}<option value="{{ s.id }}" {% if homework and homework.subject_id == s.id %}selected{% endif %}>{{ s.name }} ({{ s.level }})</option>{% endfor %}</select></div>
+<div class="col-md-6"><label class="form-label">Classe *</label><select class="form-select" name="class_id" required><option value="">Choisir une classe</option>{% for c in classes %}<option value="{{ c.id }}" {% if homework and homework.class_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+<div class="col-md-6"><label class="form-label">Date limite de remise *</label><input class="form-control" type="date" name="due_date" value="{{ homework.due_date if homework else '' }}" required></div>
+<div class="col-md-6"><label class="form-label">Remplacer la pièce jointe (PDF, image, document)</label><input class="form-control" type="file" name="attachment" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.odt"></div>
+<div class="col-md-12"><label class="form-label">Consignes et description</label><textarea class="form-control" name="description" rows="3">{{ homework.description if homework else '' }}</textarea></div>
+</div></div><div class="card-footer bg-white text-end"><a class="btn btn-light" href="{{ url_for('homework') }}">Annuler</a> <button class="btn btn-primary">Enregistrer</button></div></form>
+{% endblock %}
+
