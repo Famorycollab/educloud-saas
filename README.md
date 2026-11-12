@@ -1,128 +1,84 @@
-# 🏫 Application de Gestion d'École Primaire (Mono-établissement)
+# 🏫 EduCloud SaaS Pro — Plateforme de Gestion Scolaire Multi-Établissements & Business Intelligence
 
-Application web de gestion scolaire conforme au cahier des charges de déploiement mono-école (Dr Hamdi Hassen, ISG Sousse). Réalisée avec Python (Flask) et SQLite/PostgreSQL.
-
----
-
-## 🎯 Fonctionnalités implémentées
-
-### 1. Gestion des Utilisateurs & Contrôle d'Accès (RBAC)
-- **6 rôles distincts** : Administrateur / Direction, Enseignant, Parent, Élève, Comptable, Secrétariat.
-- Protection CSRF sur l'ensemble des formulaires POST.
-- Sessions sécurisées, désactivation de compte avec révocation immédiate de session.
-- Espace **Mon profil** pour consultation et modification du mot de passe.
-- **Audit Log** : traçabilité de toutes les créations, modifications et suppressions.
-
-### 2. Scolarité & Dossiers Élèves
-- **CRUD complet sur toutes les entités** : Élèves, Classes, Matières, Salles.
-- Inscription et pré-inscription en ligne avec validation par l'administration/secrétariat.
-- Contrôle strict des effectifs et de la capacité maximale des classes.
-- Import et export des élèves en format CSV.
-- Archivage (suppression logique / soft delete) pour préserver l'historique pluriannuel.
-
-### 3. Emploi du Temps
-- Création, modification et suppression de créneaux.
-- **Détection des conflits** : impossibilité de programmer un enseignant, une classe ou une salle sur le même créneau horaire.
-- Filtrage automatique selon le rôle (enseignant, parent, élève).
-
-### 4. Évaluations, Notes & Bulletins
-- Création, modification et suppression des évaluations avec barème configurable.
-- Saisie des notes avec contrôle de cohérence.
-- **Bulletins de notes scolaires en PDF** téléchargeables avec moyennes pondérées par les coefficients des matières.
-
-### 5. Absences
-- Enregistrement des absences par classe et par élève.
-- Justification directe des absences par les parents depuis leur espace.
-- Modification et suppression des enregistrements par l'administration ou l'enseignant.
-
-### 6. Finances & Comptabilité
-- Grille tarifaire par année scolaire (CRUD complet).
-- Saisie et historique des paiements (Espèces, Virement, Mobile money).
-- **Génération automatique de reçus PDF** avec solde restant calculé en direct.
-- **Notification automatique enrichie** au parent (montant, date, mode, solde restant, lien vers le reçu).
-- **Export comptable complet en CSV** de toutes les transactions financières.
-- **Relance automatique des impayés** : envoi de notifications automatiques aux parents ayant un solde en retard.
-
-### 7. Devoirs (Homework)
-- Publication, modification et suppression contrôlée des devoirs par les enseignants.
-- Pièces jointes (PDF, documents, images).
-- Dépôt de travail par l'élève et correction téléchargeable après la date de remise.
-- Notation des devoirs par l'enseignant.
-
-### 8. Messagerie & Communication
-- Échanges directs sécurisés selon les permissions RBAC.
-- **Brouillons** : enregistrement et modification avant envoi officiel.
-- **Immuabilité des messages envoyés** : garantie de traçabilité.
-- **Suppression côté destinataire** (masquage de boîte sans altérer la copie expéditeur ni l'historique).
-- Envoi et téléchargement sécurisé de pièces jointes.
-- Annonces générales ciblées par audience.
+> **Projet pratique – Cloud et Big Data**  
+> *Développement et déploiement d'une application SaaS de gestion scolaire intégrant un module Business Intelligence et Aide à la Décision.*  
+> **Étudiant : TOURE**  
+> **Année universitaire : 2026-2027**
 
 ---
 
-## 🚀 Lancement en local
+## 🌐 Déploiement Cloud & Accès en Ligne
 
-1. Cloner ou ouvrir le projet dans votre terminal.
-2. Créer l'environnement virtuel et installer les dépendances :
-
-```bash
-python -m venv .venv
-# Sur Windows :
-.venv\Scripts\activate
-# Sur Linux / macOS :
-source .venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-3. Lancer l'application :
-
-```bash
-python app.py
-```
-
-4. Accéder à l'application sur [http://127.0.0.1:5000](http://127.0.0.1:5000).
+* **URL Publique Cloud (HTTPS) :** [https://ingredients-conclusions-unlike-retreat.trycloudflare.com](https://ingredients-conclusions-unlike-retreat.trycloudflare.com)
+* **Accès Local :** [http://127.0.0.1:5000](http://127.0.0.1:5000)
+* **Livrable Word officiel :** `Projet_Cloud_BigData_TOURE.docx` *(à la racine du projet)*
 
 ---
 
-## 🔑 Comptes de démonstration
+## 🏛️ Architecture Multi-Établissements (Multi-Tenant)
 
-La base est automatiquement pré-remplie au premier lancement avec des comptes de test :
+L'application gère plusieurs établissements scolaires de manière totalement cloisonnée et indépendante, avec bascule instantanée pour les profils de direction :
 
-| Rôle | Identifiant | Mot de passe | Accès principal |
+1. **Établissement N°1 : Groupe Scolaire International d'Excellence (Dakar, Sénégal)**  
+   *Code : EXCELLENCE · Devise : FCFA · Primaire complet (CP à CM2)*
+2. **Établissement N°2 : Institut Polyvalent Horizon Avenir (Abidjan, Côte d'Ivoire)**  
+   *Code : HORIZON · Devise : FCFA · Collège (6ème à 3ème)*
+
+---
+
+## 🔑 Matrice des Comptes de Démonstration
+
+### Établissement 1 : Groupe Scolaire d'Excellence (Dakar)
+| Rôle | Identifiant | Mot de passe | Périmètre d'accès |
 |---|---|---|---|
-| **Administrateur** | `admin` | `admin123` | Tous les modules, configuration, utilisateurs |
-| **Comptable** | `comptable` | `compta123` | Module financier, paiements, reçus, relances |
-| **Secrétariat** | `secretaire` | `secret123` | Dossiers élèves, pré-inscriptions |
-| **Enseignant** | `enseignant` | `prof123` | Classes affectées, notes, devoirs, emploi du temps |
-| **Parent** | `parent` / `parent2` | `parent123` | Suivi des enfants, notes, paiements, messagerie |
-| **Élève** | `eleve` / `eleve2` | `eleve123` | Devoirs, notes, emploi du temps personnel |
+| **Directeur** | `directeur` | `directeur123` | **Centre Décisionnel BI (10 Dashboards)**, Simulateur N+1 |
+| **Administrateur** | `admin` | `admin123` | Gestion globale, élèves, classes, salles, journal d'audit |
+| **Comptable** | `comptable` | `compta123` | Module financier, reçus PDF, relances automatiques |
+| **Secrétaire** | `secretaire` | `secret123` | Pré-inscriptions, dossiers élèves et scolarité |
+| **Enseignant** | `enseignant` | `prof123` | Classes affectées, notes, devoirs, absences |
+| **Parent** | `parent` | `parent123` | Suivi des enfants, bulletins PDF, paiements |
+| **Élève** | `eleve` | `eleve123` | Devoirs, notes, emploi du temps personnel |
+
+### Établissement 2 : Institut Polyvalent Horizon (Abidjan)
+| Rôle | Identifiant | Mot de passe | Périmètre d'accès |
+|---|---|---|---|
+| **Directeur** | `directeur_horizon` | `directeur123` | Centre Décisionnel BI dédié à Abidjan |
+| **Administrateur** | `admin_horizon` | `admin123` | Gestion de l'établissement d'Abidjan |
+| **Comptable** | `comptable_horizon` | `compta123` | Trésorerie et facturation locale |
+| **Enseignant** | `enseignant_horizon` | `prof123` | Classes du collège |
+| **Parent** | `parent_horizon` | `parent123` | Suivi scolaire des enfants à Abidjan |
+| **Élève** | `eleve_horizon` | `eleve123` | Espace personnel élève |
+
+### SuperAdmin Global Plateforme SaaS
+| Rôle | Identifiant | Mot de passe | Privilèges |
+|---|---|---|---|
+| **SuperAdmin** | `superadmin` | `superadmin123` | Supervision transversale, bascule instantanée entre toutes les écoles |
 
 ---
 
-## 🧪 Tests unitaires et d'intégration
+## 📊 Module Business Intelligence & Aide à la Décision (SID)
 
-La suite de tests automatisés vérifie le contrôle d'accès, la sécurité CSRF, le RBAC, les opérations CRUD et la comptabilité :
+L'application intègre un **Système d'Information Décisionnel** complet composé de **10 Tableaux de Bord** :
+
+1. **Dashboard 1 – Vue Globale de l'Établissement** : Effectifs totaux, classes, taux d'occupation, alertes saturation (>95%) ou sous-remplissage (<60%), graphique d'évolution pluriannuelle.
+2. **Dashboard 2 – Gestion Financière & Trésorerie** : Total attendu, montant encaissé, reste à recouvrer, taux de recouvrement, projection mensuelle de cashflow, relance 1-clic des impayés.
+3. **Dashboard 3 – Performance Pédagogique** : Moyenne générale, taux de réussite/échec, moyennes par classe et matière, détection des élèves en difficulté.
+4. **Dashboard 4 – Absences & Corrélations Big Data** : Volume d'absences, répartition justifiées vs injustifiées, élèves chroniques, analyse statistique démontrant l'impact des absences sur la moyenne.
+5. **Dashboard 5 – RH & Enseignants** : Volume horaire hebdomadaire par enseignant, détection de surcharge (>20h) et disponibilité horaire pour suppléance.
+6. **Dashboard 6 – Inscriptions & Rétention** : Taux de fidélisation (93.4%), flux de nouvelles inscriptions, répartition géographique par quartier des familles.
+7. **Dashboard 7 – Communication Parents** : Taux de lecture des messages (92%), annonces ciblées, réactivité parentale.
+8. **Dashboard 8 – Emplois du Temps & Salles** : Taux d'occupation des salles (base 30h/semaine), détection des salles sous-utilisées (<35%), 0 conflit d'horaires.
+9. **Dashboard 9 – Early Warning System (EWS · Détection Précoce des Risques)** : Algorithme décisionnel croisant notes < 10, absences répétées et retards financiers pour déclencher une alerte et un plan d'intervention précoce.
+10. **Dashboard 10 – Stratégique, Prévisions & Simulateur N+1** : Simulateur interactif de rentrée 2027-2028 calculant en temps réel les besoins en salles, enseignants et revenus prévisionnels avec recommandations décisionnelles de l'IA.
+
+---
+
+## 🧪 Tests Automatisés
+
+La suite de tests vérifie l'ensemble des fonctionnalités critiques :
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
----
-
-## 🌐 Déploiement en production (Cloud / VPS)
-
-### Option A : Déploiement simple sur Railway / Render
-Le projet contient un `Procfile` prêt à l'emploi :
-1. Pousser le projet sur un dépôt GitHub privé.
-2. Sur [Railway.app](https://railway.app) ou [Render.com](https://render.com), créer un nouveau projet depuis votre dépôt GitHub.
-3. Définir les variables d'environnement dans le panneau de configuration :
-   - `SECRET_KEY` : une chaîne aléatoire sécurisée (ex: `openssl rand -hex 32`)
-   - `COOKIE_SECURE` : `1` (pour forcer les cookies HTTPS)
-   - `FLASK_DEBUG` : `0`
-
-### Option B : Déploiement Docker
-Un `Dockerfile` est inclus :
-```bash
-docker build -t ecole-gestion .
-docker run -p 5000:5000 -e SECRET_KEY="votre_cle_secrete" ecole-gestion
-```
+*Résultat : 22/22 tests réussis (100% de succès).*

@@ -1,1 +1,19 @@
-{% extends 'base.html' %}{% block title %}Pré-inscription{% endblock %}{% block content %}<div class="login-wrap"><section class="card border-0 shadow"><div class="card-body p-4"><h1 class="h3">Pré-inscription</h1><p class="text-secondary">Soumettez une demande à l'administration de l'école.</p><form method="post"><div class="row g-3"><div class="col-sm-6"><label class="form-label">Prénom de l'enfant *</label><input class="form-control" name="first_name" required></div><div class="col-sm-6"><label class="form-label">Nom de l'enfant *</label><input class="form-control" name="last_name" required></div><div class="col-sm-6"><label class="form-label">Date de naissance</label><input class="form-control" name="birth_date" type="date"></div><div class="col-sm-6"><label class="form-label">Parent / tuteur *</label><input class="form-control" name="parent_name" required></div><div class="col-sm-6"><label class="form-label">E-mail du parent</label><input class="form-control" name="parent_email" type="email"></div><div class="col-sm-6"><label class="form-label">Téléphone</label><input class="form-control" name="parent_phone"></div></div><button class="btn btn-primary mt-4">Envoyer la demande</button></form></div></section></div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Pré-inscription{% endblock %}{% block content %}
+<div class="login-panel" style="min-height:100vh">
+<div class="login-card" style="max-width:720px;margin:2rem auto">
+<a href="{{ url_for('login') }}">← Retour à la connexion</a>
+<h1 class="h3 mt-3">Demande de pré-inscription</h1>
+<p class="text-secondary">Formulaire ouvert aux parents. L’administration validera ensuite le dossier.</p>
+<form method="post" class="row g-3">
+<div class="col-md-6"><label class="form-label">Prénom de l’enfant *</label><input class="form-control" name="first_name" required></div>
+<div class="col-md-6"><label class="form-label">Nom de l’enfant *</label><input class="form-control" name="last_name" required></div>
+<div class="col-md-4"><label class="form-label">Date de naissance</label><input class="form-control" type="date" name="birth_date"></div>
+<div class="col-md-8"><label class="form-label">Nom du parent / tuteur *</label><input class="form-control" name="parent_name" required></div>
+<div class="col-md-6"><label class="form-label">E-mail du parent</label><input class="form-control" type="email" name="parent_email"></div>
+<div class="col-md-6"><label class="form-label">Téléphone</label><input class="form-control" name="parent_phone"></div>
+<div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" name="consent" value="1" required> J’autorise le traitement des données de mon enfant (RGPD) pour la scolarité.</label></div>
+<div class="col-12"><button class="btn btn-primary">Envoyer la demande</button></div>
+</form>
+</div>
+</div>
+{% endblock %}

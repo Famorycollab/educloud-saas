@@ -9,3 +9,6 @@ private_uploads/*
 .env
 .DS_Store
 Thumbs.db
+
+school_backup.db
+cloudflared.exe

@@ -1,1 +1,19 @@
-{% extends 'base.html' %}{% block title %}Demandes de pré-inscription{% endblock %}{% block content %}<h1 class="h2">Demandes de pré-inscription</h1><p class="text-secondary mb-4">Examinez les demandes des familles et transformez les demandes acceptées en dossiers élèves.</p><div class="row g-3">{% for a in applications %}<div class="col-lg-6"><article class="card border-0 shadow-sm"><div class="card-body"><div class="d-flex justify-content-between"><h2 class="h5">{{ a.first_name }} {{ a.last_name }}</h2><span class="badge text-bg-{{ 'success' if a.status=='approved' else ('danger' if a.status=='rejected' else 'warning') }}">{{ a.status }}</span></div><p class="text-secondary mb-1">Né(e) le {{ a.birth_date or '—' }}</p><p class="mb-1">Parent : {{ a.parent_name }}</p><p class="text-secondary">{{ a.parent_email or '—' }} · {{ a.parent_phone or '—' }}</p><div class="small text-secondary mb-3">Demande du {{ a.created_at }}</div>{% if a.status=='pending' %}<form method="post" class="d-flex flex-wrap gap-2"><input type="hidden" name="application_id" value="{{ a.id }}"><select class="form-select" name="class_id"><option value="">Affecter à une classe plus tard</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }} · {{ c.level }}</option>{% endfor %}</select><button class="btn btn-primary" name="action" value="approve">Approuver et créer le dossier</button><button class="btn btn-outline-danger" name="action" value="reject">Refuser</button></form>{% endif %}</div></article></div>{% else %}<p class="text-secondary">Aucune demande reçue.</p>{% endfor %}</div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Pré-inscriptions{% endblock %}{% block breadcrumb %}Pré-inscriptions{% endblock %}{% block content %}
+<section class="page-heading"><div><div class="page-eyebrow">Inscriptions</div><h1>Demandes à valider</h1></div></section>
+<div class="card border-0"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Enfant</th><th>Naissance</th><th>Parent</th><th>Contact</th><th>Statut</th><th>Décision</th></tr></thead>
+<tbody>{% for a in applications %}<tr>
+<td class="fw-semibold">{{ a.first_name }} {{ a.last_name }}</td>
+<td>{{ a.birth_date or '—' }}</td>
+<td>{{ a.parent_name }}</td>
+<td>{{ a.parent_email or '' }} {{ a.parent_phone or '' }}</td>
+<td>{{ a.status }}</td>
+<td>{% if a.status=='pending' %}
+<form method="post" class="d-flex gap-2 flex-wrap">
+<input type="hidden" name="application_id" value="{{ a.id }}">
+<select class="form-select form-select-sm" name="class_id" style="width:auto"><option value="">Classe (auto si vide)</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+<button class="btn btn-sm btn-success" name="action" value="approve">Approuver</button>
+<button class="btn btn-sm btn-outline-danger" name="action" value="reject">Refuser</button>
+</form>
+{% else %}—{% endif %}</td>
+</tr>{% else %}<tr><td colspan="6" class="text-center py-4 text-secondary">Aucune demande.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

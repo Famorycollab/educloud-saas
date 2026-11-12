@@ -1,1 +1,17 @@
-{% extends 'base.html' %}{% block title %}Annonces{% endblock %}{% block content %}<h1 class="h2">Annonces de l'école</h1><p class="text-secondary mb-4">Informations importantes pour les familles et l'équipe pédagogique.</p>{% if session.get('role') in ('admin','teacher') %}<form method="post" class="card border-0 shadow-sm mb-4"><div class="card-body"><div class="row g-2"><div class="col-md-3"><input class="form-control" name="title" placeholder="Titre" required></div><div class="col-md-2"><select class="form-select" name="audience"><option value="all">Toute l'école</option><option value="parent">Parents</option><option value="teacher">Enseignants</option><option value="student">Élèves</option></select></div><div class="col-md-5"><textarea class="form-control" name="body" rows="2" placeholder="Contenu de l'annonce" required></textarea></div><div class="col-md-2 d-grid"><button class="btn btn-primary">Publier</button></div></div></div></form>{% endif %}<div class="row g-3">{% for a in announcements %}<div class="col-lg-6"><article class="card border-0 shadow-sm h-100"><div class="card-body"><div class="d-flex justify-content-between text-secondary small"><span>{{ a.author }}</span><time>{{ a.created_at }}</time></div><h2 class="h5 mt-3">{{ a.title }}</h2><p class="mb-0">{{ a.body }}</p></div></article></div>{% else %}<p class="text-secondary">Aucune annonce publiée.</p>{% endfor %}</div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Annonces{% endblock %}{% block breadcrumb %}Annonces{% endblock %}{% block content %}
+<section class="page-heading"><div><div class="page-eyebrow">Communication</div><h1>Annonces générales</h1><p>Une annonce publiée est immuable. En cas d’erreur, publiez une annonce corrective.</p></div></section>
+{% if session.get('role') in ('admin','teacher') %}
+<form method="post" class="card border-0 mb-4"><div class="card-body">
+<div class="row g-2">
+<div class="col-md-4"><input class="form-control" name="title" placeholder="Titre" required></div>
+<div class="col-md-5"><input class="form-control" name="body" placeholder="Contenu" required></div>
+<div class="col-md-2"><select class="form-select" name="audience"><option value="all">Tous</option><option value="parent">Parents</option><option value="teacher">Enseignants</option><option value="student">Élèves</option></select></div>
+<div class="col-md-1 d-grid"><button class="btn btn-primary">Publier</button></div>
+</div></div></form>
+{% endif %}
+<div class="card border-0"><div class="list-group list-group-flush">
+{% for a in announcements %}
+<article class="list-group-item p-4"><div class="d-flex justify-content-between"><strong>{{ a.title }}</strong><span class="badge text-bg-light">{{ a.audience }}</span></div><p class="mb-1 mt-2">{{ a.body }}</p><div class="small text-secondary">{{ a.author }} · {{ a.created_at }}</div></article>
+{% else %}<div class="text-center text-secondary p-5">Aucune annonce.</div>{% endfor %}
+</div></div>
+{% endblock %}

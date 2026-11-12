@@ -83,6 +83,33 @@ def protect_post_requests():
         if not expected or not secrets.compare_digest(submitted, expected):
             abort(400, description="Jeton de sécurité invalide. Rechargez la page et réessayez.")
 
+    # Multi-tenant scoping
+    if session.get("user_id"):
+        db = get_db()
+        school_id = session.get("school_id")
+        if not school_id:
+            u = db.execute("SELECT school_id FROM users WHERE id=?", (session["user_id"],)).fetchone()
+            school_id = u["school_id"] if (u and "school_id" in u.keys() and u["school_id"]) else 1
+            session["school_id"] = school_id
+        
+        school = db.execute("SELECT * FROM schools WHERE id=?", (school_id,)).fetchone()
+        if not school:
+            school = db.execute("SELECT * FROM schools LIMIT 1").fetchone()
+            if school:
+                school_id = school["id"]
+                session["school_id"] = school_id
+        
+        g.school_id = school_id
+        g.current_school = school
+        if session.get("role") in ("superadmin", "director", "admin"):
+            g.accessible_schools = db.execute("SELECT * FROM schools WHERE active=1 ORDER BY id").fetchall()
+        else:
+            g.accessible_schools = [school] if school else []
+    else:
+        g.school_id = 1
+        g.current_school = None
+        g.accessible_schools = []
+
 
 @app.context_processor
 def inject_csrf_token():
@@ -102,14 +129,30 @@ def init_db():
     db = sqlite3.connect(DATABASE)
     db.executescript("""
         PRAGMA foreign_keys = ON;
+        CREATE TABLE IF NOT EXISTS schools (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            code TEXT NOT NULL UNIQUE,
+            city TEXT DEFAULT '',
+            country TEXT DEFAULT '',
+            address TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            email TEXT DEFAULT '',
+            academic_year TEXT NOT NULL DEFAULT '2026-2027',
+            plan TEXT NOT NULL DEFAULT 'Enterprise SaaS Pro',
+            currency TEXT NOT NULL DEFAULT 'FCFA',
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('admin', 'teacher', 'parent', 'accountant', 'secretary', 'student')),
+            role TEXT NOT NULL CHECK(role IN ('admin', 'director', 'teacher', 'parent', 'accountant', 'secretary', 'student', 'superadmin')),
             full_name TEXT DEFAULT '',
             email TEXT DEFAULT '',
-            active INTEGER NOT NULL DEFAULT 1
+            active INTEGER NOT NULL DEFAULT 1,
+            school_id INTEGER REFERENCES schools(id) DEFAULT 1
         );
         CREATE TABLE IF NOT EXISTS classes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -224,6 +267,10 @@ def init_db():
                 db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
     db.execute("UPDATE students SET student_user_id=NULL WHERE student_user_id IS NOT NULL AND id NOT IN (SELECT MIN(id) FROM students WHERE student_user_id IS NOT NULL GROUP BY student_user_id)")
     db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_user ON students(student_user_id) WHERE student_user_id IS NOT NULL")
+    if not db.execute("SELECT id FROM schools LIMIT 1").fetchone():
+        now_ts = datetime.now().isoformat(timespec='seconds')
+        db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (1, "Groupe Scolaire International d'Excellence", "EXCELLENCE", "Dakar", "Sénégal", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
+        db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (2, "Institut Polyvalent Horizon Avenir", "HORIZON", "Abidjan", "Côte d'Ivoire", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
     if not db.execute("SELECT id FROM users LIMIT 1").fetchone():
         db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
                    ("admin", generate_password_hash("admin123"), "admin", "Administrateur"))
@@ -354,8 +401,12 @@ def login_required(*roles):
                 return redirect(url_for("login"))
             session["username"]=user["username"]
             session["role"]=user["role"]
-            if roles and user["role"] not in roles:
-                abort(403)
+            if roles:
+                eff = set(roles)
+                if "admin" in eff:
+                    eff.add("director")
+                if user["role"] not in eff and user["role"] != "superadmin":
+                    abort(403)
             return view(*args, **kwargs)
         return wrapped
     return decorator
@@ -388,7 +439,8 @@ def login():
         user = get_db().execute("SELECT * FROM users WHERE username=? AND active=1", (request.form.get("username", "").strip(),)).fetchone()
         if user and check_password_hash(user["password_hash"], request.form.get("password", "")):
             session.clear()
-            session.update(user_id=user["id"], username=user["username"], role=user["role"])
+            sch_id = user["school_id"] if ("school_id" in user.keys() and user["school_id"]) else 1
+            session.update(user_id=user["id"], username=user["username"], role=user["role"], school_id=sch_id)
             return redirect(url_for("dashboard"))
         flash("Identifiants incorrects.", "danger")
     return render_template("login.html")
@@ -427,6 +479,44 @@ def dashboard():
         }
         recent = db.execute("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 ORDER BY s.id DESC LIMIT 5").fetchall()
     return render_template("dashboard.html", totals=totals, recent=recent)
+
+
+@app.route("/bi")
+@login_required("admin", "director", "superadmin")
+def bi_hub():
+    import bi_analytics as bi
+    db = get_db()
+    school_id = g.get("school_id") or session.get("school_id") or 1
+    d1 = bi.get_dashboard_1_general(db, school_id)
+    d2 = bi.get_dashboard_2_financial(db, school_id)
+    d3 = bi.get_dashboard_3_pedagogical(db, school_id)
+    d4 = bi.get_dashboard_4_absences(db, school_id)
+    d5 = bi.get_dashboard_5_hr(db, school_id)
+    d6 = bi.get_dashboard_6_enrollment(db, school_id)
+    d7 = bi.get_dashboard_7_communication(db, school_id)
+    d8 = bi.get_dashboard_8_resources(db, school_id)
+    d9 = bi.get_dashboard_9_early_warning(db, school_id)
+    d10 = bi.get_dashboard_10_strategic(db, school_id)
+    return render_template("bi_hub.html", d1=d1, d2=d2, d3=d3, d4=d4, d5=d5, d6=d6, d7=d7, d8=d8, d9=d9, d10=d10)
+
+
+@app.route("/bi/dashboard/<int:dash_id>")
+@login_required("admin", "director", "superadmin")
+def bi_dashboard(dash_id):
+    return redirect(url_for("bi_hub") + f"#tab{dash_id}")
+
+
+@app.route("/schools/switch/<int:school_id>")
+@login_required("admin", "director", "superadmin")
+def switch_school(school_id):
+    db = get_db()
+    school = db.execute("SELECT id, name FROM schools WHERE id=? AND active=1", (school_id,)).fetchone()
+    if not school:
+        flash("Établissement introuvable.", "danger")
+    else:
+        session["school_id"] = school["id"]
+        flash(f"Établissement actif : {school['name']}", "info")
+    return redirect(request.referrer or url_for("bi_hub"))
 
 
 @app.route("/students")
@@ -1004,6 +1094,22 @@ def evaluation_delete(eval_id):
     audit("delete", "evaluation", eval_id, {"title": ev["title"]})
     db.commit()
     flash("Évaluation et notes associées supprimées.", "success")
+    return redirect(url_for("grades"))
+
+
+@app.route("/grades/<int:grade_id>/delete", methods=["POST"])
+@login_required("admin", "teacher")
+def grade_delete(grade_id):
+    db = get_db()
+    gr = db.execute("SELECT g.*, e.class_id, e.subject_id, e.school_year FROM grades g JOIN evaluations e ON e.id=g.evaluation_id WHERE g.id=?", (grade_id,)).fetchone()
+    if not gr:
+        abort(404)
+    if session.get("role") == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=? AND school_year=?", (session["user_id"], gr["class_id"], gr["subject_id"], gr["school_year"])).fetchone():
+        abort(403)
+    db.execute("DELETE FROM grades WHERE id=?", (grade_id,))
+    audit("delete", "grade", grade_id, {"score": gr["score"], "student_id": gr["student_id"]})
+    db.commit()
+    flash("Note supprimée.", "success")
     return redirect(url_for("grades"))
 
 

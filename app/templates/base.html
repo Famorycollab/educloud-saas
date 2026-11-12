@@ -26,15 +26,19 @@
       <a class="side-link" href="{{ url_for('grades') }}"><span class="nav-icon">✳</span>Notes & bulletins</a>
       <a class="side-link" href="{{ url_for('absences') }}"><span class="nav-icon">◉</span>Absences</a>
       <a class="side-link" href="{{ url_for('homework') }}"><span class="nav-icon">▧</span>Devoirs</a>
-      {% if session.get('role') in ('admin','accountant','parent') %}<div class="sidebar-caption">FINANCES</div><a class="side-link" href="{{ url_for('payments') }}"><span class="nav-icon">＄</span>Paiements</a>{% endif %}
-      {% if session.get('role') in ('admin','accountant') %}<a class="side-link" href="{{ url_for('fee_schedules') }}"><span class="nav-icon">≡</span>Tarifs scolaires</a>{% endif %}
+      {% if session.get('role') in ('admin','director','accountant','parent') %}<div class="sidebar-caption">FINANCES</div><a class="side-link" href="{{ url_for('payments') }}"><span class="nav-icon">＄</span>Paiements</a>{% endif %}
+      {% if session.get('role') in ('admin','director','accountant') %}<a class="side-link" href="{{ url_for('fee_schedules') }}"><span class="nav-icon">≡</span>Tarifs scolaires</a>{% endif %}
       <div class="sidebar-caption">COMMUNICATION</div>
       <a class="side-link" href="{{ url_for('messages') }}"><span class="nav-icon">✉</span>Messages</a>
       <a class="side-link" href="{{ url_for('announcements') }}"><span class="nav-icon">◈</span>Annonces</a>
       <a class="side-link" href="{{ url_for('notifications') }}"><span class="nav-icon">♧</span>Notifications</a>
-      {% if session.get('role') in ('admin','secretary') %}<div class="sidebar-caption">ADMINISTRATION</div>{% endif %}
+      {% if session.get('role') in ('admin','director','superadmin') %}
+      <div class="sidebar-caption">DÉCISIONNEL & BI</div>
+      <a class="side-link" href="{{ url_for('bi_hub') }}"><span class="nav-icon">📊</span>Centre Décisionnel (10 Dashboards)</a>
+      {% endif %}
+      {% if session.get('role') in ('admin','director','secretary') %}<div class="sidebar-caption">ADMINISTRATION</div>{% endif %}
       {% if session.get('role') == 'secretary' %}<a class="side-link" href="{{ url_for('pre_enrollments') }}"><span class="nav-icon">＋</span>Pré-inscriptions</a>{% endif %}
-      {% if session.get('role') == 'admin' %}
+      {% if session.get('role') in ('admin','director') %}
       <a class="side-link" href="{{ url_for('rooms') }}"><span class="nav-icon">⌂</span>Salles</a>
       <a class="side-link" href="{{ url_for('assignments') }}"><span class="nav-icon">⇄</span>Affectations</a>
       <a class="side-link" href="{{ url_for('pre_enrollments') }}"><span class="nav-icon">＋</span>Pré-inscriptions</a>
@@ -46,7 +50,21 @@
     <div class="sidebar-user"><a href="{{ url_for('profile') }}" class="avatar text-decoration-none">{{ (session.get('username') or 'U')[:1]|upper }}</a><span class="user-meta"><strong>{{ session.get('username') }}</strong><small>{{ session.get('role')|capitalize }}</small></span><form method="post" action="{{ url_for('logout') }}"><button class="logout-button" aria-label="Déconnexion" title="Déconnexion">↪</button></form></div>
   </aside>
   <div class="app-main">
-    <header class="topbar"><button class="menu-toggle" type="button" aria-label="Ouvrir le menu" aria-controls="appSidebar" aria-expanded="false">☰</button><div class="topbar-label">Espace de gestion <span>/</span> {% block breadcrumb %}Établissement{% endblock %}</div><div class="topbar-role">{{ session.get('role')|capitalize }}</div></header>
+    <header class="topbar"><button class="menu-toggle" type="button" aria-label="Ouvrir le menu" aria-controls="appSidebar" aria-expanded="false">☰</button><div class="topbar-label">Espace de gestion <span>/</span> {% block breadcrumb %}Établissement{% endblock %}</div><div class="d-flex align-items-center gap-2">
+      {% if g.accessible_schools and g.accessible_schools|length > 1 %}
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          🏫 {{ g.current_school.name if g.current_school else 'Établissement' }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+          {% for s in g.accessible_schools %}
+          <li><a class="dropdown-item {% if s.id == g.school_id %}active{% endif %}" href="{{ url_for('switch_school', school_id=s.id) }}">{{ s.name }} ({{ s.city }})</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <div class="topbar-role">{{ session.get('role')|capitalize }}</div>
+    </div></header>
     <main class="page-content">
 {% else %}
 <main class="auth-content">

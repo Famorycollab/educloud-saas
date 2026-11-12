@@ -1,1 +1,23 @@
-{% extends 'base.html' %}{% block title %}Absences{% endblock %}{% block content %}<h1 class="h2">Suivi des absences</h1><p class="text-secondary mb-4">Historique des absences et motifs communiqués.</p>{% if session.get('role') in ('admin','teacher') %}<form method="post" class="card border-0 shadow-sm mb-4"><div class="card-body row g-2"><div class="col-md-4"><select class="form-select" name="student_id" required><option value="">Élève</option>{% for x in students %}<option value="{{ x.id }}">{{ x.first_name }} {{ x.last_name }}</option>{% endfor %}</select></div><div class="col-md-3"><input class="form-control" name="absence_date" type="date" required></div><div class="col-md-3"><input class="form-control" name="reason" placeholder="Motif / justification"></div><div class="col-md-2 d-grid"><button class="btn btn-primary">Enregistrer</button></div></div></form>{% endif %}<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Élève</th><th>Motif</th><th>Justifiée</th>{% if session.get('role') in ('admin','teacher') %}<th>Actions</th>{% endif %}</tr></thead><tbody>{% for x in absences %}<tr><td>{{ x.absence_date }}</td><td>{{ x.first_name }} {{ x.last_name }}</td><td>{{ x.reason or '—' }}</td><td>{{ 'Oui' if x.justified else 'Non' }}{% if session.get('role')=='parent' and not x.justified %}<form class="d-inline" method="post" action="{{ url_for('absence_justify',absence_id=x.id) }}"><button class="btn btn-sm btn-link">Justifier</button></form>{% endif %}</td>{% if session.get('role') in ('admin','teacher') %}<td class="text-nowrap"><a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('absence_edit', absence_id=x.id) }}">Modifier</a><form class="d-inline" method="post" action="{{ url_for('absence_delete', absence_id=x.id) }}" onsubmit="return confirm('Supprimer cet enregistrement d’absence ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td>{% endif %}</tr>{% else %}<tr><td colspan="5" class="text-center py-4">Aucune absence enregistrée.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Absences{% endblock %}{% block breadcrumb %}Absences{% endblock %}{% block content %}
+<section class="page-heading"><div><div class="page-eyebrow">Vie scolaire</div><h1>Absences</h1><p>Suivi et justification parentale.</p></div></section>
+{% if session.get('role') in ('admin','teacher') %}
+<form method="post" class="card border-0 mb-4"><div class="card-body"><div class="row g-2">
+<div class="col-md-4"><select class="form-select" name="student_id" required><option value="">Élève</option>{% for s in students %}<option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>{% endfor %}</select></div>
+<div class="col-md-3"><input class="form-control" type="date" name="absence_date" required></div>
+<div class="col-md-3"><input class="form-control" name="reason" placeholder="Motif"></div>
+<div class="col-md-2 d-grid"><button class="btn btn-primary">Enregistrer</button></div>
+</div></div></form>
+{% endif %}
+<div class="card border-0"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Élève</th><th>Motif</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody>{% for a in absences %}<tr><td>{{ a.absence_date }}</td><td>{{ a.first_name }} {{ a.last_name }}</td><td>{{ a.reason or '—' }}</td>
+<td>{% if a.justified %}<span class="badge text-bg-success">Justifiée</span>{% else %}<span class="badge text-bg-danger">Non justifiée</span>{% endif %}</td>
+<td class="text-nowrap">
+{% if session.get('role')=='parent' and not a.justified %}
+<form class="d-inline" method="post" action="{{ url_for('absence_justify', absence_id=a.id) }}"><button class="btn btn-sm btn-outline-success">Justifier</button></form>
+{% endif %}
+{% if session.get('role') in ('admin','teacher') %}
+<a class="btn btn-sm btn-outline-primary" href="{{ url_for('absence_edit', absence_id=a.id) }}">Modifier</a>
+<form class="d-inline" method="post" action="{{ url_for('absence_delete', absence_id=a.id) }}" onsubmit="return confirm('Supprimer cette absence ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>
+{% endif %}
+</td></tr>{% else %}<tr><td colspan="5" class="text-center py-5 text-secondary">Aucune absence.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

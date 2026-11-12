@@ -1,0 +1,739 @@
+{% extends 'base.html' %}
+{% block title %}Centre Décisionnel & Business Intelligence{% endblock %}
+{% block breadcrumb %}Business Intelligence & Aide à la Décision{% endblock %}
+
+{% block content %}
+<div class="bi-dashboard-container">
+
+  <!-- Top Hero / BI Title Card -->
+  <div class="card border-0 shadow-sm mb-4 bg-gradient text-white" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border-radius: 1rem;">
+    <div class="card-body p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-warning text-dark fw-bold px-3 py-1 text-uppercase">Module Décisionnel · SID</span>
+            <span class="badge bg-light text-primary fw-semibold px-2 py-1">Cloud & Big Data</span>
+          </div>
+          <h1 class="h3 fw-bold mb-1">Plateforme Business Intelligence & Aide à la Décision</h1>
+          <p class="mb-0 text-white-50">
+            Établissement actif : <strong>{{ g.current_school.name if g.current_school else 'Groupe Scolaire' }}</strong> 
+            · Ville : <strong>{{ g.current_school.city if g.current_school else 'Dakar' }}</strong>
+          </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <!-- School Switcher inside BI -->
+          {% if g.accessible_schools|length > 1 %}
+          <div class="dropdown">
+            <button class="btn btn-light text-primary fw-bold dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
+              🏫 Changer d'école ({{ g.current_school.code if g.current_school else 'EXCELLENCE' }})
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+              {% for s in g.accessible_schools %}
+              <li><a class="dropdown-item {% if s.id == g.school_id %}active fw-bold{% endif %}" href="{{ url_for('switch_school', school_id=s.id) }}">{{ s.name }} ({{ s.city }})</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+          <button class="btn btn-outline-light" onclick="window.print()"><span class="me-1">🖨️</span>Imprimer rapport BI</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 Dashboards Navigation Pills -->
+  <ul class="nav nav-pills mb-4 gap-2 flex-nowrap overflow-x-auto pb-2" id="biTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active fw-bold text-nowrap" id="tab1-btn" data-bs-toggle="pill" data-bs-target="#tab1" type="button">1. Vue Globale</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab2-btn" data-bs-toggle="pill" data-bs-target="#tab2" type="button">2. Finances</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab3-btn" data-bs-toggle="pill" data-bs-target="#tab3" type="button">3. Pédagogie</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab4-btn" data-bs-toggle="pill" data-bs-target="#tab4" type="button">4. Absences</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab5-btn" data-bs-toggle="pill" data-bs-target="#tab5" type="button">5. RH Enseignants</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab6-btn" data-bs-toggle="pill" data-bs-target="#tab6" type="button">6. Inscriptions</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab7-btn" data-bs-toggle="pill" data-bs-target="#tab7" type="button">7. Communication</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab8-btn" data-bs-toggle="pill" data-bs-target="#tab8" type="button">8. Salles & Horaires</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap text-danger" id="tab9-btn" data-bs-toggle="pill" data-bs-target="#tab9" type="button">🚨 9. Early Warning</button></li>
+    <li class="nav-item"><button class="nav-link fw-bold text-nowrap text-indigo" id="tab10-btn" data-bs-toggle="pill" data-bs-target="#tab10" type="button">🔮 10. Stratégie & IA</button></li>
+  </ul>
+
+  <!-- Tab Contents -->
+  <div class="tab-content" id="biTabsContent">
+
+    <!-- TAB 1: VUE GLOBALE & CAPACITÉ -->
+    <div class="tab-pane fade show active" id="tab1" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TOTAL ÉLÈVES</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+              <h2 class="h3 fw-bold mb-0 text-primary">{{ d1.total_students }}</h2>
+              <span class="badge bg-success-subtle text-success small">+7.8% N-1</span>
+            </div>
+            <span class="text-muted small mt-1">Élèves inscrits actifs</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">ENSEIGNANTS & RH</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+              <h2 class="h3 fw-bold mb-0 text-dark">{{ d1.total_teachers }}</h2>
+              <span class="badge bg-info-subtle text-info small">Ratio 1:{{ (d1.total_students / (d1.total_teachers or 1))|round(1) }}</span>
+            </div>
+            <span class="text-muted small mt-1">Corps professoral actif</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">CLASSES ACTIVES</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+              <h2 class="h3 fw-bold mb-0 text-dark">{{ d1.total_classes }}</h2>
+              <span class="badge bg-secondary-subtle text-secondary small">Capacité {{ d1.total_capacity }}</span>
+            </div>
+            <span class="text-muted small mt-1">Groupes pédagogiques</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TAUX D'OCCUPATION</span>
+            <div class="d-flex align-items-baseline gap-2 mt-1">
+              <h2 class="h3 fw-bold mb-0 {% if d1.occupancy_rate > 95 %}text-danger{% elif d1.occupancy_rate > 80 %}text-success{% else %}text-warning{% endif %}">{{ d1.occupancy_rate }}%</h2>
+              {% if d1.overloaded_classes %}<span class="badge bg-danger small">{{ d1.overloaded_classes|length }} surchargée(s)</span>{% endif %}
+            </div>
+            <div class="progress mt-2" style="height: 6px;">
+              <div class="progress-bar {% if d1.occupancy_rate > 95 %}bg-danger{% else %}bg-primary{% endif %}" style="width: {{ d1.occupancy_rate }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold mb-3">Taux de Remplissage par Classe & Alertes Capacité</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr><th>Classe</th><th>Niveau</th><th>Effectif</th><th>Capacité</th><th>Taux</th><th>Statut</th></tr>
+                </thead>
+                <tbody>
+                  {% for c in d1.classes_stats %}
+                  <tr>
+                    <td class="fw-bold">{{ c.name }}</td>
+                    <td>{{ c.level }}</td>
+                    <td>{{ c.count }}</td>
+                    <td>{{ c.capacity }}</td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height: 8px;">
+                          <div class="progress-bar {% if c.is_overloaded %}bg-danger{% elif c.is_under %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ c.occupancy_pct }}%"></div>
+                        </div>
+                        <small class="fw-bold">{{ c.occupancy_pct }}%</small>
+                      </div>
+                    </td>
+                    <td>
+                      {% if c.is_overloaded %}
+                      <span class="badge bg-danger">⚠️ Surcharge</span>
+                      {% elif c.is_under %}
+                      <span class="badge bg-warning text-dark">Sous-remplie</span>
+                      {% else %}
+                      <span class="badge bg-success">Optimal</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold mb-3">Évolution Pluriannuelle des Effectifs</h5>
+            <canvas id="multiyearChart" height="220"></canvas>
+            <div class="mt-3 p-3 bg-light rounded text-muted small">
+              📈 <strong>Tendance observée :</strong> Croissance stable des effectifs (+15% en 2 ans). Prévision N+1 : anticipation de la saturation de l'établissement.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: FINANCES & PAIEMENTS -->
+    <div class="tab-pane fade" id="tab2" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TOTAL FRAIS ATTENDUS</span>
+            <h2 class="h4 fw-bold mb-0 text-dark mt-1">{{ d2.total_expected|round|int }} {{ g.current_school.currency or 'FCFA' }}</h2>
+            <span class="text-muted small">Année scolaire 2026-2027</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">MONTANT ENCAISSÉ</span>
+            <h2 class="h4 fw-bold mb-0 text-success mt-1">{{ d2.total_collected|round|int }} {{ g.current_school.currency or 'FCFA' }}</h2>
+            <span class="text-success small fw-semibold">Paiements validés</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">RESTE À RECOUVRER</span>
+            <h2 class="h4 fw-bold mb-0 text-danger mt-1">{{ d2.remaining_balance|round|int }} {{ g.current_school.currency or 'FCFA' }}</h2>
+            <span class="text-danger small">Impayés & reliquats</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TAUX DE RECOUVREMENT</span>
+            <h2 class="h4 fw-bold mb-0 text-primary mt-1">{{ d2.recovery_rate }}%</h2>
+            <div class="progress mt-2" style="height: 6px;">
+              <div class="progress-bar bg-success" style="width: {{ d2.recovery_rate }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold mb-3">Évolution Mensuelle des Recettes & Prévisions</h5>
+            <canvas id="financeChart" height="200"></canvas>
+            <div class="mt-3 d-flex gap-3 text-muted small">
+              <div><span class="badge bg-primary">■</span> Encaissements Réels</div>
+              <div><span class="badge bg-info">■</span> Prévisions Budgétaires (P)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="fw-bold mb-0 text-danger">Parents en Retard de Paiement</h5>
+              <span class="badge bg-danger-subtle text-danger fw-bold">{{ d2.late_students|length }} dossiers</span>
+            </div>
+            <div class="table-responsive" style="max-height: 280px;">
+              <table class="table table-sm table-hover align-middle">
+                <thead><tr><th>Élève</th><th>Parent</th><th>Reste dû</th><th></th></tr></thead>
+                <tbody>
+                  {% for l in d2.late_students %}
+                  <tr>
+                    <td class="fw-bold">{{ l.name }}<br><small class="text-muted">{{ l.class_name }}</small></td>
+                    <td>{{ l.parent_name }}<br><small class="text-muted">{{ l.parent_phone }}</small></td>
+                    <td class="text-danger fw-bold">{{ l.due|round|int }} F</td>
+                    <td><form method="post" action="{{ url_for('payments_send_reminders') }}" class="d-inline"><button class="btn btn-xs btn-outline-danger btn-sm">Relancer</button></form></td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="4" class="text-success text-center py-3">🎉 Aucun retard de paiement détecté !</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: PÉDAGOGIE & PERFORMANCE -->
+    <div class="tab-pane fade" id="tab3" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">MOYENNE GÉNÉRALE</span>
+            <h2 class="h3 fw-bold mb-0 text-primary mt-1">{{ d3.global_avg }} / 20</h2>
+            <span class="text-muted small">Sur {{ d3.grade_count }} notes saisies</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TAUX DE RÉUSSITE</span>
+            <h2 class="h3 fw-bold mb-0 text-success mt-1">{{ d3.success_rate }}%</h2>
+            <span class="text-success small fw-semibold">Notes ≥ 10/20</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TAUX D'ÉCHEC</span>
+            <h2 class="h3 fw-bold mb-0 text-danger mt-1">{{ d3.failure_rate }}%</h2>
+            <span class="text-danger small">Notes &lt; 10/20</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">ÉLÈVES EN DIFFICULTÉ</span>
+            <h2 class="h3 fw-bold mb-0 text-warning mt-1">{{ d3.students_in_need|length }}</h2>
+            <span class="text-warning small fw-bold">Accompagnement requis</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold mb-3">Moyennes par Classe & Taux de Réussite</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead><tr><th>Classe</th><th>Niveau</th><th>Moyenne</th><th>Réussite</th></tr></thead>
+                <tbody>
+                  {% for ca in d3.class_averages %}
+                  <tr>
+                    <td class="fw-bold">{{ ca.class_name }}</td>
+                    <td>{{ ca.level }}</td>
+                    <td><span class="badge {% if ca.avg_score >= 12 %}bg-success{% elif ca.avg_score >= 10 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6">{{ ca.avg_score }} / 20</span></td>
+                    <td>{{ ca.pass_rate }}%</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold mb-3">Classement des Matières (Performances)</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead><tr><th>Matière</th><th>Coefficient</th><th>Moyenne</th><th>Appréciation</th></tr></thead>
+                <tbody>
+                  {% for sr in d3.subject_rankings %}
+                  <tr>
+                    <td class="fw-bold">{{ sr.subject_name }}</td>
+                    <td>{{ sr.coefficient }}</td>
+                    <td><strong>{{ sr.avg_score }} / 20</strong></td>
+                    <td>
+                      {% if sr.avg_score >= 13 %}<span class="badge bg-success-subtle text-success">Excellente</span>
+                      {% elif sr.avg_score >= 10 %}<span class="badge bg-info-subtle text-info">Satisfaisante</span>
+                      {% else %}<span class="badge bg-danger-subtle text-danger">À renforcer</span>{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ABSENCES & CORRÉLATIONS -->
+    <div class="tab-pane fade" id="tab4" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TOTAL ABSENCES</span>
+            <h2 class="h3 fw-bold mb-0 text-dark mt-1">{{ d4.total_abs }}</h2>
+            <span class="text-muted small">Créneaux d'absence enregistrés</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">ABSENCES JUSTIFIÉES</span>
+            <h2 class="h3 fw-bold mb-0 text-success mt-1">{{ d4.justified_count }} ({{ d4.justified_pct }}%)</h2>
+            <span class="text-success small">Avec justificatif ou certificat</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">ABSENCES INJUSTIFIÉES</span>
+            <h2 class="h3 fw-bold mb-0 text-danger mt-1">{{ d4.unjustified_count }}</h2>
+            <span class="text-danger small">Signalements aux familles requis</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-bold mb-0">🔍 Analyse Big Data : Corrélation Absences & Performance Scolaire</h5>
+          <span class="badge bg-primary-subtle text-primary fw-bold">Modèle Décisionnel</span>
+        </div>
+        <p class="text-muted small">Ce tableau croise les données de présence avec les moyennes trimestrielles pour identifier l'impact direct du nombre d'absences sur la chute des notes.</p>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light"><tr><th>Élève</th><th>Classe</th><th>Nombre d'Absences</th><th>Moyenne Actuelle</th><th>Impact Détecté</th></tr></thead>
+            <tbody>
+              {% for cd in d4.correlation_data %}
+              <tr>
+                <td class="fw-bold">{{ cd.student_name }}</td>
+                <td>{{ cd.class_name }}</td>
+                <td><span class="badge {% if cd.absence_count >= 4 %}bg-danger{% elif cd.absence_count >= 2 %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ cd.absence_count }} absence(s)</span></td>
+                <td class="fw-bold">{{ cd.avg_score }} / 20</td>
+                <td>
+                  {% if cd.absence_count >= 4 and cd.avg_score < 10 %}
+                  <span class="badge bg-danger">🚨 Chute sévère corrélée à l'absentéisme</span>
+                  {% elif cd.absence_count >= 2 and cd.avg_score < 12 %}
+                  <span class="badge bg-warning text-dark">⚠️ Fragilité liée aux absences</span>
+                  {% else %}
+                  <span class="badge bg-success-subtle text-success">Résultats préservés</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RH & ENSEIGNANTS -->
+    <div class="tab-pane fade" id="tab5" role="tabpanel">
+      <div class="card border-0 shadow-sm p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Charge Horaire Hebdomadaire des Enseignants</h5>
+          <span class="badge bg-info-subtle text-info fw-bold">{{ d5.teachers_count }} Enseignants</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light"><tr><th>Enseignant</th><th>Email</th><th>Volume Hebdomadaire</th><th>Classes Assignées</th><th>Diagnostic RH</th></tr></thead>
+            <tbody>
+              {% for t in d5.teacher_stats %}
+              <tr>
+                <td class="fw-bold">{{ t.name }}</td>
+                <td>{{ t.email or '—' }}</td>
+                <td class="fw-bold">{{ t.weekly_hours }} h / semaine</td>
+                <td><span class="badge bg-secondary">{{ t.assigned_classes }} classe(s)</span></td>
+                <td>
+                  {% if 'Surcharge' in t.status %}
+                  <span class="badge bg-danger">⚠️ Surcharge horaire (>20h)</span>
+                  {% elif 'Sous-charge' in t.status %}
+                  <span class="badge bg-warning text-dark">Disponibilité horaire (>6h libres)</span>
+                  {% else %}
+                  <span class="badge bg-success">Charge équilibrée</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: INSCRIPTIONS & RÉTENTION -->
+    <div class="tab-pane fade" id="tab6" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TAUX DE RÉTENTION SCOLAIRE</span>
+            <h2 class="h3 fw-bold mb-0 text-success mt-1">{{ d6.retention_rate }}%</h2>
+            <span class="text-success small fw-semibold">Fidélisation d'une année sur l'autre</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">NOUVELLES INSCRIPTIONS</span>
+            <h2 class="h3 fw-bold mb-0 text-primary mt-1">{{ d6.new_inscriptions }}</h2>
+            <span class="text-muted small">Nouveaux arrivants cette année</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">PRÉVISIONS RENTRÉE N+1</span>
+            <h2 class="h3 fw-bold mb-0 text-indigo mt-1">{{ d6.next_year_forecast }} élèves</h2>
+            <span class="text-info small">Modèle de croissance prédictif</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4">
+        <h5 class="fw-bold mb-3">Répartition Géographique des Familles (Origine des Élèves)</h5>
+        <div class="row g-3">
+          {% for d in d6.districts %}
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="d-flex justify-content-between font-bold mb-1">
+                <span>{{ d.district }}</span>
+                <strong>{{ d.share }}%</strong>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-primary" style="width: {{ d.share }}%"></div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: COMMUNICATION PARENTS -->
+    <div class="tab-pane fade" id="tab7" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TOTAL MESSAGES ÉCHANGÉS</span>
+            <h2 class="h3 fw-bold mb-0 text-dark mt-1">{{ d7.total_messages }}</h2>
+            <span class="text-muted small">Canaux parents & administration</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">TAUX D'OUVERTURE / LECTURE</span>
+            <h2 class="h3 fw-bold mb-0 text-success mt-1">{{ d7.read_rate }}%</h2>
+            <span class="text-success small fw-semibold">Consultés dans les 48h</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">SCORE D'ENGAGEMENT PARENTAL</span>
+            <h2 class="h3 fw-bold mb-0 text-primary mt-1">{{ d7.engagement_score }} / 100</h2>
+            <span class="text-primary small">Excellente réactivité</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4">
+        <h5 class="fw-bold mb-3">Dernières Annonces Administratives</h5>
+        <div class="list-group list-group-flush">
+          {% for a in d7.recent_announcements %}
+          <div class="list-group-item px-0 py-2">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1 fw-bold">{{ a.title }}</h6>
+              <small class="text-muted">{{ a.created_at }}</small>
+            </div>
+            <p class="mb-1 text-muted small">Audience : <span class="badge bg-secondary-subtle text-secondary">{{ a.audience }}</span> · Auteur : {{ a.author or 'Direction' }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: SALLES & HORAIRES -->
+    <div class="tab-pane fade" id="tab8" role="tabpanel">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">SALLES RÉPERTORIÉES</span>
+            <h2 class="h3 fw-bold mb-0 text-dark mt-1">{{ d8.rooms_count }}</h2>
+            <span class="text-muted small">Salles de classe et laboratoires</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">OCCUPATION MOYENNE</span>
+            <h2 class="h3 fw-bold mb-0 text-primary mt-1">{{ d8.average_occupancy }}%</h2>
+            <span class="text-muted small">Sur base 30h/semaine</span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-0 shadow-sm p-3 h-100">
+            <span class="text-secondary small fw-bold">CONFLITS D'HORAIRES</span>
+            <h2 class="h3 fw-bold mb-0 text-success mt-1">0 conflit</h2>
+            <span class="text-success small fw-semibold">Contrôle strict validé</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4">
+        <h5 class="fw-bold mb-3">Taux d'Utilisation des Salles</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light"><tr><th>Salle</th><th>Capacité</th><th>Créneaux Occupés</th><th>Taux d'Occupation</th><th>Diagnostic</th></tr></thead>
+            <tbody>
+              {% for r in d8.room_stats %}
+              <tr>
+                <td class="fw-bold">{{ r.name }}</td>
+                <td>{{ r.capacity }} places</td>
+                <td>{{ r.slots_booked }} créneau(x)</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 8px;">
+                      <div class="progress-bar {% if r.is_under %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ r.occupancy_pct }}%"></div>
+                    </div>
+                    <small class="fw-bold">{{ r.occupancy_pct }}%</small>
+                  </div>
+                </td>
+                <td>
+                  {% if r.is_under %}
+                  <span class="badge bg-warning text-dark">Sous-utilisée (&lt;35%)</span>
+                  {% else %}
+                  <span class="badge bg-success">Utilisation Optimale</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 9: EARLY WARNING SYSTEM (EWS) -->
+    <div class="tab-pane fade" id="tab9" role="tabpanel">
+      <div class="alert alert-danger border-0 shadow-sm d-flex justify-content-between align-items-center mb-4 p-3 rounded-3">
+        <div class="d-flex align-items-center gap-3">
+          <span class="fs-1">🚨</span>
+          <div>
+            <h5 class="alert-heading fw-bold mb-1">Early Warning System (EWS) · Détection Précoce des Risques</h5>
+            <p class="mb-0 small">Algorithme d'analyse croisée : <strong>Moyenne &lt; 10/20 (40%)</strong> + <strong>Absences non justifiées (35%)</strong> + <strong>Retards de paiement (25%)</strong>.</p>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <span class="badge bg-danger fs-6 px-3 py-2">{{ d9.high_risk_count }} Risque Critique</span>
+          <span class="badge bg-warning text-dark fs-6 px-3 py-2">{{ d9.moderate_risk_count }} Risque Modéré</span>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4">
+        <h5 class="fw-bold mb-3 text-danger">Élèves sous Surveillance Préventive (Intervention Recommandée)</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Élève</th>
+                <th>Classe</th>
+                <th>Moyenne</th>
+                <th>Absences</th>
+                <th>Impayé</th>
+                <th>Indice Risque</th>
+                <th>Plan d'Action Recommandé</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ar in d9.at_risk_list %}
+              <tr>
+                <td class="fw-bold">{{ ar.name }}<br><small class="text-muted">{{ ar.parent_name }} ({{ ar.parent_phone }})</small></td>
+                <td>{{ ar.class_name }}</td>
+                <td><span class="badge {% if ar.avg_score < 10 %}bg-danger{% else %}bg-warning text-dark{% endif %} fs-6">{{ ar.avg_score }} / 20</span></td>
+                <td><span class="text-danger fw-bold">{{ ar.unjust_abs }} non-justifiées</span></td>
+                <td><span class="text-muted">{{ ar.unpaid_due|round|int }} F</span></td>
+                <td>
+                  <span class="badge bg-{{ ar.badge_class }} px-2 py-1 fs-6">{{ ar.risk_score }}% · {{ ar.risk_level }}</span>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-primary">{{ ar.recommended_action }}</div>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="text-center py-4 text-success fw-bold">👍 Aucun élève en zone de risque critique pour cet établissement.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 10: STRATÉGIE, PRÉVISIONS & SIMULATEUR IA -->
+    <div class="tab-pane fade" id="tab10" role="tabpanel">
+      <div class="card border-0 shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1">Simulateur Stratégique & Aide à la Décision (Rentrée N+1)</h5>
+            <p class="text-muted small mb-0">Ajustez l'objectif d'élèves pour projeter instantanément les besoins en infrastructure, RH et revenus.</p>
+          </div>
+          <span class="badge bg-primary text-uppercase px-3 py-1">Outil Direction</span>
+        </div>
+
+        <div class="row g-4 align-items-center bg-light p-3 rounded-3 mb-4">
+          <div class="col-md-5">
+            <label class="form-label fw-bold">Objectif Effectifs Rentrée 2027-2028 : <span id="simDisplay" class="text-primary fs-5">450 élèves</span></label>
+            <input type="range" class="form-range" min="300" max="700" step="10" value="450" id="simSlider" oninput="calculateSimulation(this.value)">
+            <div class="d-flex justify-content-between text-muted small">
+              <span>300 élèves</span>
+              <span>Actuel : {{ d10.active_students }} élèves</span>
+              <span>700 élèves</span>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <div class="row g-2">
+              <div class="col-sm-4">
+                <div class="p-3 bg-white rounded shadow-sm text-center">
+                  <span class="text-muted small fw-bold">RECETTES N+1</span>
+                  <div id="simRevenue" class="fw-bold text-success fs-6 mt-1">45,000,000 F</div>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="p-3 bg-white rounded shadow-sm text-center">
+                  <span class="text-muted small fw-bold">SALLES REQUISES</span>
+                  <div id="simRooms" class="fw-bold text-primary fs-6 mt-1">16 salles</div>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="p-3 bg-white rounded shadow-sm text-center">
+                  <span class="text-muted small fw-bold">PROFS À RECRUTER</span>
+                  <div id="simTeachers" class="fw-bold text-indigo fs-6 mt-1">+3 professeurs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">💡 Recommandations Décisionnelles Automatiques :</h6>
+        <div class="row g-3">
+          {% for rec in d10.recommendations %}
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 h-100 bg-white">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary-subtle text-primary fw-bold">{{ rec.type }}</span>
+                <span class="badge bg-warning text-dark">{{ rec.priority }}</span>
+              </div>
+              <p class="small text-muted mb-2">{{ rec.text }}</p>
+              <div class="small fw-bold text-success">🎯 Impact attendu : {{ rec.impact }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Chart.js initialization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Simulation calculator
+  function calculateSimulation(val) {
+    document.getElementById('simDisplay').innerText = val + ' élèves';
+    var fee = {{ d10.avg_fee or 100000 }};
+    var totalRev = Math.round(val * fee);
+    document.getElementById('simRevenue').innerText = totalRev.toLocaleString('fr-FR') + ' {{ g.current_school.currency or "FCFA" }}';
+    var rooms = Math.ceil(val / 28);
+    document.getElementById('simRooms').innerText = rooms + ' salles';
+    var currentTeachers = {{ d10.teachers_count or 1 }};
+    var neededTeachers = Math.ceil(val / 17);
+    var deltaTeachers = Math.max(0, neededTeachers - currentTeachers);
+    document.getElementById('simTeachers').innerText = '+' + deltaTeachers + ' professeur(s)';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Multiyear chart
+    var ctx1 = document.getElementById('multiyearChart');
+    if (ctx1) {
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: [{% for t in d1.multiyear_trends %}'{{ t.year }}',{% endfor %}],
+          datasets: [{
+            label: 'Effectifs Élèves',
+            data: [{% for t in d1.multiyear_trends %}{{ t.count }},{% endfor %}],
+            backgroundColor: '#1e3c72',
+            borderRadius: 6
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+
+    // Finance monthly chart
+    var ctx2 = document.getElementById('financeChart');
+    if (ctx2) {
+      new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: [{% for m in d2.monthly_revenues %}'{{ m.month }}',{% endfor %}{% for p in d2.projected_revenues %}'{{ p.month }}',{% endfor %}],
+          datasets: [
+            {
+              label: 'Encaissements (FCFA)',
+              data: [{% for m in d2.monthly_revenues %}{{ m.total }},{% endfor %}{% for p in d2.projected_revenues %}{{ p.amount }},{% endfor %}],
+              borderColor: '#2a5298',
+              backgroundColor: 'rgba(42, 82, 152, 0.1)',
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+  });
+</script>
+{% endblock %}
