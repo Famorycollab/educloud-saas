@@ -266,35 +266,35 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS demo_seed (seed_key TEXT PRIMARY KEY, created_at TEXT NOT NULL);
     """)
-    migrations = {
-        "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1"},
-        "students": {"medical_notes": "TEXT DEFAULT ''", "photo_path": "TEXT DEFAULT ''", "parent_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "student_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL"},
-        "messages": {"is_draft": "INTEGER NOT NULL DEFAULT 0", "attachment_path": "TEXT DEFAULT ''", "hidden_by_sender": "INTEGER NOT NULL DEFAULT 0", "hidden_by_recipient": "INTEGER NOT NULL DEFAULT 0"},
-    }
-    for table, columns in migrations.items():
-        existing = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
-        for column, declaration in columns.items():
-            if column not in existing:
-                db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
-    db.execute("UPDATE students SET student_user_id=NULL WHERE student_user_id IS NOT NULL AND id NOT IN (SELECT MIN(id) FROM students WHERE student_user_id IS NOT NULL GROUP BY student_user_id)")
-    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_user ON students(student_user_id) WHERE student_user_id IS NOT NULL")
-    if not db.execute("SELECT id FROM schools LIMIT 1").fetchone():
-        now_ts = datetime.now().isoformat(timespec='seconds')
-        db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (1, "Groupe Scolaire International d'Excellence", "EXCELLENCE", "Dakar", "Sénégal", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
-        db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (2, "Institut Polyvalent Horizon Avenir", "HORIZON", "Abidjan", "Côte d'Ivoire", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
-    if not db.execute("SELECT id FROM users LIMIT 1").fetchone():
-        db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
-                   ("admin", generate_password_hash("admin123"), "admin", "Administrateur"))
-        db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
-                   ("comptable", generate_password_hash("compta123"), "accountant", "Aminata Diallo"))
-    if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-demo-v2'").fetchone():
-        legacy_demo = db.execute(
-            "SELECT 1 FROM users WHERE username='enseignant' AND EXISTS(SELECT 1 FROM classes WHERE name='CP-A' AND school_year='2026-2027')"
-        ).fetchone()
-        if legacy_demo:
-            db.execute("INSERT INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-v2", datetime.now().isoformat(timespec="seconds")))
-        else:
-            seed_demo_data(db)
+        migrations = {
+            "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1"},
+            "students": {"medical_notes": "TEXT DEFAULT ''", "photo_path": "TEXT DEFAULT ''", "parent_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "student_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL"},
+            "messages": {"is_draft": "INTEGER NOT NULL DEFAULT 0", "attachment_path": "TEXT DEFAULT ''", "hidden_by_sender": "INTEGER NOT NULL DEFAULT 0", "hidden_by_recipient": "INTEGER NOT NULL DEFAULT 0"},
+        }
+        for table, columns in migrations.items():
+            existing = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
+            for column, declaration in columns.items():
+                if column not in existing:
+                    db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
+        db.execute("UPDATE students SET student_user_id=NULL WHERE student_user_id IS NOT NULL AND id NOT IN (SELECT MIN(id) FROM students WHERE student_user_id IS NOT NULL GROUP BY student_user_id)")
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_user ON students(student_user_id) WHERE student_user_id IS NOT NULL")
+        if not db.execute("SELECT id FROM schools LIMIT 1").fetchone():
+            now_ts = datetime.now().isoformat(timespec='seconds')
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (1, "Groupe Scolaire International d'Excellence", "EXCELLENCE", "Dakar", "Sénégal", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (2, "Institut Polyvalent Horizon Avenir", "HORIZON", "Abidjan", "Côte d'Ivoire", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
+        if not db.execute("SELECT id FROM users LIMIT 1").fetchone():
+            db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
+                       ("admin", generate_password_hash("admin123"), "admin", "Administrateur"))
+            db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
+                       ("comptable", generate_password_hash("compta123"), "accountant", "Aminata Diallo"))
+        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-demo-v2'").fetchone():
+            legacy_demo = db.execute(
+                "SELECT 1 FROM users WHERE username='enseignant' AND EXISTS(SELECT 1 FROM classes WHERE name='CP-A' AND school_year='2026-2027')"
+            ).fetchone()
+            if legacy_demo:
+                db.execute("INSERT INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-v2", datetime.now().isoformat(timespec="seconds")))
+            else:
+                seed_demo_data(db)
         db.commit()
     except sqlite3.OperationalError as e:
         if "locked" in str(e).lower() or "busy" in str(e).lower():
