@@ -1,19 +1,174 @@
-{% extends 'base.html' %}{% block title %}Pré-inscriptions{% endblock %}{% block breadcrumb %}Pré-inscriptions{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Inscriptions</div><h1>Demandes à valider</h1></div></section>
-<div class="card border-0"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Enfant</th><th>Naissance</th><th>Parent</th><th>Contact</th><th>Statut</th><th>Décision</th></tr></thead>
-<tbody>{% for a in applications %}<tr>
-<td class="fw-semibold">{{ a.first_name }} {{ a.last_name }}</td>
-<td>{{ a.birth_date or '—' }}</td>
-<td>{{ a.parent_name }}</td>
-<td>{{ a.parent_email or '' }} {{ a.parent_phone or '' }}</td>
-<td>{{ a.status }}</td>
-<td>{% if a.status=='pending' %}
-<form method="post" class="d-flex gap-2 flex-wrap">
-<input type="hidden" name="application_id" value="{{ a.id }}">
-<select class="form-select form-select-sm" name="class_id" style="width:auto"><option value="">Classe (auto si vide)</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
-<button class="btn btn-sm btn-success" name="action" value="approve">Approuver</button>
-<button class="btn btn-sm btn-outline-danger" name="action" value="reject">Refuser</button>
-</form>
-{% else %}—{% endif %}</td>
-</tr>{% else %}<tr><td colspan="6" class="text-center py-4 text-secondary">Aucune demande.</td></tr>{% endfor %}</tbody></table></div></div>
+{% extends 'base.html' %}
+{% block title %}Dossiers d'Admission · Pré-inscriptions{% endblock %}
+{% block breadcrumb %}Inscriptions &amp; Admissions{% endblock %}
+
+{% block content %}
+<style>
+.candidate-avatar {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: grid; place-items: center; font-weight: 800; font-size: 0.95rem;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: #fff; flex-shrink: 0; box-shadow: 0 4px 12px rgba(2,132,199,0.25);
+}
+.status-pill {
+  font-size: 0.75rem; font-weight: 700; border-radius: 8px;
+  padding: 0.3rem 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+}
+.status-pending { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.status-approved { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.status-rejected { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+</style>
+
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-user-plus me-1"></i>Admissions</div>
+    <h1>Dossiers de Pré-inscription</h1>
+    <p>Validation administrative des nouvelles demandes d'admission scolaire en ligne.</p>
+  </div>
+  <a class="btn btn-outline-primary" href="{{ url_for('pre_enrollment') }}" target="_blank">
+    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Formulaire public parent
+  </a>
+</section>
+
+<!-- KPIs Candidatures -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card stat-payments">
+      <div class="stat-top">
+        <span>En attente de validation</span>
+        <span class="stat-icon"><i class="fa-solid fa-hourglass-half"></i></span>
+      </div>
+      <strong>{{ applications|selectattr('status','equalto','pending')|list|length }}</strong>
+      <small class="stat-note">Dossiers à instruire par le secrétariat</small>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Dossiers Approuvés</span>
+        <span class="stat-icon"><i class="fa-solid fa-circle-check"></i></span>
+      </div>
+      <strong>{{ applications|selectattr('status','equalto','approved')|list|length }}</strong>
+      <small class="stat-note">Élèves admis définitivement</small>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Total Candidatures</span>
+        <span class="stat-icon"><i class="fa-solid fa-folder-open"></i></span>
+      </div>
+      <strong>{{ applications|length }}</strong>
+      <small class="stat-note">Toutes demandes confondues</small>
+    </div>
+  </div>
+</div>
+
+<!-- Table Candidatures -->
+<div class="card border-0 shadow-sm" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-file-signature text-primary"></i>
+      <strong>Demandes d'admission</strong>
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2">{{ applications|length }}</span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Candidat / Élève</th>
+          <th>Date de naissance</th>
+          <th>Parent / Tuteur</th>
+          <th>Contacts</th>
+          <th>Statut du dossier</th>
+          <th class="text-end">Décision administrative</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in applications %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="candidate-avatar">
+                {{ a.first_name[:1]|upper }}{{ a.last_name[:1]|upper }}
+              </div>
+              <div>
+                <strong class="d-block text-dark">{{ a.first_name }} {{ a.last_name }}</strong>
+                <small class="text-muted">Candidat admission</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="text-muted small">
+              <i class="fa-regular fa-calendar fa-xs me-1"></i>{{ a.birth_date or '—' }}
+            </span>
+          </td>
+          <td>
+            <strong class="text-dark small">{{ a.parent_name }}</strong>
+          </td>
+          <td>
+            <div class="small text-muted">
+              {% if a.parent_email %}
+              <div><i class="fa-regular fa-envelope fa-xs me-1"></i>{{ a.parent_email }}</div>
+              {% endif %}
+              {% if a.parent_phone %}
+              <div><i class="fa-solid fa-phone fa-xs me-1"></i>{{ a.parent_phone }}</div>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            {% if a.status == 'pending' %}
+            <span class="status-pill status-pending">
+              <i class="fa-solid fa-hourglass-half fa-xs"></i>En attente
+            </span>
+            {% elif a.status == 'approved' %}
+            <span class="status-pill status-approved">
+              <i class="fa-solid fa-check fa-xs"></i>Validé
+            </span>
+            {% else %}
+            <span class="status-pill status-rejected">
+              <i class="fa-solid fa-xmark fa-xs"></i>Refusé
+            </span>
+            {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if a.status == 'pending' %}
+            <form method="post" class="d-inline-flex gap-2 align-items-center justify-content-end">
+              <input type="hidden" name="application_id" value="{{ a.id }}">
+              <select class="form-select form-select-sm" name="class_id" style="width:160px; font-size:0.8rem; border-radius:8px;">
+                <option value="">Classe (auto)</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn btn-sm btn-success px-3" name="action" value="approve" style="border-radius:8px;">
+                <i class="fa-solid fa-check me-1"></i>Valider
+              </button>
+              <button class="btn btn-sm btn-outline-danger px-2" name="action" value="reject" style="border-radius:8px;" title="Refuser">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </form>
+            {% else %}
+            <span class="text-muted small">Dossier clôturé</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center py-5 text-secondary">
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fa-solid fa-folder-open"></i></div>
+              <h3>Aucune demande d'inscription</h3>
+              <p>Partagez le lien du formulaire public pour recueillir les demandes des familles.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

@@ -1,29 +1,135 @@
-{% extends 'base.html' %}{% block title %}Mon profil{% endblock %}{% block content %}
-<div class="mb-4"><h1 class="h2">Mon profil</h1><p class="text-secondary mb-0">Consultez vos informations personnelles et modifiez votre mot de passe.</p></div>
+{% extends 'base.html' %}
+{% block title %}Mon Profil · Paramètres du Compte{% endblock %}
+{% block breadcrumb %}Mon Profil{% endblock %}
+
+{% block content %}
+<style>
+.profile-hero {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%);
+  border-radius: 20px;
+  padding: 2rem;
+  color: #fff;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(29,78,216,0.25);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.profile-hero-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1d4ed8;
+  display: grid;
+  place-items: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+.profile-card {
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(13,27,46,0.06);
+  overflow: hidden;
+  height: 100%;
+}
+.profile-card-header {
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.profile-card-body { padding: 1.5rem; }
+</style>
+
+<div class="profile-hero">
+  <div class="profile-hero-avatar">
+    {{ (user.full_name or user.username or 'U')[:1]|upper }}
+  </div>
+  <div class="flex-grow-1">
+    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+      <h1 class="h3 fw-bold mb-0 text-white">{{ user.full_name or user.username }}</h1>
+      <span class="badge bg-white text-primary fw-bold text-uppercase px-3 py-1">
+        <i class="fa-solid fa-shield-halved fa-xs me-1"></i>{{ user.role|capitalize }}
+      </span>
+      <span class="badge bg-success-subtle text-success px-2 py-1">
+        <i class="fa-solid fa-circle-check fa-xs me-1"></i>Compte Actif
+      </span>
+    </div>
+    <p class="mb-0 text-white-50 small">
+      <i class="fa-regular fa-envelope me-1"></i>{{ user.email or 'Aucun email configuré' }}
+      <span class="mx-2 opacity-50">·</span>
+      <i class="fa-solid fa-user-tag me-1"></i>@{{ user.username }}
+    </p>
+  </div>
+</div>
+
 <div class="row g-4">
-<div class="col-lg-6">
-<div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
-<h2 class="h5 mb-3">Informations de compte</h2>
-<form method="post" action="{{ url_for('profile_info') }}">
-<div class="mb-3"><label class="form-label">Identifiant</label><input class="form-control bg-light" value="{{ user.username }}" readonly></div>
-<div class="mb-3"><label class="form-label">Rôle</label><input class="form-control bg-light" value="{{ user.role|capitalize }}" readonly></div>
-<div class="mb-3"><label class="form-label">Nom complet *</label><input class="form-control" name="full_name" value="{{ user.full_name or '' }}" required></div>
-<div class="mb-3"><label class="form-label">Adresse e-mail</label><input class="form-control" name="email" type="email" value="{{ user.email or '' }}"></div>
-<button class="btn btn-primary" type="submit">Mettre à jour mes informations</button>
-</form>
-</div></div>
-</div>
-<div class="col-lg-6">
-<div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
-<h2 class="h5 mb-3">Sécurité & mot de passe</h2>
-<form method="post" action="{{ url_for('profile_password') }}">
-<div class="mb-3"><label class="form-label">Mot de passe actuel *</label><input class="form-control" name="current_password" type="password" required></div>
-<div class="mb-3"><label class="form-label">Nouveau mot de passe (8 caractères minimum) *</label><input class="form-control" name="new_password" type="password" minlength="8" required></div>
-<div class="mb-3"><label class="form-label">Confirmer le nouveau mot de passe *</label><input class="form-control" name="confirm_password" type="password" minlength="8" required></div>
-<button class="btn btn-primary" type="submit">Changer mon mot de passe</button>
-</form>
-</div></div>
-</div>
+  <!-- Colonne 1 : Infos perso -->
+  <div class="col-lg-6">
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <i class="fa-solid fa-user-gear text-primary fs-5"></i>
+        <h2 class="h6 fw-bold mb-0 text-dark">Informations personnelles</h2>
+      </div>
+      <div class="profile-card-body">
+        <form method="post" action="{{ url_for('profile_info') }}">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">IDENTIFIANT SYSTÈME</label>
+            <input class="form-control" value="{{ user.username }}" readonly style="background:#f8fafc;">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">RÔLE HABILITÉ</label>
+            <input class="form-control" value="{{ user.role|capitalize }}" readonly style="background:#f8fafc;">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">NOM COMPLET *</label>
+            <input class="form-control" name="full_name" value="{{ user.full_name or '' }}" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label small fw-bold text-muted">ADRESSE EMAIL</label>
+            <input class="form-control" name="email" type="email" value="{{ user.email or '' }}" placeholder="votre.email@ecole.com">
+          </div>
+          <button class="btn btn-primary w-100 justify-content-center py-2" type="submit">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Enregistrer les modifications
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colonne 2 : Sécurité -->
+  <div class="col-lg-6">
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <i class="fa-solid fa-lock text-primary fs-5"></i>
+        <h2 class="h6 fw-bold mb-0 text-dark">Sécurité &amp; Mot de passe</h2>
+      </div>
+      <div class="profile-card-body">
+        <form method="post" action="{{ url_for('profile_password') }}">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">MOT DE PASSE ACTUEL *</label>
+            <input class="form-control" name="current_password" type="password" placeholder="Mot de passe actuel" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">NOUVEAU MOT DE PASSE (8+ CARACTÈRES) *</label>
+            <input class="form-control" name="new_password" type="password" minlength="8" placeholder="Nouveau mot de passe" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label small fw-bold text-muted">CONFIRMER LE NOUVEAU MOT DE PASSE *</label>
+            <input class="form-control" name="confirm_password" type="password" minlength="8" placeholder="Confirmez le mot de passe" required>
+          </div>
+          <button class="btn btn-primary w-100 justify-content-center py-2" type="submit">
+            <i class="fa-solid fa-key me-1"></i> Mettre à jour mon mot de passe
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
-

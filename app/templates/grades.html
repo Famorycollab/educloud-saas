@@ -1,34 +1,309 @@
-{% extends 'base.html' %}{% block title %}Notes & bulletins{% endblock %}{% block breadcrumb %}Notes{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Pédagogie</div><h1>Notes et évaluations</h1><p>Contrôle continu, examens trimestriels et moyennes pondérées.</p></div></section>
+{% extends 'base.html' %}{% block title %}Notes &amp; bulletins{% endblock %}{% block breadcrumb %}Notes{% endblock %}{% block content %}
+
+<style>
+  .eval-card-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-radius: 16px 16px 0 0;
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fff;
+  }
+  .grade-card-header {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    border-radius: 16px 16px 0 0;
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fff;
+  }
+  .eval-card-header i, .grade-card-header i { font-size: 1.3rem; opacity: 0.9; }
+  .eval-card-header h2, .grade-card-header h2 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: 0.01em; }
+  .form-card { border: 0; border-radius: 16px; box-shadow: 0 4px 24px rgba(79,70,229,.10); overflow: hidden; margin-bottom: 1.5rem; }
+  .form-card .card-body { padding: 1.5rem; background: #fff; }
+  .form-card .form-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+  .form-card .form-control, .form-card .form-select {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.85rem;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-card .form-control:focus, .form-card .form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+  }
+  .btn-create { background: linear-gradient(135deg, #4f46e5, #7c3aed); border: 0; color: #fff; border-radius: 10px; font-weight: 600; padding: 0.55rem 1.3rem; }
+  .btn-create:hover { opacity: .9; color: #fff; }
+  .btn-grade-save { background: linear-gradient(135deg, #059669, #10b981); border: 0; color: #fff; border-radius: 10px; font-weight: 600; padding: 0.55rem 1.3rem; }
+  .btn-grade-save:hover { opacity: .9; color: #fff; }
+  .table-card { border: 0; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,.07); overflow: hidden; margin-bottom: 1.5rem; }
+  .table-card .card-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+  .table-card .card-header h2 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
+  .table-card .table { margin: 0; }
+  .table-card thead th { background: #f1f5f9; color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1.5px solid #e2e8f0; padding: 0.75rem 1rem; }
+  .table-card tbody td { padding: 0.9rem 1rem; vertical-align: middle; border-color: #f1f5f9; font-size: 0.875rem; }
+  .table-card tbody tr { transition: background .15s; }
+  .table-card tbody tr:hover { background: #f8fafc; }
+  .badge-examen { background: linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; font-size:.72rem; padding:.3em .75em; border-radius:999px; font-weight:600; }
+  .badge-controle { background: linear-gradient(135deg,#f97316,#ea580c); color:#fff; font-size:.72rem; padding:.3em .75em; border-radius:999px; font-weight:600; }
+  .grade-badge { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; padding:.3em .85em; font-weight:700; font-size:.8rem; }
+  .grade-badge.red { background:#fee2e2; color:#dc2626; }
+  .grade-badge.orange { background:#ffedd5; color:#ea580c; }
+  .grade-badge.green { background:#dcfce7; color:#16a34a; }
+  .grade-progress { height: 5px; border-radius: 999px; background: #e2e8f0; margin-top: 4px; overflow: hidden; }
+  .grade-progress-bar { height: 100%; border-radius: 999px; transition: width .6s ease; }
+  .grade-progress-bar.red { background: #dc2626; }
+  .grade-progress-bar.orange { background: #f97316; }
+  .grade-progress-bar.green { background: #16a34a; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(16px);} to { opacity:1; transform:none;} }
+  .animate-row { animation: fadeInUp 0.4s ease both; }
+</style>
+
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow">Pédagogie</div>
+    <h1>Notes et évaluations</h1>
+    <p>Contrôle continu, examens trimestriels et moyennes pondérées.</p>
+  </div>
+</section>
+
 {% if session.get('role') in ('admin','teacher') %}
-<form method="post" action="{{ url_for('evaluations') }}" class="card border-0 mb-4"><div class="card-body"><h2 class="h5 mb-3">Créer une évaluation</h2>
-<div class="row g-2">
-<div class="col-md-3"><input class="form-control" name="title" placeholder="Titre" required></div>
-<div class="col-md-2"><select class="form-select" name="subject_id" required><option value="">Matière</option>{% for x in subjects %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><select class="form-select" name="class_id" required><option value="">Classe</option>{% for x in classes %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><select class="form-select" name="eval_type"><option value="controle">Contrôle continu</option><option value="trimestre">Examen trimestriel</option></select></div>
-<div class="col-md-1"><input class="form-control" type="date" name="evaluation_date" required></div>
-<div class="col-md-1"><input class="form-control" type="number" name="max_score" value="20" min="1" step="0.5"></div>
-<div class="col-md-1 d-grid"><button class="btn btn-primary">Créer</button></div>
-</div></div></form>
-<form method="post" class="card border-0 mb-4"><div class="card-body"><h2 class="h5 mb-3">Saisir une note</h2>
-<div class="row g-2">
-<div class="col-md-3"><select class="form-select" name="evaluation_id" required><option value="">Évaluation</option>{% for e in evaluations %}<option value="{{ e.id }}">{{ e.title }} · {{ e.class_name }}</option>{% endfor %}</select></div>
-<div class="col-md-3"><select class="form-select" name="student_id" required><option value="">Élève</option>{% for s in students %}<option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><input class="form-control" name="score" type="number" min="0" step="0.25" placeholder="Note" required></div>
-<div class="col-md-3"><input class="form-control" name="comment" placeholder="Commentaire"></div>
-<div class="col-md-1 d-grid"><button class="btn btn-primary">OK</button></div>
-</div></div></form>
+
+{# --- Créer une évaluation --- #}
+<form method="post" action="{{ url_for('evaluations') }}" class="form-card card">
+  <div class="eval-card-header">
+    <i class="fa-solid fa-clipboard-list"></i>
+    <h2>Créer une évaluation</h2>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Titre</label>
+        <input class="form-control" name="title" placeholder="Ex : DS Algèbre n°1" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Matière</label>
+        <select class="form-select" name="subject_id" required>
+          <option value="">Choisir…</option>
+          {% for x in subjects %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Classe</label>
+        <select class="form-select" name="class_id" required>
+          <option value="">Choisir…</option>
+          {% for x in classes %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Type</label>
+        <select class="form-select" name="eval_type">
+          <option value="controle">Contrôle continu</option>
+          <option value="trimestre">Examen trimestriel</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">Date</label>
+        <input class="form-control" type="date" name="evaluation_date" required>
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">/ Max</label>
+        <input class="form-control" type="number" name="max_score" value="20" min="1" step="0.5">
+      </div>
+      <div class="col-md-1 d-grid">
+        <label class="form-label d-none d-md-block">&nbsp;</label>
+        <button class="btn btn-create" type="submit">
+          <i class="fa-solid fa-plus me-1"></i>Créer
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{# --- Saisir une note --- #}
+<form method="post" class="form-card card">
+  <div class="grade-card-header">
+    <i class="fa-solid fa-pen-to-square"></i>
+    <h2>Saisir une note</h2>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Évaluation</label>
+        <select class="form-select" name="evaluation_id" required>
+          <option value="">Choisir une évaluation…</option>
+          {% for e in evaluations %}<option value="{{ e.id }}">{{ e.title }} · {{ e.class_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Élève</label>
+        <select class="form-select" name="student_id" required>
+          <option value="">Choisir un élève…</option>
+          {% for s in students %}<option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1">
+        <label class="form-label">Note</label>
+        <input class="form-control" name="score" type="number" min="0" step="0.25" placeholder="0" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Commentaire</label>
+        <input class="form-control" name="comment" placeholder="Remarque facultative…">
+      </div>
+      <div class="col-md-1 d-grid">
+        <label class="form-label d-none d-md-block">&nbsp;</label>
+        <button class="btn btn-grade-save" type="submit">
+          <i class="fa-solid fa-check me-1"></i>OK
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
 {% endif %}
-<div class="card border-0 mb-4"><div class="card-body"><h2 class="h5">Évaluations</h2>
-<div class="table-responsive"><table class="table"><thead><tr><th>Titre</th><th>Type</th><th>Classe</th><th>Matière</th><th>Date</th><th>/max</th>{% if session.get('role') in ('admin','teacher') %}<th></th>{% endif %}</tr></thead>
-<tbody>{% for e in evaluations %}<tr><td>{{ e.title }}</td><td>{{ 'Examen trimestriel' if e.eval_type == 'trimestre' else 'Contrôle continu' }}</td><td>{{ e.class_name }}</td><td>{{ e.subject_name }}</td><td>{{ e.evaluation_date }}</td><td>{{ e.max_score }}</td>
-{% if session.get('role') in ('admin','teacher') %}<td class="text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('evaluation_edit', eval_id=e.id) }}">Modifier</a>
-<form class="d-inline" method="post" action="{{ url_for('evaluation_delete', eval_id=e.id) }}" onsubmit="return confirm('Supprimer cette évaluation et ses notes ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td>{% endif %}</tr>
-{% else %}<tr><td colspan="7" class="text-secondary">Aucune évaluation.</td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="card border-0"><div class="card-body"><h2 class="h5">Notes enregistrées</h2>
-<div class="table-responsive"><table class="table"><thead><tr><th>Élève</th><th>Évaluation</th><th>Note</th><th>Commentaire</th>{% if session.get('role') in ('admin','teacher') %}<th></th>{% endif %}</tr></thead>
-<tbody>{% for g in grades %}<tr><td>{{ g.first_name }} {{ g.last_name }}</td><td>{{ g.evaluation_title }}</td><td>{{ g.score }}</td><td>{{ g.comment or '—' }}</td>
-{% if session.get('role') in ('admin','teacher') %}<td><form method="post" action="{{ url_for('grade_delete', grade_id=g.id) }}" onsubmit="return confirm('Supprimer cette note ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td>{% endif %}</tr>
-{% else %}<tr><td colspan="5" class="text-secondary">Aucune note.</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+{# --- Tableau évaluations --- #}
+<div class="table-card card">
+  <div class="card-header">
+    <i class="fa-solid fa-list-check text-primary"></i>
+    <h2>Évaluations</h2>
+    <span class="badge bg-primary ms-auto">{{ evaluations|length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Titre</th>
+          <th>Type</th>
+          <th>Classe</th>
+          <th>Matière</th>
+          <th>Date</th>
+          <th>/ Max</th>
+          {% if session.get('role') in ('admin','teacher') %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in evaluations %}
+        <tr class="animate-row" style="animation-delay:{{ loop.index0 * 0.05 }}s">
+          <td><strong>{{ e.title }}</strong></td>
+          <td>
+            {% if e.eval_type == 'trimestre' %}
+              <span class="badge-examen"><i class="fa-solid fa-graduation-cap me-1"></i>Examen trimestriel</span>
+            {% else %}
+              <span class="badge-controle"><i class="fa-solid fa-pencil me-1"></i>Contrôle continu</span>
+            {% endif %}
+          </td>
+          <td><span class="badge text-bg-light border">{{ e.class_name }}</span></td>
+          <td>{{ e.subject_name }}</td>
+          <td>
+            <span style="color:#64748b;">
+              <i class="fa-regular fa-calendar me-1"></i>
+              {{ e.evaluation_date }}
+            </span>
+          </td>
+          <td><strong>{{ e.max_score }}</strong></td>
+          {% if session.get('role') in ('admin','teacher') %}
+          <td class="text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('evaluation_edit', eval_id=e.id) }}">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('evaluation_delete', eval_id=e.id) }}" onsubmit="return confirm('Supprimer cette évaluation et ses notes ?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center py-5">
+            <div style="color:#94a3b8;">
+              <i class="fa-solid fa-clipboard-list fa-2x mb-2 d-block"></i>
+              <div class="fw-semibold">Aucune évaluation créée</div>
+              <small>Utilisez le formulaire ci-dessus pour en créer une.</small>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# --- Tableau notes --- #}
+<div class="table-card card">
+  <div class="card-header">
+    <i class="fa-solid fa-star-half-stroke text-warning"></i>
+    <h2>Notes enregistrées</h2>
+    <span class="badge bg-warning text-dark ms-auto">{{ grades|length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Élève</th>
+          <th>Évaluation</th>
+          <th>Note</th>
+          <th>Commentaire</th>
+          {% if session.get('role') in ('admin','teacher') %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in grades %}
+        <tr class="animate-row" style="animation-delay:{{ loop.index0 * 0.05 }}s">
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;">
+                {{ g.first_name[0] }}{{ g.last_name[0] }}
+              </div>
+              <span>{{ g.first_name }} {{ g.last_name }}</span>
+            </div>
+          </td>
+          <td>{{ g.evaluation_title }}</td>
+          <td>
+            {% set pct = (g.score / 20 * 100)|int if g.score is not none else 0 %}
+            {% if g.score is not none and g.score < 10 %}
+              {% set cls = 'red' %}
+            {% elif g.score is not none and g.score < 14 %}
+              {% set cls = 'orange' %}
+            {% else %}
+              {% set cls = 'green' %}
+            {% endif %}
+            <div>
+              <span class="grade-badge {{ cls }}">
+                <i class="fa-solid {% if cls == 'green' %}fa-circle-check{% elif cls == 'orange' %}fa-circle-minus{% else %}fa-circle-xmark{% endif %}"></i>
+                {{ g.score }}<small style="font-weight:400;opacity:.7">/20</small>
+              </span>
+              <div class="grade-progress">
+                <div class="grade-progress-bar {{ cls }}" style="width:{{ pct }}%"></div>
+              </div>
+            </div>
+          </td>
+          <td class="text-secondary">{{ g.comment or '—' }}</td>
+          {% if session.get('role') in ('admin','teacher') %}
+          <td>
+            <form method="post" action="{{ url_for('grade_delete', grade_id=g.id) }}" onsubmit="return confirm('Supprimer cette note ?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-5">
+            <div style="color:#94a3b8;">
+              <i class="fa-solid fa-star fa-2x mb-2 d-block"></i>
+              <div class="fw-semibold">Aucune note enregistrée</div>
+              <small>Saisissez des notes via le formulaire ci-dessus.</small>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 {% endblock %}

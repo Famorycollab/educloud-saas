@@ -1,15 +1,173 @@
-{% extends 'base.html' %}{% block title %}Tarifs{% endblock %}{% block breadcrumb %}Tarifs{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Finances</div><h1>Grille tarifaire</h1><p>Inscription, scolarité et tranches par année académique.</p></div></section>
-<form method="post" class="card border-0 mb-4"><div class="card-body"><div class="row g-2">
-<div class="col-md-4"><input class="form-control" name="label" placeholder="Libellé" required></div>
-<div class="col-md-2"><input class="form-control" type="number" min="0.01" step="0.01" name="amount" placeholder="Montant" required></div>
-<div class="col-md-2"><input class="form-control" type="date" name="due_date"></div>
-<div class="col-md-2"><input class="form-control" name="school_year" value="2026-2027"></div>
-<div class="col-md-2 d-grid"><button class="btn btn-primary">Ajouter</button></div>
-</div></div></form>
-<div class="card border-0"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Libellé</th><th>Montant</th><th>Échéance</th><th>Année</th><th></th></tr></thead>
-<tbody>{% for f in fees %}<tr><td>{{ f.label }}</td><td>{{ '%.2f'|format(f.amount) }}</td><td>{{ f.due_date or '—' }}</td><td>{{ f.school_year }}</td>
-<td class="text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('fee_edit', fee_id=f.id) }}">Modifier</a>
-<form class="d-inline" method="post" action="{{ url_for('fee_delete', fee_id=f.id) }}" onsubmit="return confirm('Supprimer ce tarif ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td></tr>
-{% else %}<tr><td colspan="5" class="text-secondary text-center py-4">Aucun tarif.</td></tr>{% endfor %}</tbody></table></div></div>
+{% extends 'base.html' %}
+{% block title %}Grille Tarifaire · Finances{% endblock %}
+{% block breadcrumb %}Finances · Grille Tarifaire{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-file-invoice-dollar me-1"></i>Finances</div>
+    <h1>Grille Tarifaire Scolaire</h1>
+    <p>Paramétrage des frais d'inscription, mensualités et échéances par année académique.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary" onclick="document.getElementById('formTarif').scrollIntoView({behavior:'smooth'})">
+      <i class="fa-solid fa-plus me-1"></i> Nouveau tarif
+    </button>
+  </div>
+</section>
+
+<!-- KPIs Tarifs -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card stat-payments">
+      <div class="stat-top">
+        <span>Lignes Tarifaires</span>
+        <span class="stat-icon"><i class="fa-solid fa-receipt"></i></span>
+      </div>
+      <strong>{{ fees|length }}</strong>
+      <small class="stat-note">Frais et tranches configurés</small>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Montant Total Annuel</span>
+        <span class="stat-icon"><i class="fa-solid fa-coins"></i></span>
+      </div>
+      <strong>
+        {% if fees %}
+          {{ '%.0f'|format(fees|sum(attribute='amount')) }}
+        {% else %}
+          0
+        {% endif %}
+      </strong>
+      <small class="stat-note">Total théorique par élève (FCFA)</small>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Année de Référence</span>
+        <span class="stat-icon"><i class="fa-regular fa-calendar-check"></i></span>
+      </div>
+      <strong>2026-2027</strong>
+      <small class="stat-note">Année scolaire active</small>
+    </div>
+  </div>
+</div>
+
+<!-- Formulaire Nouveau Tarif -->
+<div class="card border-0 shadow-sm mb-4" id="formTarif" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #d97706, #ea580c);">
+    <h2 class="h6 mb-0 fw-bold d-flex align-items-center gap-2">
+      <i class="fa-solid fa-plus-circle"></i>
+      Ajouter une nouvelle ligne tarifaire
+    </h2>
+  </div>
+  <div class="card-body p-4 bg-white">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted">LIBELLÉ DE LA PRESTATION</label>
+          <input class="form-control" name="label" placeholder="ex: Frais d'inscription, Cantine T1..." required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">MONTANT (FCFA)</label>
+          <input class="form-control" type="number" min="0.01" step="0.01" name="amount" placeholder="ex: 50000" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">DATE D'ÉCHÉANCE</label>
+          <input class="form-control" type="date" name="due_date">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">ANNÉE SCOLAIRE</label>
+          <input class="form-control" name="school_year" value="2026-2027">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100 justify-content-center py-2" type="submit">
+            <i class="fa-solid fa-check me-1"></i> Enregistrer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Tarifs -->
+<div class="card border-0 shadow-sm" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-list-numeric text-primary"></i>
+      <strong>Grille tarifaire active</strong>
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2">{{ fees|length }}</span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Libellé du tarif</th>
+          <th>Montant</th>
+          <th>Échéance de paiement</th>
+          <th>Année scolaire</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in fees %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="stat-icon" style="width:36px; height:36px; font-size:1rem; border-radius:10px;">
+                <i class="fa-solid fa-file-invoice"></i>
+              </span>
+              <strong class="text-dark">{{ f.label }}</strong>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-success-subtle text-success fs-6 fw-bold px-3 py-2 border border-success-subtle">
+              {{ '%.0f'|format(f.amount) }} FCFA
+            </span>
+          </td>
+          <td>
+            {% if f.due_date %}
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+              <i class="fa-regular fa-clock fa-xs me-1"></i>{{ f.due_date }}
+            </span>
+            {% else %}
+            <span class="text-muted small">Au fil de l'eau</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="text-muted small">
+              <i class="fa-regular fa-calendar fa-xs me-1"></i>{{ f.school_year }}
+            </span>
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('fee_edit', fee_id=f.id) }}" style="border-radius:8px;">
+              <i class="fa-solid fa-pen fa-xs me-1"></i>Modifier
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('fee_delete', fee_id=f.id) }}" onsubmit="return confirm('Supprimer cette ligne tarifaire ?')">
+              <button class="btn btn-sm btn-outline-danger" style="border-radius:8px;">
+                <i class="fa-regular fa-trash-can fa-xs"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-5 text-secondary">
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <h3>Aucun tarif configuré</h3>
+              <p>Ajoutez les frais de scolarité pour permettre le suivi des paiements des élèves.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

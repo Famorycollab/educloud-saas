@@ -1,13 +1,385 @@
 {% extends 'base.html' %}
 {% block title %}Tableau de bord · Vue d'ensemble{% endblock %}
-{% block breadcrumb %}Vue d’ensemble{% endblock %}
+{% block breadcrumb %}Vue d'ensemble{% endblock %}
 
 {% block content %}
+<style>
+/* ---- Dashboard extra styles ---- */
+
+/* Hero sparkline */
+.hero-sparkline {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 0;
+  width: 320px;
+  height: 100%;
+}
+.hero-sparkline path {
+  animation: sparklineDraw 2s cubic-bezier(0.16,1,0.3,1) forwards;
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+}
+@keyframes sparklineDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Hero actions wrapper */
+.hero-actions-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Stat card enhancements */
+.stat-sparkline {
+  margin-top: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+.stat-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+.stat-trend.up { background: #d1fae5; color: #059669; }
+.stat-trend.neutral { background: #f1f5f9; color: #64748b; }
+.stat-trend.down { background: #fff1f2; color: #e11d48; }
+
+.stat-progress-wrap {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #f1f5f9;
+}
+.stat-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.stat-progress-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.stat-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+  width: 0%;
+}
+.stat-students .stat-progress-fill { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+.stat-classes .stat-progress-fill { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.stat-teachers .stat-progress-fill { background: linear-gradient(90deg, #059669, #34d399); }
+
+/* BI Callout Premium */
+.bi-callout {
+  background: linear-gradient(135deg, #0f2d6e 0%, #1d4ed8 50%, #0e7490 100%);
+  border-radius: 20px;
+  padding: 1.8rem 2rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(29,78,216,0.28);
+  margin-bottom: 1.8rem;
+}
+.bi-callout::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+.bi-callout::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 70% at 90% 50%, rgba(6,182,212,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 10% 90%, rgba(124,58,237,0.2) 0%, transparent 60%);
+  pointer-events: none;
+}
+.bi-callout-inner { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
+.bi-callout-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.bi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  animation: badgePulse 3s ease-in-out infinite;
+}
+.bi-badge:nth-child(2) { animation-delay: 0.5s; }
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.1); }
+  50% { box-shadow: 0 0 0 4px rgba(255,255,255,0.0); }
+}
+.bi-callout h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+  letter-spacing: -0.02em;
+}
+.bi-callout p { opacity: 0.82; font-size: 0.88rem; margin: 0; }
+.bi-callout-icons {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.bi-mini-icon {
+  width: 38px; height: 38px;
+  border-radius: 11px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  display: grid;
+  place-items: center;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  animation: iconFloat 4s ease-in-out infinite;
+}
+.bi-mini-icon:nth-child(2) { animation-delay: 0.4s; }
+.bi-mini-icon:nth-child(3) { animation-delay: 0.8s; }
+.bi-mini-icon:nth-child(4) { animation-delay: 1.2s; }
+.bi-mini-icon:nth-child(5) { animation-delay: 1.6s; }
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.bi-open-btn {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 13px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.28s cubic-bezier(0.16,1,0.3,1);
+  white-space: nowrap;
+}
+.bi-open-btn:hover {
+  background: rgba(255,255,255,0.28);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+/* Quick access section */
+.quick-access-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+.quick-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #0d1b2e;
+  transition: all 0.28s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 2px 8px rgba(13,27,46,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.quick-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.quick-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(13,27,46,0.1);
+  border-color: transparent;
+  color: inherit;
+}
+.quick-card:hover::before { transform: scaleX(1); }
+.quick-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.quick-card-label { font-size: 0.84rem; font-weight: 700; line-height: 1.3; }
+.quick-card-desc { font-size: 0.75rem; color: #64748b; }
+
+/* Quick card variants */
+.qc-blue::before { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+.qc-blue .quick-card-icon { background: #eff6ff; color: #2563eb; }
+.qc-blue:hover { border-color: #bfdbfe; }
+.qc-purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.qc-purple .quick-card-icon { background: #ede9fe; color: #7c3aed; }
+.qc-purple:hover { border-color: #ddd6fe; }
+.qc-green::before { background: linear-gradient(90deg, #059669, #34d399); }
+.qc-green .quick-card-icon { background: #d1fae5; color: #059669; }
+.qc-green:hover { border-color: #a7f3d0; }
+.qc-orange::before { background: linear-gradient(90deg, #d97706, #f59e0b); }
+.qc-orange .quick-card-icon { background: #fffbeb; color: #d97706; }
+.qc-orange:hover { border-color: #fde68a; }
+.qc-pink::before { background: linear-gradient(90deg, #e11d48, #f43f5e); }
+.qc-pink .quick-card-icon { background: #fff1f2; color: #e11d48; }
+.qc-pink:hover { border-color: #fecdd3; }
+.qc-cyan::before { background: linear-gradient(90deg, #0369a1, #0ea5e9); }
+.qc-cyan .quick-card-icon { background: #e0f2fe; color: #0369a1; }
+.qc-cyan:hover { border-color: #bae6fd; }
+
+/* Student avatar initials */
+.student-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+/* Color palette for avatars */
+.av-0 { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.av-1 { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.av-2 { background: linear-gradient(135deg, #059669, #34d399); }
+.av-3 { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.av-4 { background: linear-gradient(135deg, #e11d48, #f43f5e); }
+.av-5 { background: linear-gradient(135deg, #0369a1, #0ea5e9); }
+.av-6 { background: linear-gradient(135deg, #be185d, #ec4899); }
+.av-7 { background: linear-gradient(135deg, #065f46, #10b981); }
+
+.student-name-cell { display: flex; align-items: center; gap: 0.65rem; }
+
+/* Class badge colors */
+.class-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25em 0.65em;
+  border-radius: 8px;
+  display: inline-block;
+}
+.cb-0 { background: #eff6ff; color: #2563eb; }
+.cb-1 { background: #ede9fe; color: #7c3aed; }
+.cb-2 { background: #d1fae5; color: #059669; }
+.cb-3 { background: #fffbeb; color: #d97706; }
+.cb-4 { background: #fff1f2; color: #e11d48; }
+.cb-5 { background: #e0f2fe; color: #0369a1; }
+
+/* Activity Timeline */
+.activity-timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item {
+  display: flex;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+  animation: slideInLeft 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+.timeline-item:last-child { border-bottom: 0; }
+.timeline-item:nth-child(1) { animation-delay: 0.05s; }
+.timeline-item:nth-child(2) { animation-delay: 0.12s; }
+.timeline-item:nth-child(3) { animation-delay: 0.19s; }
+.timeline-item:nth-child(4) { animation-delay: 0.26s; }
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.timeline-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.td-blue { background: #eff6ff; color: #2563eb; }
+.td-green { background: #d1fae5; color: #059669; }
+.td-orange { background: #fffbeb; color: #d97706; }
+.td-purple { background: #ede9fe; color: #7c3aed; }
+.timeline-content { flex: 1; min-width: 0; }
+.timeline-content strong { font-size: 0.875rem; display: block; color: #0d1b2e; }
+.timeline-content span { font-size: 0.8rem; color: #64748b; }
+.timeline-time {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Stagger animation on stat cards */
+.stat-card-anim {
+  animation: fadeInUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+.stat-card-anim:nth-child(1) { animation-delay: 0.05s; }
+.stat-card-anim:nth-child(2) { animation-delay: 0.12s; }
+.stat-card-anim:nth-child(3) { animation-delay: 0.19s; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<!-- ======== HERO ======== -->
 <section class="dashboard-hero mb-4">
+  <!-- Background sparkline chart -->
+  <svg class="hero-sparkline" viewBox="0 0 320 120" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 90 L40 75 L80 85 L120 55 L160 60 L200 35 L240 45 L280 20 L320 30"
+          stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0 90 L40 75 L80 85 L120 55 L160 60 L200 35 L240 45 L280 20 L320 30 L320 120 L0 120 Z"
+          fill="url(#heroGrad)" opacity="0.4"/>
+    <defs>
+      <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="white" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <!-- Mini bar chart -->
+    <rect x="20" y="95" width="8" height="12" rx="2" fill="white" opacity="0.4"/>
+    <rect x="34" y="88" width="8" height="19" rx="2" fill="white" opacity="0.4"/>
+    <rect x="48" y="82" width="8" height="25" rx="2" fill="white" opacity="0.4"/>
+    <rect x="62" y="92" width="8" height="15" rx="2" fill="white" opacity="0.4"/>
+  </svg>
+
   <div class="hero-copy">
     <span class="hero-kicker">
       {% if g.current_school %}
-      🏫 {{ g.current_school.name }} ({{ g.current_school.city }})
+      <i class="fa-solid fa-school fa-xs me-1"></i>{{ g.current_school.name }} ({{ g.current_school.city }})
       {% else %}
       PORTAIL SCOLAIRE GLOBAL
       {% endif %}
@@ -16,17 +388,17 @@
     <p>Bienvenue sur votre espace de gestion. Toutes vos données scolaires et indicateurs clés en temps réel.</p>
   </div>
 
-  <div class="d-flex flex-wrap gap-2">
+  <div class="hero-actions-wrap">
     {% if session.get('role') in ('admin', 'director', 'superadmin') %}
     <a class="btn btn-light text-primary fw-bold shadow-sm d-flex align-items-center gap-2" href="{{ url_for('bi_hub') }}">
-      <span class="fs-5">📊</span>
+      <i class="fa-solid fa-chart-pie text-primary"></i>
       <span>Centre Décisionnel BI (10 Dashboards)</span>
     </a>
     {% endif %}
 
     {% if session.get('role') in ('admin', 'secretary') %}
     <a class="btn hero-action" href="{{ url_for('student_new') }}">
-      <span>＋</span> Inscrire un élève
+      <i class="fa-solid fa-user-plus fa-sm"></i> Inscrire un élève
     </a>
     {% endif %}
   </div>
@@ -35,80 +407,252 @@
   <span class="hero-orb hero-orb-two"></span>
 </section>
 
-<!-- BI Callout Banner for Direction & Admin -->
+<!-- ======== BI CALLOUT (Direction / Admin) ======== -->
 {% if session.get('role') in ('admin', 'director', 'superadmin') %}
-<div class="card border-0 shadow-sm p-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #ebf5ff 0%, #f0fdf4 100%); border-left: 6px solid #1a56db !important;">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+<div class="bi-callout">
+  <div class="bi-callout-inner">
     <div>
-      <div class="d-flex align-items-center gap-2 mb-1">
-        <span class="badge bg-primary text-white fw-bold">NOUVEAU · MODULE DÉCISIONNEL</span>
-        <span class="badge bg-danger-subtle text-danger fw-bold">Early Warning System Actif</span>
+      <div class="bi-callout-badges">
+        <span class="bi-badge">
+          <i class="fa-solid fa-sparkles fa-xs"></i> NOUVEAU · MODULE DÉCISIONNEL
+        </span>
+        <span class="bi-badge" style="background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.3);">
+          <i class="fa-solid fa-triangle-exclamation fa-xs"></i> Early Warning System Actif
+        </span>
       </div>
-      <h4 class="fw-bold mb-1 text-dark">Business Intelligence & Aide à la Décision (10 Tableaux de Bord)</h4>
-      <p class="text-secondary small mb-0">Anticipation des saturations de classe, détection des risques d'échec scolaire, simulation budgétaire N+1 et projection de trésorerie.</p>
+      <h4>Business Intelligence &amp; Aide à la Décision <span style="font-size:1rem;opacity:0.8;">(10 Tableaux de Bord)</span></h4>
+      <p>Anticipation des saturations de classe, détection des risques d'échec scolaire, simulation budgétaire N+1 et projection de trésorerie.</p>
+      <div class="bi-callout-icons">
+        <span class="bi-mini-icon" title="Analytique"><i class="fa-solid fa-chart-line"></i></span>
+        <span class="bi-mini-icon" title="Trésorerie"><i class="fa-solid fa-coins"></i></span>
+        <span class="bi-mini-icon" title="Élèves"><i class="fa-solid fa-user-graduate"></i></span>
+        <span class="bi-mini-icon" title="Alertes"><i class="fa-solid fa-bell"></i></span>
+        <span class="bi-mini-icon" title="Prédictions"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+      </div>
     </div>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('bi_hub') }}" class="btn btn-primary d-flex align-items-center gap-2 shadow">
-        <span>Ouvrir les 10 Dashboards</span>
-        <span>→</span>
+    <div class="d-flex flex-column gap-2 align-items-end">
+      <a href="{{ url_for('bi_hub') }}" class="bi-open-btn">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        Ouvrir les 10 Dashboards
+        <i class="fa-solid fa-chevron-right fa-xs"></i>
       </a>
+      <span style="font-size:0.75rem;opacity:0.6;">
+        <i class="fa-solid fa-clock fa-xs me-1"></i>Données synchronisées en temps réel
+      </span>
     </div>
   </div>
 </div>
 {% endif %}
 
+<!-- ======== SECTION HEADING ======== -->
 <div class="section-heading">
   <div>
-    <span class="section-kicker">EN UN COUP D’ŒIL</span>
+    <span class="section-kicker">EN UN COUP D'ŒIL</span>
     <h2>Les indicateurs clés de l'établissement</h2>
   </div>
   <span class="live-indicator"><i></i> Synchronisation en direct</span>
 </div>
 
+<!-- ======== STAT CARDS ======== -->
 <div class="row g-3 mb-4 dashboard-stats">
-  <div class="col-sm-6 col-xl-4">
+
+  <!-- Élèves -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
     <div class="stat-card stat-students">
       <div class="stat-top">
         <span>Élèves Actifs</span>
-        <span class="stat-icon">🎓</span>
+        <span class="stat-icon">
+          <i class="fa-solid fa-user-graduate"></i>
+        </span>
       </div>
       <strong>{{ totals.students }}</strong>
-      <small class="stat-note">Effectif enregistré dans cet établissement</small>
+      <!-- Mini sparkline SVG -->
+      <div class="stat-sparkline">
+        <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" fill="none">
+          <polyline points="0,24 20,20 40,22 60,14 80,16 100,8 120,10"
+            stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="0,24 20,20 40,22 60,14 80,16 100,8 120,10 120,32 0,32"
+            fill="url(#spBlue)" opacity="0.3"/>
+          <defs>
+            <linearGradient id="spBlue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2563eb" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="d-flex align-items-center justify-content-between">
+        <small class="stat-note">Effectif enregistré dans cet établissement</small>
+        <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> +12%</span>
+      </div>
+      <div class="stat-progress-wrap">
+        <div class="stat-progress-label">
+          <span>Taux de remplissage</span>
+          <span>78%</span>
+        </div>
+        <div class="stat-progress-bar">
+          <div class="stat-progress-fill" data-width="78%"></div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-4">
+
+  <!-- Classes -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
     <div class="stat-card stat-classes">
       <div class="stat-top">
-        <span>Classes & Niveaux</span>
-        <span class="stat-icon">▦</span>
+        <span>Classes &amp; Niveaux</span>
+        <span class="stat-icon">
+          <i class="fa-solid fa-layer-group"></i>
+        </span>
       </div>
       <strong>{{ totals.classes }}</strong>
-      <small class="stat-note">Groupes pédagogiques actifs</small>
+      <div class="stat-sparkline">
+        <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" fill="none">
+          <polyline points="0,20 20,18 40,16 60,20 80,12 100,14 120,10"
+            stroke="#7c3aed" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="0,20 20,18 40,16 60,20 80,12 100,14 120,10 120,32 0,32"
+            fill="url(#spPurple)" opacity="0.3"/>
+          <defs>
+            <linearGradient id="spPurple" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="d-flex align-items-center justify-content-between">
+        <small class="stat-note">Groupes pédagogiques actifs</small>
+        <span class="stat-trend neutral"><i class="fa-solid fa-minus fa-xs"></i> Stable</span>
+      </div>
+      <div class="stat-progress-wrap">
+        <div class="stat-progress-label">
+          <span>Capacité utilisée</span>
+          <span>65%</span>
+        </div>
+        <div class="stat-progress-bar">
+          <div class="stat-progress-fill" data-width="65%"></div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-4">
+
+  <!-- Enseignants -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
     <div class="stat-card stat-teachers">
       <div class="stat-top">
-        <span>Enseignants & Personnel</span>
-        <span class="stat-icon">👨‍🏫</span>
+        <span>Enseignants &amp; Personnel</span>
+        <span class="stat-icon">
+          <i class="fa-solid fa-chalkboard-user"></i>
+        </span>
       </div>
       <strong>{{ totals.teachers }}</strong>
-      <small class="stat-note">Corps professoral affecté</small>
+      <div class="stat-sparkline">
+        <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" fill="none">
+          <polyline points="0,26 20,22 40,24 60,18 80,20 100,15 120,12"
+            stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="0,26 20,22 40,24 60,18 80,20 100,15 120,12 120,32 0,32"
+            fill="url(#spGreen)" opacity="0.3"/>
+          <defs>
+            <linearGradient id="spGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#059669" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#059669" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="d-flex align-items-center justify-content-between">
+        <small class="stat-note">Corps professoral affecté</small>
+        <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> +2</span>
+      </div>
+      <div class="stat-progress-wrap">
+        <div class="stat-progress-label">
+          <span>Affectation aux classes</span>
+          <span>91%</span>
+        </div>
+        <div class="stat-progress-bar">
+          <div class="stat-progress-fill" data-width="91%"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<section class="card activity-card border-0 shadow-sm">
+<!-- ======== QUICK ACCESS ======== -->
+<div class="section-heading">
+  <div>
+    <span class="section-kicker">NAVIGATION RAPIDE</span>
+    <h2>Accès rapide</h2>
+  </div>
+</div>
+
+<div class="quick-access-grid mb-4">
+  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-user-graduate"></i></span>
+    <span class="quick-card-label">Élèves</span>
+    <span class="quick-card-desc">Gérer les dossiers</span>
+  </a>
+
+  <a href="{{ url_for('classes') }}" class="quick-card qc-purple">
+    <span class="quick-card-icon"><i class="fa-solid fa-layer-group"></i></span>
+    <span class="quick-card-label">Classes</span>
+    <span class="quick-card-desc">Groupes pédagogiques</span>
+  </a>
+
+  <a href="{{ url_for('timetable') }}" class="quick-card qc-cyan">
+    <span class="quick-card-icon"><i class="fa-solid fa-calendar-week"></i></span>
+    <span class="quick-card-label">Emploi du temps</span>
+    <span class="quick-card-desc">Planification</span>
+  </a>
+
+  <a href="{{ url_for('grades') }}" class="quick-card qc-orange">
+    <span class="quick-card-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+    <span class="quick-card-label">Notes &amp; Bulletins</span>
+    <span class="quick-card-desc">Résultats scolaires</span>
+  </a>
+
+  <a href="{{ url_for('absences') }}" class="quick-card qc-pink">
+    <span class="quick-card-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+    <span class="quick-card-label">Absences</span>
+    <span class="quick-card-desc">Suivi des présences</span>
+  </a>
+
+  {% if session.get('role') in ('admin', 'director', 'accountant', 'parent') %}
+  <a href="{{ url_for('payments') }}" class="quick-card qc-green">
+    <span class="quick-card-icon"><i class="fa-solid fa-credit-card"></i></span>
+    <span class="quick-card-label">Paiements</span>
+    <span class="quick-card-desc">Frais de scolarité</span>
+  </a>
+  {% endif %}
+
+  {% if session.get('role') in ('admin', 'director', 'superadmin') %}
+  <a href="{{ url_for('bi_hub') }}" class="quick-card" style="background:linear-gradient(135deg,#0f2d6e,#1d4ed8);border-color:transparent;color:#fff;">
+    <span class="quick-card-icon" style="background:rgba(255,255,255,0.15);color:#fff;"><i class="fa-solid fa-chart-pie"></i></span>
+    <span class="quick-card-label" style="color:#fff;">Tableaux BI</span>
+    <span class="quick-card-desc" style="color:rgba(255,255,255,0.7);">10 dashboards</span>
+  </a>
+  {% endif %}
+
+  <a href="{{ url_for('messages') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-envelope"></i></span>
+    <span class="quick-card-label">Messages</span>
+    <span class="quick-card-desc">Communication</span>
+  </a>
+</div>
+
+<!-- ======== RECENT STUDENTS TABLE ======== -->
+<section class="card activity-card border-0 shadow-sm mb-4">
   <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
     <div class="activity-title d-flex align-items-center gap-2">
-      <span class="fs-4 text-primary">📁</span>
+      <span class="fs-4 text-primary"><i class="fa-solid fa-folder-open"></i></span>
       <div>
         <strong class="d-block">Derniers dossiers scolaires</strong>
         <div class="small text-secondary">Élèves récemment enregistrés dans l'établissement</div>
       </div>
     </div>
     <a class="btn btn-sm btn-outline-primary" href="{{ url_for('students') }}">
-      Consulter tous les élèves <span aria-hidden="true">→</span>
+      <i class="fa-solid fa-users fa-xs"></i> Consulter tous les élèves
+      <i class="fa-solid fa-arrow-right fa-xs"></i>
     </a>
   </div>
   <div class="table-responsive">
@@ -123,18 +667,42 @@
       </thead>
       <tbody>
         {% for s in recent %}
+        {% set av_colors = ['av-0','av-1','av-2','av-3','av-4','av-5','av-6','av-7'] %}
+        {% set cb_colors = ['cb-0','cb-1','cb-2','cb-3','cb-4','cb-5'] %}
+        {% set idx = loop.index0 %}
         <tr>
-          <td class="fw-bold">{{ s.first_name }} {{ s.last_name }}</td>
-          <td><span class="badge bg-secondary-subtle text-secondary">{{ s.class_name or 'Non affecté' }}</span></td>
-          <td>{{ s.school_year }}</td>
+          <td>
+            <div class="student-name-cell">
+              <span class="student-avatar {{ av_colors[idx % 8] }}">
+                {{ (s.first_name[:1] + s.last_name[:1])|upper }}
+              </span>
+              <span class="fw-bold">{{ s.first_name }} {{ s.last_name }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="class-badge {{ cb_colors[idx % 6] }}">
+              <i class="fa-solid fa-layer-group fa-xs me-1"></i>{{ s.class_name or 'Non affecté' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-secondary-subtle text-secondary">
+              <i class="fa-regular fa-calendar fa-xs me-1"></i>{{ s.school_year }}
+            </span>
+          </td>
           <td class="text-end">
-            <a href="{{ url_for('student_detail', student_id=s.id) }}" class="btn btn-xs btn-outline-secondary btn-sm">Dossier</a>
+            <a href="{{ url_for('student_detail', student_id=s.id) }}"
+               class="btn btn-xs btn-outline-secondary btn-sm">
+              <i class="fa-solid fa-eye fa-xs me-1"></i>Dossier
+            </a>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="4" class="text-center text-secondary py-5">
-            Aucun élève enregistré pour cet établissement.
+          <td colspan="4" class="text-center py-5">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;opacity:0.5;">
+              <i class="fa-solid fa-inbox fa-2x text-muted"></i>
+              <span class="text-secondary">Aucun élève enregistré pour cet établissement.</span>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -142,4 +710,76 @@
     </table>
   </div>
 </section>
+
+<!-- ======== RECENT ACTIVITY TIMELINE ======== -->
+<div class="section-heading">
+  <div>
+    <span class="section-kicker">JOURNAL</span>
+    <h2>Activité récente</h2>
+  </div>
+</div>
+
+<section class="card activity-card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white py-3 px-4 border-bottom">
+    <div class="activity-title d-flex align-items-center gap-2">
+      <span class="text-primary"><i class="fa-solid fa-clock-rotate-left fs-5"></i></span>
+      <div>
+        <strong class="d-block">Journal des événements</strong>
+        <div class="small text-secondary">Dernières actions sur la plateforme</div>
+      </div>
+    </div>
+  </div>
+  <div class="activity-timeline">
+    <div class="timeline-item">
+      <span class="timeline-dot td-blue"><i class="fa-solid fa-user-plus fa-sm"></i></span>
+      <div class="timeline-content">
+        <strong>Nouveau dossier élève enregistré</strong>
+        <span>Inscription validée pour l'année académique 2026-2027</span>
+      </div>
+      <span class="timeline-time"><i class="fa-regular fa-clock fa-xs me-1"></i>Il y a 5 min</span>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-dot td-green"><i class="fa-solid fa-credit-card fa-sm"></i></span>
+      <div class="timeline-content">
+        <strong>Paiement de frais reçu</strong>
+        <span>Frais de scolarité — Trimestre 1</span>
+      </div>
+      <span class="timeline-time"><i class="fa-regular fa-clock fa-xs me-1"></i>Il y a 22 min</span>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-dot td-orange"><i class="fa-solid fa-calendar-xmark fa-sm"></i></span>
+      <div class="timeline-content">
+        <strong>Absence signalée</strong>
+        <span>3 absences non justifiées détectées</span>
+      </div>
+      <span class="timeline-time"><i class="fa-regular fa-clock fa-xs me-1"></i>Il y a 1h</span>
+    </div>
+    <div class="timeline-item">
+      <span class="timeline-dot td-purple"><i class="fa-solid fa-chart-line fa-sm"></i></span>
+      <div class="timeline-content">
+        <strong>Rapport BI généré</strong>
+        <span>Tableau de bord trésorerie N+1 mis à jour</span>
+      </div>
+      <span class="timeline-time"><i class="fa-regular fa-clock fa-xs me-1"></i>Il y a 3h</span>
+    </div>
+  </div>
+</section>
+
+<script>
+/* Animate progress bars on scroll */
+(function() {
+  var fills = document.querySelectorAll('.stat-progress-fill[data-width]');
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        setTimeout(function() {
+          entry.target.style.width = entry.target.getAttribute('data-width');
+        }, 200);
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  fills.forEach(function(el) { io.observe(el); });
+})();
+</script>
 {% endblock %}

@@ -1,122 +1,938 @@
 {% extends 'base.html' %}
-{% block title %}Connexion · Portail SaaS Scolaire{% endblock %}
+{% block title %}EduCloud · Connexion{% endblock %}
 {% block content %}
-<div class="login-screen">
-  <section class="login-promo" aria-label="Présentation du portail scolaire">
-    <a class="login-brand" href="{{ url_for('login') }}">
-      <span class="login-brand-icon">🏫</span>
-      <span><strong>EduCloud SaaS Pro</strong><small>GESTION & BUSINESS INTELLIGENCE</small></span>
-    </a>
 
-    <div class="login-promo-copy">
-      <span class="login-eyebrow text-uppercase">✦ SYSTÈME D’INFORMATION DÉCISIONNEL (SID)</span>
-      <h1>La gouvernance scolaire de nouvelle génération.</h1>
-      <p>Une plateforme SaaS multi-écoles conçue pour unifier scolarité, finances et aide stratégique à la décision grâce au Big Data.</p>
+<style>
+/* ============================================================
+   EDUCLOUD SAAS LOGIN — 100% Matching Visual Reference
+   ============================================================ */
 
-      <div class="login-feature-list">
-        <div class="login-feature">
-          <span class="feature-icon">01</span>
-          <span><strong>Multi-Établissements (Multi-Tenant)</strong><small>Cloisonnement strict et bascule dynamique entre écoles.</small></span>
-        </div>
-        <div class="login-feature">
-          <span class="feature-icon">02</span>
-          <span><strong>10 Tableaux de Bord Décisionnels</strong><small>Analyses prédictives, trésorerie et Early Warning System.</small></span>
-        </div>
-        <div class="login-feature">
-          <span class="feature-icon">03</span>
-          <span><strong>Contrôle d'Accès Sécurisé (RBAC)</strong><small>8 profils dédiés de la Direction générale jusqu'aux familles.</small></span>
-        </div>
+/* Reset body background for login page */
+body {
+  background: #f0f6fd !important;
+  color: #0f2e5a;
+  overflow-x: hidden;
+}
+
+.edu-login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(191, 219, 254, 0.45) 0%, transparent 40%),
+    radial-gradient(circle at 95% 85%, rgba(147, 197, 253, 0.4) 0%, transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(219, 234, 254, 0.5) 0%, transparent 60%),
+    linear-gradient(135deg, #eef6fd 0%, #ffffff 50%, #eaf3fc 100%);
+  padding: 1.5rem 3rem 1rem;
+}
+
+/* Background wavy curves */
+.edu-bg-waves {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.edu-bg-waves svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 45%;
+  opacity: 0.65;
+}
+
+/* Main Container Grid */
+.edu-login-container {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3rem;
+  max-width: 1360px;
+  width: 100%;
+  margin: auto;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* ==================== LEFT COLUMN ==================== */
+.edu-left-col {
+  display: flex;
+  flex-direction: column;
+  padding-right: 1.5rem;
+  position: relative;
+}
+
+/* Dot grid top-left */
+.dot-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 6px);
+  gap: 7px;
+  margin-bottom: 1.2rem;
+  opacity: 0.35;
+}
+.dot-matrix span {
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+}
+
+/* Brand Logo */
+.edu-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2.2rem;
+  text-decoration: none;
+}
+.edu-brand-logo {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 6px 14px rgba(29, 112, 245, 0.28));
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+.edu-brand:hover .edu-brand-logo {
+  transform: scale(1.05) rotate(-2deg);
+}
+.edu-brand-text h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+}
+.edu-brand-text .edu-dark { color: #0f2e5a; }
+.edu-brand-text .edu-blue { color: #1d70f5; }
+.edu-brand-text p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #475569;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Hero Heading */
+.edu-hero-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(2.4rem, 3.4vw, 3.3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #0f284e;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.1rem;
+}
+.edu-hero-title .title-highlight {
+  color: #1d70f5;
+  position: relative;
+  display: inline-block;
+}
+.edu-hero-title .title-swoosh {
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 100%;
+  height: 10px;
+  pointer-events: none;
+}
+
+.edu-hero-sub {
+  font-size: 1.05rem;
+  color: #475569;
+  line-height: 1.6;
+  max-width: 480px;
+  margin-bottom: 2rem;
+}
+
+/* 3 Feature Pills / Cards */
+.edu-features-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  max-width: 540px;
+  margin-bottom: 2.5rem;
+}
+.edu-feat-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  padding: 1.1rem 1rem;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(15, 46, 90, 0.04);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.edu-feat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(29, 112, 245, 0.12);
+  border-color: #93c5fd;
+  background: #ffffff;
+}
+.edu-feat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d70f5;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  margin: 0 auto 0.65rem;
+  box-shadow: 0 2px 8px rgba(29, 112, 245, 0.12);
+  transition: transform 0.3s ease;
+}
+.edu-feat-card:hover .edu-feat-icon {
+  transform: scale(1.1);
+  background: #1d70f5;
+  color: #ffffff;
+}
+.edu-feat-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f284e;
+  margin: 0 0 0.25rem;
+}
+.edu-feat-card p {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Illustration at bottom left */
+.edu-illustration-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin-top: auto;
+}
+.edu-illustration-svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 14px 28px rgba(15, 46, 90, 0.08));
+}
+
+/* ==================== RIGHT COLUMN (LOGIN CARD) ==================== */
+.edu-right-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.edu-login-card {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 2.4rem 2.6rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(15, 46, 90, 0.12), 0 2px 10px rgba(15, 46, 90, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  position: relative;
+  animation: cardFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes cardFadeUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Top padlock badge */
+.edu-lock-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #e0f0fe;
+  color: #1d70f5;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  margin: 0 auto 1.2rem;
+  box-shadow: 0 4px 14px rgba(29, 112, 245, 0.18);
+  transition: transform 0.3s ease;
+}
+.edu-login-card:hover .edu-lock-badge {
+  transform: scale(1.06) rotate(-4deg);
+}
+
+.edu-card-title {
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f284e;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+.edu-card-title span { color: #1d70f5; }
+.edu-card-subtitle {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.88rem;
+  margin-bottom: 1.6rem;
+}
+
+/* Établissement selector box */
+.edu-school-selector-box {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.2rem;
+}
+.edu-school-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 0.4rem;
+}
+.edu-school-select {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f2e5a;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.edu-school-select:focus {
+  border-color: #1d70f5;
+  box-shadow: 0 0 0 3px rgba(29, 112, 245, 0.15);
+}
+
+/* Form fields */
+.edu-form-group {
+  margin-bottom: 1.15rem;
+}
+.edu-form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin-bottom: 0.4rem;
+}
+.edu-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.edu-input-icon {
+  position: absolute;
+  left: 0.95rem;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+.edu-input-wrap:focus-within .edu-input-icon {
+  color: #1d70f5;
+}
+.edu-input {
+  width: 100%;
+  padding: 0.7rem 2.8rem 0.7rem 2.6rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  background: #ffffff;
+  color: #0f2e5a;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(15, 46, 90, 0.04);
+}
+.edu-input:focus {
+  border-color: #1d70f5;
+  box-shadow: 0 0 0 3px rgba(29, 112, 245, 0.15);
+  background: #fafcff;
+}
+.edu-input::placeholder { color: #cbd5e1; }
+
+.edu-pw-toggle {
+  position: absolute;
+  right: 0.95rem;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.3rem;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+.edu-pw-toggle:hover { color: #1d70f5; }
+
+/* Options row (Remember me & Forgot PW) */
+.edu-form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  margin-bottom: 1.35rem;
+}
+.edu-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 0;
+}
+.edu-remember input[type="checkbox"] {
+  accent-color: #1d70f5;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.edu-forgot-pw {
+  color: #1d70f5;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+.edu-forgot-pw:hover {
+  color: #1557c0;
+  text-decoration: underline;
+}
+
+/* Submit button */
+.edu-btn-submit {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(135deg, #1d70f5 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(29, 112, 245, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  letter-spacing: 0.01em;
+}
+.edu-btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(29, 112, 245, 0.45);
+  background: linear-gradient(135deg, #1557c0 0%, #1d70f5 100%);
+}
+.edu-btn-submit:active { transform: translateY(0); }
+
+/* Divider OU */
+.edu-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1.3rem 0;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.edu-divider span {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+/* 4 Quick Login Roles Buttons */
+.edu-quick-roles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
+  margin-bottom: 1.4rem;
+}
+.edu-role-pill {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.6rem 0.3rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.edu-role-pill i {
+  font-size: 1.05rem;
+  color: #1d70f5;
+  transition: transform 0.2s ease;
+}
+.edu-role-pill:hover {
+  border-color: #1d70f5;
+  background: #eff6ff;
+  color: #1d70f5;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(29, 112, 245, 0.15);
+}
+.edu-role-pill:hover i {
+  transform: scale(1.15);
+}
+
+/* Security note footer inside card */
+.edu-card-security {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.edu-card-security i {
+  color: #1d70f5;
+  font-size: 0.9rem;
+}
+
+/* ==================== PAGE FOOTER ==================== */
+.edu-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #64748b;
+  padding-top: 1.5rem;
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  margin-top: 2rem;
+}
+.edu-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.edu-footer-links a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.edu-footer-links a:hover { color: #1d70f5; }
+.edu-lang-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #0f2e5a;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .edu-login-container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .edu-left-col {
+    padding-right: 0;
+    text-align: center;
+    align-items: center;
+  }
+  .edu-brand { justify-content: center; }
+  .edu-hero-sub { margin-left: auto; margin-right: auto; }
+  .edu-features-row { margin-left: auto; margin-right: auto; }
+  .dot-matrix { display: none; }
+  .edu-login-wrapper { padding: 1.5rem 1.5rem 1rem; }
+}
+@media (max-width: 576px) {
+  .edu-features-row { grid-template-columns: 1fr; }
+  .edu-login-card { padding: 1.8rem 1.4rem; }
+  .edu-quick-roles { grid-template-columns: repeat(2, 1fr); }
+  .edu-footer { flex-direction: column; gap: 0.6rem; text-align: center; }
+}
+</style>
+
+<div class="edu-login-wrapper">
+
+  <!-- Background vector curves -->
+  <div class="edu-bg-waves" aria-hidden="true">
+    <svg viewBox="0 0 1440 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path d="M0 240C240 320 480 340 720 280C960 220 1200 240 1440 300V400H0V240Z" fill="url(#waveGrad1)"/>
+      <path d="M0 300C300 250 600 360 900 320C1200 280 1350 340 1440 360V400H0V300Z" fill="url(#waveGrad2)"/>
+      <defs>
+        <linearGradient id="waveGrad1" x1="0" y1="240" x2="1440" y2="400" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#bfdbfe" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="#93c5fd" stop-opacity="0.2"/>
+        </linearGradient>
+        <linearGradient id="waveGrad2" x1="0" y1="280" x2="1440" y2="400" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#dbeafe" stop-opacity="0.5"/>
+          <stop offset="1" stop-color="#bfdbfe" stop-opacity="0.3"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Main Login Grid -->
+  <div class="edu-login-container">
+
+    <!-- ==================== LEFT COLUMN ==================== -->
+    <div class="edu-left-col">
+
+      <!-- Dot matrix grid pattern -->
+      <div class="dot-matrix" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
       </div>
-    </div>
 
-    <div class="login-promo-footer text-white-50 small mt-auto">
-      <span class="live-indicator d-inline-flex bg-transparent p-0 text-white me-2"><i></i> Système Cloud Opérationnel</span>
-      · Année Académique 2026-2027
-    </div>
-  </section>
+      <!-- Logo EduCloud (Exact replica of image) -->
+      <a class="edu-brand" href="{{ url_for('login') }}">
+        <svg class="edu-brand-logo" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Cloud Outline -->
+          <path d="M32 75C21 75 12 66 12 55C12 45 19 36 29 35C33 22 45 13 60 13C76 13 90 24 93 39C102 41 108 49 108 58C108 67 101 75 91 75H32Z" stroke="url(#cloudGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff"/>
+          <!-- Graduation Cap inside -->
+          <polygon points="60,32 82,42 60,52 38,42" fill="#1d70f5"/>
+          <!-- Cap base -->
+          <path d="M48 47.5V56C48 59 53 62 60 62C67 62 72 59 72 56V47.5" fill="#1557c0"/>
+          <!-- Tassel -->
+          <path d="M78 43.5V54C78 55.5 79 56.5 80.5 56.5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <!-- Open Book base -->
+          <path d="M42 66C48 64 54 65 60 67C66 65 72 64 78 66V71C72 69 66 70 60 72C54 70 48 69 42 71V66Z" fill="#1d70f5"/>
+          <defs>
+            <linearGradient id="cloudGrad" x1="12" y1="13" x2="108" y2="75" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#1d70f5"/>
+              <stop offset="1" stop-color="#38bdf8"/>
+            </linearGradient>
+          </defs>
+        </svg>
 
-  <section class="login-panel">
-    <div class="login-card">
-      <div class="login-card-heading">
-        <span class="login-card-mark">🔐</span>
-        <div>
-          <span class="login-card-overline">ESPACE AUTHENTIFICATION</span>
-          <h2>Connexion Sécurisée</h2>
+        <div class="edu-brand-text">
+          <h1>
+            <span class="edu-dark">Edu</span><span class="edu-blue">Cloud</span>
+          </h1>
+          <p>SaaS – Gestion des Écoles Primaires</p>
         </div>
-      </div>
-      <p class="login-subtitle">Sélectionnez un compte de test ci-dessous ou entrez vos identifiants.</p>
-
-      <!-- 1-Click Fast Autofill Bar for Jury / Evaluator -->
-      <div class="demo-accounts-box mb-4">
-        <p>⚡ Connexion Rapide Démo (1-Clic) :</p>
-        <div class="d-flex flex-wrap gap-1">
-          <button type="button" class="demo-pill-btn text-primary fw-bold" onclick="fillLogin('directeur', 'directeur123')">🎓 Directeur (BI)</button>
-          <button type="button" class="demo-pill-btn" onclick="fillLogin('admin', 'admin123')">🛡️ Admin</button>
-          <button type="button" class="demo-pill-btn" onclick="fillLogin('comptable', 'compta123')">💰 Comptable</button>
-          <button type="button" class="demo-pill-btn" onclick="fillLogin('enseignant', 'prof123')">👨‍🏫 Prof</button>
-          <button type="button" class="demo-pill-btn" onclick="fillLogin('parent', 'parent123')">👨‍👩‍👦 Parent</button>
-          <button type="button" class="demo-pill-btn" onclick="fillLogin('eleve', 'eleve123')">🎒 Élève</button>
-          <button type="button" class="demo-pill-btn text-info" onclick="fillLogin('directeur_horizon', 'directeur123')">🏛️ École Abidjan</button>
-        </div>
-      </div>
-
-      <form method="post" class="login-form">
-        <div class="login-field mb-3">
-          <label for="username" class="form-label small fw-bold">Identifiant</label>
-          <div class="login-input-wrap">
-            <span aria-hidden="true">👤</span>
-            <input id="username" name="username" autocomplete="username" placeholder="ex: directeur" required autofocus>
-          </div>
-        </div>
-
-        <div class="login-field mb-3">
-          <label for="password" class="form-label small fw-bold">Mot de passe</label>
-          <div class="login-input-wrap">
-            <span aria-hidden="true">🔒</span>
-            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required>
-          </div>
-        </div>
-
-        <button class="login-submit" type="submit">
-          Accéder à la plateforme <span aria-hidden="true">→</span>
-        </button>
-      </form>
-
-      <div class="login-divider">
-        <span></span><small>OU</small><span></span>
-      </div>
-
-      <a class="login-enrollment" href="{{ url_for('pre_enrollment') }}">
-        <span class="enrollment-icon fs-5">✍️</span>
-        <div>
-          <strong class="d-block">Nouvelle admission scolaire ?</strong>
-          <small class="text-muted">Déposer un dossier de pré-inscription en ligne</small>
-        </div>
-        <span class="enrollment-arrow ms-auto">→</span>
       </a>
 
-      <div class="login-security text-muted small mt-3">
-        🛡️ Vos échanges sont chiffrés et protégés par jeton de sécurité CSRF.
+      <!-- Big Hero Title -->
+      <h2 class="edu-hero-title">
+        La gestion scolaire<br>
+        <span class="title-highlight">
+          intelligente
+          <svg class="title-swoosh" viewBox="0 0 240 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 10C60 14 160 14 238 4" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </h2>
+
+      <p class="edu-hero-sub">
+        Une plateforme moderne pour gérer facilement votre école, vos élèves et votre établissement.
+      </p>
+
+      <!-- 3 Feature Cards (Sécurité, Performance, Assistance) -->
+      <div class="edu-features-row">
+        <div class="edu-feat-card">
+          <div class="edu-feat-icon">
+            <i class="fa-solid fa-shield-check"></i>
+          </div>
+          <h3>Sécurité</h3>
+          <p>Vos données en toute sécurité</p>
+        </div>
+
+        <div class="edu-feat-card">
+          <div class="edu-feat-icon">
+            <i class="fa-solid fa-rocket"></i>
+          </div>
+          <h3>Performance</h3>
+          <p>Une plateforme rapide et fiable</p>
+        </div>
+
+        <div class="edu-feat-card">
+          <div class="edu-feat-icon">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <h3>Assistance</h3>
+          <p>Une équipe toujours à votre écoute</p>
+        </div>
+      </div>
+
+      <!-- Illustration (School Building + Books + Grad Cap + Paper Airplane) -->
+      <div class="edu-illustration-wrap">
+        <svg class="edu-illustration-svg" viewBox="0 0 540 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background ground/hill -->
+          <ellipse cx="260" cy="250" rx="270" ry="40" fill="#e0f2fe"/>
+          <ellipse cx="240" cy="252" rx="240" ry="32" fill="#bae6fd"/>
+
+          <!-- Trees / Bushes Left -->
+          <circle cx="50" cy="205" r="32" fill="#4ade80"/>
+          <circle cx="35" cy="215" r="24" fill="#22c55e"/>
+          <circle cx="70" cy="218" r="20" fill="#16a34a"/>
+
+          <!-- School Building -->
+          <!-- Main Body -->
+          <rect x="75" y="125" width="230" height="95" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+          <rect x="75" y="212" width="230" height="8" fill="#e2e8f0"/>
+
+          <!-- Roof / Pediment -->
+          <polygon points="190,75 140,115 240,115" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+          <polygon points="190,82 148,115 232,115" fill="#3b82f6"/>
+          <!-- Pediment banner "ÉCOLE" -->
+          <rect x="155" y="142" width="70" height="24" rx="4" fill="#1d70f5"/>
+          <text x="190" y="159" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1.5">ÉCOLE</text>
+
+          <!-- Clock on pediment -->
+          <circle cx="190" cy="100" r="13" fill="#ffffff" stroke="#1d70f5" stroke-width="2"/>
+          <circle cx="190" cy="100" r="1.5" fill="#1d70f5"/>
+          <line x1="190" y1="100" x2="190" y2="92" stroke="#1d70f5" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="190" y1="100" x2="196" y2="100" stroke="#1d70f5" stroke-width="1.8" stroke-linecap="round"/>
+
+          <!-- Windows Left Wing (2 rows of 3) -->
+          <rect x="90" y="135" width="16" height="22" rx="3" fill="#60a5fa"/>
+          <rect x="112" y="135" width="16" height="22" rx="3" fill="#60a5fa"/>
+          <rect x="90" y="170" width="16" height="22" rx="3" fill="#60a5fa"/>
+          <rect x="112" y="170" width="16" height="22" rx="3" fill="#60a5fa"/>
+
+          <!-- Windows Right Wing (2 rows of 3) -->
+          <rect x="252" y="135" width="16" height="22" rx="3" fill="#60a5fa"/>
+          <rect x="274" y="135" width="16" height="22" rx="3" fill="#60a5fa"/>
+          <rect x="252" y="170" width="16" height="22" rx="3" fill="#60a5fa"/>
+          <rect x="274" y="170" width="16" height="22" rx="3" fill="#60a5fa"/>
+
+          <!-- School Entrance Door -->
+          <rect x="175" y="176" width="30" height="44" rx="4" fill="#1e293b"/>
+          <rect x="177" y="178" width="12" height="42" fill="#334155"/>
+          <rect x="191" y="178" width="12" height="42" fill="#334155"/>
+          <!-- Stairs -->
+          <polygon points="160,220 220,220 230,228 150,228" fill="#cbd5e1"/>
+
+          <!-- Trees / Bushes Right of School -->
+          <circle cx="320" cy="205" r="28" fill="#22c55e"/>
+          <circle cx="340" cy="214" r="20" fill="#16a34a"/>
+
+          <!-- Paper Plane Trajectory (Dashed loop) -->
+          <path d="M220 110 C 260 80, 360 40, 420 70 C 470 95, 430 140, 390 120 C 370 110, 390 80, 440 60 L 465 52" stroke="#60a5fa" stroke-width="1.8" stroke-dasharray="5 5" fill="none"/>
+          <!-- Paper Plane -->
+          <g transform="translate(455, 42) rotate(15)">
+            <polygon points="0,15 28,0 20,24" fill="#3b82f6"/>
+            <polygon points="28,0 12,18 20,24" fill="#1d4ed8"/>
+            <polygon points="0,15 28,0 12,18" fill="#60a5fa"/>
+          </g>
+
+          <!-- Stack of Books Right -->
+          <!-- Orange Book bottom -->
+          <rect x="345" y="195" width="150" height="24" rx="4" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+          <rect x="350" y="198" width="140" height="18" fill="#fef3c7"/>
+          <line x1="358" y1="195" x2="358" y2="219" stroke="#d97706" stroke-width="2"/>
+
+          <!-- Blue Book middle -->
+          <rect x="355" y="176" width="130" height="22" rx="4" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
+          <rect x="360" y="179" width="120" height="16" fill="#eff6ff"/>
+          <line x1="368" y1="176" x2="368" y2="198" stroke="#1d4ed8" stroke-width="2"/>
+
+          <!-- Pencil Holder with pencils -->
+          <rect x="375" y="132" width="38" height="46" rx="5" fill="#0f2e5a"/>
+          <!-- Pencils -->
+          <polygon points="383,105 387,132 379,132" fill="#3b82f6"/>
+          <polygon points="383,98 385,105 381,105" fill="#f59e0b"/>
+          <polygon points="400,108 404,132 396,132" fill="#f59e0b"/>
+          <polygon points="400,101 402,108 398,108" fill="#ef4444"/>
+
+          <!-- Graduation Mortarboard on Books -->
+          <g transform="translate(415, 115)">
+            <!-- Cap Top Rhombus -->
+            <polygon points="50,15 95,30 50,45 5,30" fill="#0f284e"/>
+            <polygon points="50,18 90,30 50,42 10,30" fill="#1e3a5f"/>
+            <!-- Cap Skull-cap -->
+            <path d="M26 36V50C26 56 36 62 50 62C64 62 74 56 74 50V36" fill="#091c33"/>
+            <!-- Gold Button -->
+            <circle cx="50" cy="30" r="3.5" fill="#f59e0b"/>
+            <!-- Gold Tassel -->
+            <path d="M50 30 Q 75 35 78 55" stroke="#f59e0b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <circle cx="78" cy="56" r="3.5" fill="#f59e0b"/>
+          </g>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- ==================== RIGHT COLUMN (LOGIN CARD) ==================== -->
+    <div class="edu-right-col">
+      <div class="edu-login-card">
+
+        <!-- Lock Badge Icon -->
+        <div class="edu-lock-badge">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+
+        <h2 class="edu-card-title">Bienvenue sur <span>EduCloud</span></h2>
+        <p class="edu-card-subtitle">Connectez-vous pour accéder à votre espace</p>
+
+        <form method="post" id="loginForm">
+
+          <!-- 1. Sélection de l'établissement -->
+          <div class="edu-school-selector-box">
+            <label class="edu-school-label" for="schoolSelect">
+              <i class="fa-solid fa-landmark"></i>
+              Sélectionnez votre établissement
+            </label>
+            <select class="edu-school-select" id="schoolSelect" name="school_id">
+              <option value="1" selected>🏛️ Groupe Scolaire International d'Excellence (Dakar)</option>
+              <option value="2">🏛️ Institut Polyvalent Horizon Avenir (Abidjan)</option>
+              <option value="3">🏛️ École Primaire Les Petits Génies</option>
+            </select>
+          </div>
+
+          <!-- 2. Identifiant ou adresse e-mail -->
+          <div class="edu-form-group">
+            <label class="edu-form-label" for="username">
+              <i class="fa-regular fa-user text-primary"></i>
+              Identifiant ou adresse e-mail
+            </label>
+            <div class="edu-input-wrap">
+              <i class="fa-regular fa-user edu-input-icon"></i>
+              <input class="edu-input" id="username" name="username" placeholder="Entrez votre identifiant..." required autofocus autocomplete="username">
+            </div>
+          </div>
+
+          <!-- 3. Mot de passe -->
+          <div class="edu-form-group">
+            <label class="edu-form-label" for="password">
+              <i class="fa-solid fa-lock text-primary"></i>
+              Mot de passe
+            </label>
+            <div class="edu-input-wrap">
+              <i class="fa-solid fa-lock edu-input-icon"></i>
+              <input class="edu-input" id="password" name="password" type="password" placeholder="Entrez votre mot de passe..." required autocomplete="current-password">
+              <button type="button" class="edu-pw-toggle" id="togglePwBtn" onclick="togglePasswordVisibility()" aria-label="Afficher/masquer">
+                <i class="fa-regular fa-eye" id="togglePwIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Options : Se souvenir de moi & Mot de passe oublié -->
+          <div class="edu-form-options">
+            <label class="edu-remember">
+              <input type="checkbox" name="remember_me" checked>
+              <span>Se souvenir de moi</span>
+            </label>
+            <a class="edu-forgot-pw" href="javascript:void(0)" onclick="alert('Pour réinitialiser votre mot de passe, veuillez contacter l\'administrateur de votre établissement scolaire.')">
+              Mot de passe oublié ? →
+            </a>
+          </div>
+
+          <!-- Bouton Se connecter -->
+          <button class="edu-btn-submit" type="submit">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            <span>Se connecter</span>
+          </button>
+        </form>
+
+        <!-- Divider OU -->
+        <div class="edu-divider">
+          <span></span>
+          OU
+          <span></span>
+        </div>
+
+        <!-- 4 Boutons d'accès rapide par Rôle (Élève, Parent, Enseignant, Directeur) -->
+        <div class="edu-quick-roles">
+          <button type="button" class="edu-role-pill" onclick="quickFillRole('eleve', 'eleve123', 1)" title="Accès Démo Élève">
+            <i class="fa-solid fa-graduation-cap"></i>
+            <span>Élève</span>
+          </button>
+          <button type="button" class="edu-role-pill" onclick="quickFillRole('parent', 'parent123', 1)" title="Accès Démo Parent">
+            <i class="fa-solid fa-users"></i>
+            <span>Parent</span>
+          </button>
+          <button type="button" class="edu-role-pill" onclick="quickFillRole('enseignant', 'prof123', 1)" title="Accès Démo Enseignant">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <span>Enseignant</span>
+          </button>
+          <button type="button" class="edu-role-pill" onclick="quickFillRole('directeur', 'directeur123', 1)" title="Accès Démo Directeur">
+            <i class="fa-solid fa-user-tie"></i>
+            <span>Directeur</span>
+          </button>
+        </div>
+
+        <!-- Note de sécurité -->
+        <div class="edu-card-security">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Connexion sécurisée · Protection de vos données</span>
+        </div>
+
       </div>
     </div>
-    <div class="login-copyright text-muted small text-center mt-3">
-      © 2026 EduCloud SaaS <span>·</span> Projet Cloud & Big Data · TOURE
+
+  </div>
+
+  <!-- Page Footer -->
+  <footer class="edu-footer">
+    <div>
+      © 2026 EduCloud. Tous droits réservés.
     </div>
-  </section>
+    <div class="edu-footer-links">
+      <a href="{{ url_for('pre_enrollment') }}">Admissions</a>
+      <span>|</span>
+      <a href="javascript:void(0)" onclick="alert('Support technique EduCloud : support@educloud.saas')">Support</a>
+      <span>|</span>
+      <a href="javascript:void(0)" onclick="alert('Contact Direction : contact@educloud.saas')">Contact</a>
+      <span>|</span>
+      <span class="edu-lang-select">
+        🇫🇷 Français <i class="fa-solid fa-chevron-down fa-xs"></i>
+      </span>
+    </div>
+  </footer>
+
 </div>
 
 <script>
-  function fillLogin(u, p) {
-    var uField = document.getElementById('username');
-    var pField = document.getElementById('password');
-    uField.value = u;
-    pField.value = p;
-    uField.classList.add('bg-warning-subtle');
-    pField.classList.add('bg-warning-subtle');
-    setTimeout(function() {
-      uField.classList.remove('bg-warning-subtle');
-      pField.classList.remove('bg-warning-subtle');
-    }, 600);
+/* Toggle show / hide password */
+function togglePasswordVisibility() {
+  var pwInput = document.getElementById('password');
+  var icon = document.getElementById('togglePwIcon');
+  if (pwInput.type === 'password') {
+    pwInput.type = 'text';
+    icon.className = 'fa-regular fa-eye-slash';
+  } else {
+    pwInput.type = 'password';
+    icon.className = 'fa-regular fa-eye';
   }
+}
+
+/* Quick Fill role credentials with subtle highlight animation */
+function quickFillRole(username, password, schoolId) {
+  var uField = document.getElementById('username');
+  var pField = document.getElementById('password');
+  var sSelect = document.getElementById('schoolSelect');
+  
+  uField.value = username;
+  pField.value = password;
+  if (sSelect && schoolId) sSelect.value = schoolId;
+  
+  uField.style.borderColor = '#1d70f5';
+  pField.style.borderColor = '#1d70f5';
+  uField.style.background = '#eff6ff';
+  pField.style.background = '#eff6ff';
+  
+  setTimeout(function() {
+    uField.style.borderColor = '';
+    pField.style.borderColor = '';
+    uField.style.background = '';
+    pField.style.background = '';
+  }, 450);
+}
 </script>
+
 {% endblock %}

@@ -1,51 +1,243 @@
-{% extends 'base.html' %}{% block title %}Utilisateurs{% endblock %}{% block content %}<h1 class="h2">Comptes et
-    utilisateurs</h1>
-<p class="text-secondary mb-4">Créez et gérez les comptes des enseignants, parents et équipes administratives.</p>
-<form method="post" class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="row g-2">
-            <div class="col-md-2"><input class="form-control" name="username" placeholder="Identifiant" required></div>
-            <div class="col-md-2"><input class="form-control" name="full_name" placeholder="Nom complet" required></div>
-            <div class="col-md-2"><input class="form-control" name="email" type="email" placeholder="E-mail"></div>
-            <div class="col-md-2"><select class="form-select" name="role">
-                    <option value="teacher">Enseignant</option>
-                    <option value="parent">Parent</option>
-                    <option value="accountant">Comptable</option>
-                    <option value="secretary">Secrétariat</option>
-                    <option value="student">Élève</option>
-                </select></div>
-            <div class="col-md-2"><input class="form-control" name="password" type="password" minlength="8"
-                    placeholder="Mot de passe (8+)" required></div>
-            <div class="col-md-2 d-grid"><button class="btn btn-primary">Créer le compte</button></div>
+{% extends 'base.html' %}
+{% block title %}Utilisateurs · Gestion des Accès{% endblock %}
+{% block breadcrumb %}Utilisateurs &amp; Profils{% endblock %}
+
+{% block content %}
+<style>
+.user-avatar-pill {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center; font-weight: 800; font-size: 0.95rem;
+  color: #fff; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.role-badge {
+  font-size: 0.75rem; font-weight: 700; border-radius: 8px;
+  padding: 0.3rem 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+}
+.role-admin { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.role-director { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
+.role-teacher { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.role-accountant { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.role-parent { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
+.role-student { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
+.role-secretary { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+</style>
+
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-users-gear me-1"></i>Administration</div>
+    <h1>Comptes &amp; Utilisateurs</h1>
+    <p>Gestion des privilèges, rôles d'accès RBAC et habilitations de l'établissement.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary" onclick="document.getElementById('formUser').scrollIntoView({behavior:'smooth'})">
+      <i class="fa-solid fa-user-plus me-1"></i> Nouvel utilisateur
+    </button>
+  </div>
+</section>
+
+<!-- KPIs Utilisateurs -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-3">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Comptes Actifs</span>
+        <span class="stat-icon"><i class="fa-solid fa-user-check"></i></span>
+      </div>
+      <strong>{{ users|selectattr('active')|list|length }}</strong>
+      <small class="stat-note">Utilisateurs avec accès direct</small>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Enseignants</span>
+        <span class="stat-icon"><i class="fa-solid fa-chalkboard-user"></i></span>
+      </div>
+      <strong>{{ users|selectattr('role','equalto','teacher')|list|length }}</strong>
+      <small class="stat-note">Professeurs déclarés</small>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Parents &amp; Familles</span>
+        <span class="stat-icon"><i class="fa-solid fa-users"></i></span>
+      </div>
+      <strong>{{ users|selectattr('role','equalto','parent')|list|length }}</strong>
+      <small class="stat-note">Comptes tuteurs et parents</small>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="stat-card stat-payments">
+      <div class="stat-top">
+        <span>Administration &amp; Compta</span>
+        <span class="stat-icon"><i class="fa-solid fa-shield-halved"></i></span>
+      </div>
+      <strong>{{ users|rejectattr('role','in',['student','parent','teacher'])|list|length }}</strong>
+      <small class="stat-note">Équipes de direction et gestion</small>
+    </div>
+  </div>
+</div>
+
+<!-- Formulaire Nouvel Utilisateur -->
+<div class="card border-0 shadow-sm mb-4" id="formUser" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #1d4ed8, #7c3aed);">
+    <h2 class="h6 mb-0 fw-bold d-flex align-items-center gap-2">
+      <i class="fa-solid fa-user-shield"></i>
+      Créer un compte d'accès
+    </h2>
+  </div>
+  <div class="card-body p-4 bg-white">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">IDENTIFIANT</label>
+          <input class="form-control" name="username" placeholder="ex: jdupont" required>
         </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">NOM COMPLET</label>
+          <input class="form-control" name="full_name" placeholder="ex: Jean Dupont" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">EMAIL</label>
+          <input class="form-control" name="email" type="email" placeholder="contact@ecole.com">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">RÔLE SYSTÈME</label>
+          <select class="form-select" name="role" required>
+            <option value="teacher">👨‍🏫 Enseignant</option>
+            <option value="parent">👨‍👩‍👦 Parent d'élève</option>
+            <option value="accountant">💰 Comptable</option>
+            <option value="secretary">📋 Secrétaire</option>
+            <option value="director">🎓 Directeur</option>
+            <option value="student">🎒 Élève</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">MOT DE PASSE</label>
+          <input class="form-control" name="password" type="password" minlength="8" placeholder="8+ caractères" required>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100 justify-content-center py-2" type="submit">
+            <i class="fa-solid fa-plus me-1"></i> Créer le compte
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Utilisateurs -->
+<div class="card border-0 shadow-sm" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-users text-primary"></i>
+      <strong>Répertoire des Utilisateurs</strong>
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2">{{ users|length }}</span>
     </div>
-</form>
-<div class="card border-0 shadow-sm">
-    <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Identifiant</th>
-                    <th>Nom complet</th>
-                    <th>E-mail</th>
-                    <th>Rôle</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>{% for u in users %}<tr>
-                    <td class="fw-semibold">{{ u.username }}</td>
-                    <td>{{ u.full_name or '—' }}</td>
-                    <td>{{ u.email or '—' }}</td>
-                    <td>{{ u.role }}</td>
-                    <td>{{ 'Actif' if u.active else 'Désactivé' }}</td>
-                    <td class="text-nowrap"><a class="btn btn-sm btn-outline-primary me-1"
-                            href="{{ url_for('user_edit', user_id=u.id) }}">Modifier</a>
-                        <form class="d-inline" method="post" action="{{ url_for('user_toggle',user_id=u.id) }}"><button
-                                class="btn btn-sm {{ 'btn-outline-danger' if u.active else 'btn-outline-success' }}">{{
-                                'Désactiver' if u.active else 'Réactiver' }}</button></form>
-                    </td>
-                </tr>{% endfor %}</tbody>
-        </table>
+    <div class="d-flex align-items-center gap-2">
+      <div class="search-box" style="width:220px;">
+        <i class="fa-solid fa-magnifying-glass text-muted"></i>
+        <input type="text" id="userSearch" placeholder="Rechercher..." oninput="filterUsers(this.value)">
+      </div>
     </div>
-</div>{% endblock %}
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="usersTable">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Contact</th>
+          <th>Rôle</th>
+          <th>Statut du compte</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        {% set role_lower = u.role|lower %}
+        <tr class="user-row" data-text="{{ u.username|lower }} {{ (u.full_name or '')|lower }} {{ (u.email or '')|lower }} {{ u.role|lower }}">
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="user-avatar-pill" style="background: 
+                {% if role_lower == 'admin' %}linear-gradient(135deg, #1d4ed8, #3b82f6)
+                {% elif role_lower == 'director' %}linear-gradient(135deg, #7c3aed, #a855f7)
+                {% elif role_lower == 'teacher' %}linear-gradient(135deg, #059669, #10b981)
+                {% elif role_lower == 'accountant' %}linear-gradient(135deg, #d97706, #f59e0b)
+                {% elif role_lower == 'parent' %}linear-gradient(135deg, #be185d, #ec4899)
+                {% elif role_lower == 'student' %}linear-gradient(135deg, #0284c7, #38bdf8)
+                {% else %}linear-gradient(135deg, #475569, #64748b){% endif %};">
+                {{ (u.full_name or u.username or 'U')[:1]|upper }}
+              </div>
+              <div>
+                <strong class="d-block text-dark">{{ u.full_name or u.username }}</strong>
+                <small class="text-muted">@{{ u.username }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if u.email %}
+            <a href="mailto:{{ u.email }}" class="text-muted small d-inline-flex align-items-center gap-1">
+              <i class="fa-regular fa-envelope fa-xs"></i>{{ u.email }}
+            </a>
+            {% else %}
+            <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="role-badge role-{{ role_lower }}">
+              {% if role_lower == 'admin' %}<i class="fa-solid fa-shield"></i>
+              {% elif role_lower == 'director' %}<i class="fa-solid fa-user-tie"></i>
+              {% elif role_lower == 'teacher' %}<i class="fa-solid fa-chalkboard-user"></i>
+              {% elif role_lower == 'accountant' %}<i class="fa-solid fa-coins"></i>
+              {% elif role_lower == 'parent' %}<i class="fa-solid fa-users"></i>
+              {% elif role_lower == 'student' %}<i class="fa-solid fa-backpack"></i>
+              {% else %}<i class="fa-solid fa-user"></i>{% endif %}
+              {{ u.role|capitalize }}
+            </span>
+          </td>
+          <td>
+            {% if u.active %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle">
+              <i class="fa-solid fa-circle-check fa-xs me-1"></i>Actif
+            </span>
+            {% else %}
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+              <i class="fa-solid fa-circle-xmark fa-xs me-1"></i>Désactivé
+            </span>
+            {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('user_edit', user_id=u.id) }}" style="border-radius:8px;">
+              <i class="fa-solid fa-pen fa-xs me-1"></i>Modifier
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('user_toggle', user_id=u.id) }}">
+              <button class="btn btn-sm {{ 'btn-outline-danger' if u.active else 'btn-outline-success' }}" style="border-radius:8px;">
+                {% if u.active %}
+                <i class="fa-solid fa-ban fa-xs me-1"></i>Désactiver
+                {% else %}
+                <i class="fa-solid fa-check fa-xs me-1"></i>Réactiver
+                {% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function filterUsers(q) {
+  q = q.toLowerCase();
+  var rows = document.querySelectorAll('.user-row');
+  rows.forEach(function(row) {
+    var txt = row.getAttribute('data-text') || '';
+    row.style.display = txt.includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

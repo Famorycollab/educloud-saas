@@ -1,1 +1,247 @@
-{% extends 'base.html' %}{% block title %}Notifications{% endblock %}{% block content %}<h1 class="h2">Notifications</h1><p class="text-secondary mb-4">Suivi des messages automatiques liés à votre compte.</p><div class="card border-0 shadow-sm"><div class="list-group list-group-flush">{% for n in notifications %}<div class="list-group-item p-4"><div class="d-flex justify-content-between"><strong>{{ n.channel|capitalize }}</strong><span class="badge text-bg-secondary">{{ n.status }}</span></div><p class="mb-1 mt-2">{{ n.message }}</p><time class="small text-secondary">{{ n.created_at }}</time></div>{% else %}<div class="text-center text-secondary p-5">Aucune notification.</div>{% endfor %}</div></div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Notifications{% endblock %}{% block breadcrumb %}Notifications{% endblock %}{% block content %}
+
+<style>
+  .notif-wrap {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .notif-sidebar {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    overflow: hidden;
+    position: sticky;
+    top: 80px;
+  }
+  .notif-sidebar-header {
+    padding: 1rem 1.25rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .notif-category {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all .15s;
+    background: none;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    width: 100%;
+    text-align: left;
+  }
+  .notif-category:hover { background: #f8fafc; color: #1e293b; border-left-color: #c7d2fe; }
+  .notif-category.active { background: #eef2ff; color: #4f46e5; font-weight: 700; border-left-color: #4f46e5; }
+  .notif-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0 5px;
+  }
+  .notif-category.active .notif-count { background: #c7d2fe; color: #4f46e5; }
+  .notif-main {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    overflow: hidden;
+  }
+  .notif-main-header {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 1rem;
+  }
+  .notif-main-header h2 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
+  .notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f8fafc;
+    transition: background .15s;
+  }
+  .notif-item:hover { background: #f8fafc; }
+  .notif-item.unread { border-left: 3px solid #4f46e5; background: #fafcff; }
+  .notif-item:last-child { border-bottom: 0; }
+  .notif-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .notif-content { flex: 1; min-width: 0; }
+  .notif-content strong { font-size: 0.875rem; color: #1e293b; }
+  .notif-content p { font-size: 0.82rem; color: #64748b; margin: 0.25rem 0 0; line-height: 1.5; }
+  .notif-time { font-size: 0.75rem; color: #94a3b8; flex-shrink: 0; }
+  .badge-status-lu { background: #dcfce7; color: #16a34a; font-size: .7rem; padding: .25em .65em; border-radius: 999px; font-weight: 600; }
+  .badge-status-unread { background: #eef2ff; color: #4f46e5; font-size: .7rem; padding: .25em .65em; border-radius: 999px; font-weight: 600; }
+  .badge-status-other { background: #f1f5f9; color: #64748b; font-size: .7rem; padding: .25em .65em; border-radius: 999px; font-weight: 600; }
+  .filter-btn-group { display: flex; gap: .4rem; }
+  .filter-btn { background: #f1f5f9; border: 0; border-radius: 999px; padding: .3rem .85rem; font-size: .78rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all .15s; }
+  .filter-btn.active, .filter-btn:hover { background: #4f46e5; color: #fff; }
+  .notif-empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
+  .notif-empty i { font-size: 3rem; margin-bottom: 1rem; opacity: .4; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:none;} }
+  .notif-animate { animation: fadeInUp 0.35s ease both; }
+</style>
+
+<section class="page-heading" style="margin-bottom:1.5rem;">
+  <div>
+    <div class="page-eyebrow">Centre d'alertes</div>
+    <h1>Notifications</h1>
+    <p>Suivi des messages automatiques liés à votre compte.</p>
+  </div>
+</section>
+
+{# Build channel list from notifications #}
+{% set channels = [] %}
+{% for n in notifications %}
+  {% if n.channel not in channels %}{% set _ = channels.append(n.channel) %}{% endif %}
+{% endfor %}
+
+<div class="notif-wrap">
+
+  {# Sidebar #}
+  <nav class="notif-sidebar" aria-label="Catégories">
+    <div class="notif-sidebar-header">Canaux</div>
+    <button class="notif-category active" onclick="filterNotif('all', this)">
+      <span><i class="fa-solid fa-bell me-2"></i>Toutes</span>
+      <span class="notif-count">{{ notifications|length }}</span>
+    </button>
+    {% for ch in channels %}
+    <button class="notif-category" onclick="filterNotif('{{ ch }}', this)">
+      <span>
+        {% if ch == 'email' %}<i class="fa-solid fa-envelope me-2"></i>
+        {% elif ch == 'sms' %}<i class="fa-solid fa-mobile-screen me-2"></i>
+        {% elif ch == 'push' %}<i class="fa-solid fa-bell-ring me-2"></i>
+        {% elif ch == 'inapp' or ch == 'app' %}<i class="fa-solid fa-layer-group me-2"></i>
+        {% else %}<i class="fa-solid fa-tag me-2"></i>{% endif %}
+        {{ ch|capitalize }}
+      </span>
+      <span class="notif-count">{{ notifications|selectattr('channel','equalto',ch)|list|length }}</span>
+    </button>
+    {% endfor %}
+    <div class="notif-sidebar-header" style="margin-top:.5rem;">Statut</div>
+    <button class="notif-category" onclick="filterStatus('unread', this)">
+      <span><i class="fa-regular fa-circle me-2"></i>Non lus</span>
+      <span class="notif-count">{{ notifications|selectattr('status','ne','lu')|list|length }}</span>
+    </button>
+    <button class="notif-category" onclick="filterStatus('lu', this)">
+      <span><i class="fa-regular fa-circle-check me-2"></i>Lus</span>
+      <span class="notif-count">{{ notifications|selectattr('status','equalto','lu')|list|length }}</span>
+    </button>
+  </nav>
+
+  {# Main area #}
+  <div class="notif-main">
+    <div class="notif-main-header">
+      <h2 id="notif-title">Toutes les notifications</h2>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-secondary" style="font-size:.82rem;">{{ notifications|length }} au total</span>
+        <button class="btn btn-sm btn-outline-primary" onclick="markAllRead()">
+          <i class="fa-solid fa-check-double me-1"></i>Tout marquer comme lu
+        </button>
+      </div>
+    </div>
+
+    <div id="notif-list">
+      {% for n in notifications %}
+      {# Pick avatar color by channel #}
+      {% if n.channel == 'email' %}{% set acolor = '#4f46e5' %}{% set aletter = 'E' %}
+      {% elif n.channel == 'sms' %}{% set acolor = '#059669' %}{% set aletter = 'S' %}
+      {% elif n.channel == 'push' %}{% set acolor = '#7c3aed' %}{% set aletter = 'P' %}
+      {% else %}{% set acolor = '#0ea5e9' %}{% set aletter = n.channel[0]|upper %}{% endif %}
+
+      {% set is_unread = n.status != 'lu' %}
+      <div class="notif-item notif-animate {{ 'unread' if is_unread else '' }}"
+           data-channel="{{ n.channel }}"
+           data-status="{{ n.status }}"
+           style="animation-delay:{{ loop.index0 * 0.06 }}s">
+        <div class="notif-avatar" style="background:{{ acolor }};">{{ aletter }}</div>
+        <div class="notif-content">
+          <strong>{{ n.channel|capitalize }}</strong>
+          {% if is_unread %}
+            <span class="badge-status-unread ms-1">Non lu</span>
+          {% else %}
+            <span class="badge-status-lu ms-1"><i class="fa-solid fa-check me-1"></i>Lu</span>
+          {% endif %}
+          <p>{{ n.message }}</p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-1">
+          <span class="notif-time">{{ n.created_at }}</span>
+        </div>
+      </div>
+      {% else %}
+      <div class="notif-empty" id="empty-state">
+        <i class="fa-regular fa-bell-slash d-block"></i>
+        <div class="fw-semibold mb-1">Aucune notification</div>
+        <p class="mb-0" style="font-size:.85rem;">Vous êtes à jour ! Aucune alerte pour le moment.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+function filterNotif(channel, btn) {
+  document.querySelectorAll('.notif-category').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('notif-title').textContent = channel === 'all' ? 'Toutes les notifications' : channel.charAt(0).toUpperCase() + channel.slice(1);
+  document.querySelectorAll('.notif-item').forEach(item => {
+    item.style.display = (channel === 'all' || item.dataset.channel === channel) ? '' : 'none';
+  });
+  checkEmpty();
+}
+function filterStatus(status, btn) {
+  document.querySelectorAll('.notif-category').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('notif-title').textContent = status === 'lu' ? 'Notifications lues' : 'Notifications non lues';
+  document.querySelectorAll('.notif-item').forEach(item => {
+    if (status === 'lu') item.style.display = item.dataset.status === 'lu' ? '' : 'none';
+    else item.style.display = item.dataset.status !== 'lu' ? '' : 'none';
+  });
+  checkEmpty();
+}
+function checkEmpty() {
+  const visible = [...document.querySelectorAll('.notif-item')].filter(i => i.style.display !== 'none');
+  const es = document.getElementById('empty-state');
+  if (es) es.style.display = visible.length === 0 ? 'block' : 'none';
+}
+function markAllRead() {
+  document.querySelectorAll('.notif-item').forEach(item => {
+    item.classList.remove('unread');
+    item.dataset.status = 'lu';
+    const badge = item.querySelector('.badge-status-unread');
+    if (badge) { badge.className = 'badge-status-lu ms-1'; badge.innerHTML = '<i class="fa-solid fa-check me-1"></i>Lu'; }
+  });
+}
+</script>
+
+{% endblock %}

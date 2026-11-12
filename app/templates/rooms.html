@@ -1,15 +1,182 @@
-{% extends 'base.html' %}{% block title %}Salles{% endblock %}{% block breadcrumb %}Salles{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Locaux</div><h1>Salles</h1></div></section>
-<form method="post" class="card border-0 mb-4"><div class="card-body"><div class="row g-2">
-<div class="col-md-3"><input class="form-control" name="name" placeholder="Nom" required></div>
-<div class="col-md-2"><input class="form-control" type="number" min="1" name="capacity" value="30" required></div>
-<div class="col-md-3"><input class="form-control" name="availability" placeholder="Disponibilité"></div>
-<div class="col-md-2"><input class="form-control" name="school_year" value="2026-2027" required></div>
-<div class="col-md-2 d-grid"><button class="btn btn-primary">Ajouter</button></div>
-</div></div></form>
-<div class="card border-0"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Salle</th><th>Capacité</th><th>Disponibilité</th><th>Année</th><th></th></tr></thead>
-<tbody>{% for r in rooms %}<tr><td>{{ r.name }}</td><td>{{ r.capacity }}</td><td>{{ r.availability or '—' }}</td><td>{{ r.school_year }}</td>
-<td class="text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('room_edit', room_id=r.id) }}">Modifier</a>
-<form class="d-inline" method="post" action="{{ url_for('room_delete', room_id=r.id) }}" onsubmit="return confirm('Supprimer cette salle ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td></tr>
-{% else %}<tr><td colspan="5" class="text-secondary text-center py-4">Aucune salle.</td></tr>{% endfor %}</tbody></table></div></div>
+{% extends 'base.html' %}
+{% block title %}Salles &amp; Espaces Scolaires{% endblock %}
+{% block breadcrumb %}Infrastructures · Salles{% endblock %}
+
+{% block content %}
+<style>
+.room-icon-box {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: grid; place-items: center; font-size: 1.15rem;
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #7c3aed;
+}
+</style>
+
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-door-open me-1"></i>Infrastructures</div>
+    <h1>Gestion des Salles de Classe</h1>
+    <p>Inventaire des locaux pédagogiques, capacités d'accueil et gestion des disponibilités.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary" onclick="document.getElementById('formSalle').scrollIntoView({behavior:'smooth'})">
+      <i class="fa-solid fa-plus me-1"></i> Ajouter une salle
+    </button>
+  </div>
+</section>
+
+<!-- KPIs Salles -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Salles Répertoriées</span>
+        <span class="stat-icon"><i class="fa-solid fa-door-open"></i></span>
+      </div>
+      <strong>{{ rooms|length }}</strong>
+      <small class="stat-note">Salles et laboratoires disponibles</small>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Capacité Totale</span>
+        <span class="stat-icon"><i class="fa-solid fa-users"></i></span>
+      </div>
+      <strong>{{ rooms|sum(attribute='capacity') if rooms else 0 }}</strong>
+      <small class="stat-note">Places assises cumulées</small>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Capacité Moyenne</span>
+        <span class="stat-icon"><i class="fa-solid fa-chair"></i></span>
+      </div>
+      <strong>
+        {% if rooms|length > 0 %}
+          {{ ((rooms|sum(attribute='capacity')) / (rooms|length))|round|int }}
+        {% else %}
+          0
+        {% endif %}
+      </strong>
+      <small class="stat-note">Places par salle en moyenne</small>
+    </div>
+  </div>
+</div>
+
+<!-- Formulaire création salle -->
+<div class="card border-0 shadow-sm mb-4" id="formSalle" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #7c3aed, #0ea5e9);">
+    <h2 class="h6 mb-0 fw-bold d-flex align-items-center gap-2">
+      <i class="fa-solid fa-plus-circle"></i>
+      Ajouter une nouvelle salle
+    </h2>
+  </div>
+  <div class="card-body p-4 bg-white">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">NOM DE LA SALLE</label>
+          <input class="form-control" name="name" placeholder="ex: Salle 101, Labo SVT..." required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">CAPACITÉ (ÉLÈVES)</label>
+          <input class="form-control" type="number" min="1" name="capacity" value="30" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">DISPONIBILITÉ / ÉQUIPEMENT</label>
+          <input class="form-control" name="availability" placeholder="ex: Vidéoprojecteur, Clim...">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">ANNÉE SCOLAIRE</label>
+          <input class="form-control" name="school_year" value="2026-2027" required>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100 justify-content-center py-2" type="submit">
+            <i class="fa-solid fa-check me-1"></i> Enregistrer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Salles -->
+<div class="card border-0 shadow-sm" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-table-cells text-primary"></i>
+      <strong>Inventaire des Locaux</strong>
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2">{{ rooms|length }}</span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Salle</th>
+          <th>Capacité d'accueil</th>
+          <th>Disponibilité &amp; Équipement</th>
+          <th>Année scolaire</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rooms %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="room-icon-box">
+                <i class="fa-solid fa-building"></i>
+              </div>
+              <strong class="text-dark fs-6">{{ r.name }}</strong>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+              <i class="fa-solid fa-users fa-xs me-1"></i>{{ r.capacity }} places
+            </span>
+          </td>
+          <td>
+            {% if r.availability %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+              <i class="fa-solid fa-circle-check fa-xs me-1"></i>{{ r.availability }}
+            </span>
+            {% else %}
+            <span class="text-muted small">Standard</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="text-muted small">
+              <i class="fa-regular fa-calendar fa-xs me-1"></i>{{ r.school_year }}
+            </span>
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('room_edit', room_id=r.id) }}" style="border-radius:8px;">
+              <i class="fa-solid fa-pen fa-xs me-1"></i>Modifier
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('room_delete', room_id=r.id) }}" onsubmit="return confirm('Supprimer cette salle ?')">
+              <button class="btn btn-sm btn-outline-danger" style="border-radius:8px;">
+                <i class="fa-regular fa-trash-can fa-xs"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-5 text-secondary">
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fa-solid fa-door-open"></i></div>
+              <h3>Aucune salle enregistrée</h3>
+              <p>Configurez vos salles pour permettre l'assignation de l'emploi du temps sans conflit.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

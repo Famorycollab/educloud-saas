@@ -1,4 +1,317 @@
 {% extends 'base.html' %}{% block title %}Élèves{% endblock %}{% block breadcrumb %}Élèves{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Scolarité</div><h1>Élèves</h1><p>Consultez et gérez les dossiers scolaires de l’établissement.</p></div>{% if session.get('role') in ('admin','secretary') %}<div><a class="btn btn-outline-primary me-2" href="{{ url_for('students_export') }}">↓ Exporter CSV</a><a class="btn btn-primary" href="{{ url_for('student_new') }}">＋ Ajouter un élève</a></div>{% endif %}</section>
-{% if session.get('role') in ('admin','secretary') %}<form method="post" action="{{ url_for('students_import') }}" enctype="multipart/form-data" class="card card-body border-0 mb-3"><div class="row g-3 align-items-end"><div class="col-md"><label class="form-label fw-semibold" for="csvfile">Importer une liste d’élèves</label><input class="form-control" id="csvfile" type="file" name="file" accept=".csv" required><div class="form-text">Sélectionnez un fichier CSV au format attendu.</div></div><div class="col-md-auto"><button class="btn btn-outline-primary">Importer le fichier</button></div></div></form>{% endif %}
-<div class="card border-0"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Élève</th><th>Date de naissance</th><th>Parent / tuteur</th><th>Classe</th><th>Année</th><th>Actions</th></tr></thead><tbody>{% for s in students %}<tr><td class="fw-semibold"><a class="text-dark text-decoration-none" href="{{ url_for('student_detail', student_id=s.id) }}"><strong>{{ s.first_name }} {{ s.last_name }}</strong></a><div><a class="small fw-normal me-2" href="{{ url_for('student_detail', student_id=s.id) }}">Voir dossier</a>·<a class="small fw-normal ms-2" href="{{ url_for('bulletin_pdf',student_id=s.id) }}">Bulletin PDF</a></div></td><td>{{ s.birth_date or '—' }}</td><td>{{ s.parent_name or '—' }}{% if s.parent_phone %}<div class="small text-secondary">{{ s.parent_phone }}</div>{% endif %}</td><td>{{ s.class_name or 'Non affecté' }}</td><td>{{ s.school_year }}</td><td class="text-nowrap"><a class="btn btn-sm btn-outline-secondary me-1" href="{{ url_for('student_detail', student_id=s.id) }}">Dossier</a>{% if session.get('role') in ('admin','secretary') %}<a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('student_edit', student_id=s.id) }}">Modifier</a>{% if session.get('role')=='admin' %}<form class="d-inline" method="post" action="{{ url_for('student_delete', student_id=s.id) }}" onsubmit="return confirm('Archiver ce dossier élève ?')"><button class="btn btn-sm btn-outline-danger">Archiver</button></form>{% endif %}{% endif %}</td></tr>{% else %}<tr><td colspan="6" class="text-center py-5 text-secondary">Aucun élève pour le moment.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+
+<style>
+/* ── Students page ── */
+.student-avatar {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 700; letter-spacing: .5px;
+  flex-shrink: 0; color: #fff;
+}
+.badge-class {
+  font-size: .72rem; padding: 3px 10px; border-radius: 20px;
+  font-weight: 600; letter-spacing: .3px;
+}
+.badge-year {
+  font-size: .68rem; padding: 2px 8px; border-radius: 20px;
+  font-weight: 600; background: rgba(99,102,241,.12); color: #6366f1;
+}
+
+/* CSV drop zone */
+.csv-dropzone {
+  border: 2px dashed #c7d2fe; border-radius: 16px;
+  padding: 2rem 1.5rem; text-align: center;
+  background: linear-gradient(135deg,#f0f4ff 0%,#fafbff 100%);
+  cursor: pointer; transition: border-color .2s, background .2s;
+  position: relative;
+}
+.csv-dropzone:hover, .csv-dropzone.drag-over {
+  border-color: #6366f1; background: #eef0ff;
+}
+.csv-dropzone input[type=file] {
+  position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+}
+.csv-dropzone .dz-icon {
+  font-size: 2.2rem; color: #a5b4fc; margin-bottom: .5rem;
+}
+.csv-dropzone .dz-label { font-weight: 600; color: #4f46e5; margin-bottom: .2rem; }
+.csv-dropzone .dz-hint { font-size: .82rem; color: #94a3b8; }
+.csv-filename { font-size: .82rem; color: #6366f1; font-weight: 600; margin-top: .4rem; display: none; }
+
+/* Table */
+.students-table thead th {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #94a3b8;
+  background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 14px;
+}
+.students-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background .15s;
+  animation: rowFadeIn .35s ease both;
+}
+.students-table tbody tr:hover { background: #f8faff; }
+
+/* stagger animation */
+{% for i in range(1, 51) %}
+.students-table tbody tr:nth-child({{ i }}) { animation-delay: {{ (i - 1) * 0.04 }}s; }
+{% endfor %}
+
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Search */
+.search-wrap { position: relative; }
+.search-wrap .fa { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.search-wrap input { padding-left: 2.4rem; border-radius: 10px; border: 1.5px solid #e2e8f0; }
+.search-wrap input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 4rem 1rem; }
+.empty-state .es-icon { font-size: 3.5rem; color: #c7d2fe; margin-bottom: 1rem; }
+.empty-state .es-title { font-size: 1.1rem; font-weight: 700; color: #334155; margin-bottom: .4rem; }
+.empty-state .es-hint  { font-size: .88rem; color: #94a3b8; }
+
+/* avatar palette */
+.av0 { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+.av1 { background: linear-gradient(135deg,#0ea5e9,#38bdf8); }
+.av2 { background: linear-gradient(135deg,#10b981,#34d399); }
+.av3 { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
+.av4 { background: linear-gradient(135deg,#ef4444,#f87171); }
+.av5 { background: linear-gradient(135deg,#8b5cf6,#a78bfa); }
+.av6 { background: linear-gradient(135deg,#06b6d4,#67e8f9); }
+.av7 { background: linear-gradient(135deg,#ec4899,#f9a8d4); }
+
+/* class badge palette */
+.cl0 { background:#ede9fe; color:#7c3aed; }
+.cl1 { background:#dbeafe; color:#1d4ed8; }
+.cl2 { background:#dcfce7; color:#15803d; }
+.cl3 { background:#fef3c7; color:#b45309; }
+.cl4 { background:#fee2e2; color:#b91c1c; }
+.cl5 { background:#fce7f3; color:#9d174d; }
+</style>
+
+<!-- Page heading -->
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-user-graduate me-1"></i>Scolarité</div>
+    <h1>Élèves</h1>
+    <p class="text-secondary mb-0">Consultez et gérez les dossiers scolaires de l'établissement.</p>
+  </div>
+  {% if session.get('role') in ('admin','secretary') %}
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-primary" href="{{ url_for('students_export') }}">
+      <i class="fa-solid fa-download me-1"></i>Exporter CSV
+    </a>
+    <a class="btn btn-primary" href="{{ url_for('student_new') }}">
+      <i class="fa-solid fa-user-plus me-1"></i>Ajouter un élève
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+{% if session.get('role') in ('admin','secretary') %}
+<!-- CSV import card -->
+<div class="card border-0 mb-4" style="border-radius:18px; box-shadow:0 2px 16px rgba(99,102,241,.07);">
+  <div class="card-header border-0 d-flex align-items-center gap-2"
+       style="background:linear-gradient(90deg,#6366f1,#8b5cf6); border-radius:18px 18px 0 0; padding:1rem 1.5rem;">
+    <i class="fa-solid fa-file-arrow-up text-white fa-lg"></i>
+    <span class="fw-700 text-white">Importer une liste d'élèves (CSV)</span>
+  </div>
+  <div class="card-body p-4">
+    <form method="post" action="{{ url_for('students_import') }}" enctype="multipart/form-data" id="importForm">
+      <div class="csv-dropzone" id="dropzone">
+        <input type="file" id="csvfile" name="file" accept=".csv" required onchange="showFilename(this)">
+        <div class="dz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+        <div class="dz-label">Glissez votre fichier CSV ici</div>
+        <div class="dz-hint">ou cliquez pour parcourir · format attendu : prénom, nom, classe…</div>
+        <div class="csv-filename" id="csvFilename"></div>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="fa-solid fa-file-import me-2"></i>Importer le fichier
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Search + Table -->
+<div class="card border-0" style="border-radius:18px; box-shadow:0 2px 16px rgba(99,102,241,.07); overflow:hidden;">
+  <div class="card-header border-0 bg-white py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <span class="fw-700" style="font-size:1rem;">
+      <i class="fa-solid fa-list-ul me-2 text-indigo-500" style="color:#6366f1;"></i>
+      Liste des élèves
+    </span>
+    <div class="search-wrap" style="min-width:240px;">
+      <i class="fa fa-magnifying-glass"></i>
+      <input type="text" id="studentSearch" class="form-control form-control-sm"
+             placeholder="Rechercher un élève, classe…" autocomplete="off">
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0 students-table">
+      <thead>
+        <tr>
+          <th>Élève</th>
+          <th>Date de naissance</th>
+          <th>Parent / tuteur</th>
+          <th>Classe</th>
+          <th>Année</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="studentsBody">
+        {% for s in students %}
+        {% set av_idx = loop.index0 % 8 %}
+        {% set cl_idx = loop.index0 % 6 %}
+        {% set initials = (s.first_name[:1] + s.last_name[:1])|upper %}
+        <tr class="student-row">
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="student-avatar av{{ av_idx }}" title="{{ s.first_name }} {{ s.last_name }}">{{ initials }}</div>
+              <div>
+                <a class="fw-700 text-dark text-decoration-none d-block lh-sm"
+                   href="{{ url_for('student_detail', student_id=s.id) }}"
+                   style="font-size:.95rem;">{{ s.first_name }} {{ s.last_name }}</a>
+                <div class="mt-1 d-flex gap-2">
+                  <a class="small text-indigo fw-500 text-decoration-none"
+                     href="{{ url_for('student_detail', student_id=s.id) }}"
+                     style="color:#6366f1;">
+                    <i class="fa-solid fa-folder-open fa-xs me-1"></i>Dossier
+                  </a>
+                  <span class="text-secondary opacity-50">·</span>
+                  <a class="small fw-500 text-decoration-none"
+                     href="{{ url_for('bulletin_pdf', student_id=s.id) }}"
+                     style="color:#8b5cf6;">
+                    <i class="fa-solid fa-file-pdf fa-xs me-1"></i>Bulletin
+                  </a>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="text-secondary" style="font-size:.88rem;">
+            {% if s.birth_date %}
+            <i class="fa-solid fa-cake-candles fa-xs me-1 opacity-50"></i>{{ s.birth_date }}
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:.88rem;">
+            {% if s.parent_name %}
+            <div class="fw-600">{{ s.parent_name }}</div>
+            {% if s.parent_phone %}
+            <div class="text-secondary small"><i class="fa-solid fa-phone fa-xs me-1 opacity-50"></i>{{ s.parent_phone }}</div>
+            {% endif %}
+            {% else %}<span class="text-secondary">—</span>{% endif %}
+          </td>
+          <td>
+            <span class="badge-class cl{{ cl_idx }}">{{ s.class_name or 'Non affecté' }}</span>
+          </td>
+          <td>
+            <span class="badge-year">{{ s.school_year }}</span>
+          </td>
+          <td class="text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary me-1"
+               href="{{ url_for('student_detail', student_id=s.id) }}"
+               data-bs-toggle="tooltip" title="Voir le dossier">
+              <i class="fa-solid fa-eye fa-xs"></i>
+            </a>
+            {% if session.get('role') in ('admin','secretary') %}
+            <a class="btn btn-sm btn-outline-primary me-1"
+               href="{{ url_for('student_edit', student_id=s.id) }}"
+               data-bs-toggle="tooltip" title="Modifier">
+              <i class="fa-solid fa-pen fa-xs"></i>
+            </a>
+            {% if session.get('role') == 'admin' %}
+            <form class="d-inline" method="post"
+                  action="{{ url_for('student_delete', student_id=s.id) }}"
+                  onsubmit="return confirm('Archiver ce dossier élève ?')">
+              <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Archiver">
+                <i class="fa-solid fa-box-archive fa-xs"></i>
+              </button>
+            </form>
+            {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr id="noStudentsRow">
+          <td colspan="6" class="p-0 border-0">
+            <div class="empty-state">
+              <div class="es-icon"><i class="fa-solid fa-user-graduate"></i></div>
+              <div class="es-title">Aucun élève enregistré</div>
+              <div class="es-hint">Ajoutez votre premier élève ou importez une liste CSV pour démarrer.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Empty state shown by JS search -->
+  <div id="noResultsState" class="empty-state" style="display:none;">
+    <div class="es-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+    <div class="es-title">Aucun résultat</div>
+    <div class="es-hint">Essayez un autre nom ou une autre classe.</div>
+  </div>
+</div>
+
+<script>
+// ── CSV Drop zone ──
+(function() {
+  var dz = document.getElementById('dropzone');
+  if (!dz) return;
+  ['dragenter','dragover'].forEach(function(e) {
+    dz.addEventListener(e, function(ev) { ev.preventDefault(); dz.classList.add('drag-over'); });
+  });
+  ['dragleave','drop'].forEach(function(e) {
+    dz.addEventListener(e, function(ev) {
+      ev.preventDefault();
+      dz.classList.remove('drag-over');
+      if (ev.type === 'drop' && ev.dataTransfer.files.length) {
+        var inp = dz.querySelector('input[type=file]');
+        // Create a DataTransfer to assign files
+        var dt = new DataTransfer();
+        dt.items.add(ev.dataTransfer.files[0]);
+        inp.files = dt.files;
+        showFilename(inp);
+      }
+    });
+  });
+})();
+
+function showFilename(inp) {
+  var el = document.getElementById('csvFilename');
+  if (!el) return;
+  if (inp.files && inp.files.length) {
+    el.textContent = '📎 ' + inp.files[0].name;
+    el.style.display = 'block';
+  }
+}
+
+// ── Live search ──
+(function() {
+  var searchInput = document.getElementById('studentSearch');
+  var tbody       = document.getElementById('studentsBody');
+  var noResults   = document.getElementById('noResultsState');
+  if (!searchInput || !tbody) return;
+
+  searchInput.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    var rows = tbody.querySelectorAll('tr.student-row');
+    var visible = 0;
+
+    rows.forEach(function(row) {
+      var text = row.textContent.toLowerCase();
+      var match = !q || text.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+
+    if (noResults) noResults.style.display = (visible === 0 && q) ? 'block' : 'none';
+  });
+})();
+</script>
+
+{% endblock %}

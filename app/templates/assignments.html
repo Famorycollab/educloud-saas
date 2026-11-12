@@ -1,14 +1,136 @@
-{% extends 'base.html' %}{% block title %}Affectations{% endblock %}{% block breadcrumb %}Affectations{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Pédagogie</div><h1>Affectations enseignant ↔ matière ↔ classe</h1></div></section>
-<form method="post" class="card border-0 mb-4"><div class="card-body"><div class="row g-2">
-<div class="col-md-3"><select class="form-select" name="teacher_id" required><option value="">Enseignant</option>{% for t in teachers %}<option value="{{ t.id }}">{{ t.full_name or t.username }}</option>{% endfor %}</select></div>
-<div class="col-md-3"><select class="form-select" name="subject_id" required><option value="">Matière</option>{% for s in subjects %}<option value="{{ s.id }}">{{ s.name }} ({{ s.level }})</option>{% endfor %}</select></div>
-<div class="col-md-3"><select class="form-select" name="class_id" required><option value="">Classe</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><input class="form-control" name="school_year" value="2026-2027"></div>
-<div class="col-md-1 d-grid"><button class="btn btn-primary">Lier</button></div>
-</div></div></form>
-<div class="card border-0"><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Enseignant</th><th>Matière</th><th>Classe</th><th>Année</th><th></th></tr></thead>
-<tbody>{% for a in assignments %}<tr><td>{{ a.teacher_name }}</td><td>{{ a.subject_name }}</td><td>{{ a.class_name }}</td><td>{{ a.school_year }}</td>
-<td><form method="post" action="{{ url_for('assignment_delete', assignment_id=a.id) }}" onsubmit="return confirm('Retirer cette affectation ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td></tr>
-{% else %}<tr><td colspan="5" class="text-secondary text-center py-4">Aucune affectation.</td></tr>{% endfor %}</tbody></table></div></div>
+{% extends 'base.html' %}
+{% block title %}Affectations Pédagogiques{% endblock %}
+{% block breadcrumb %}Affectations Enseignants{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-arrows-split-up-and-left me-1"></i>Pédagogie</div>
+    <h1>Affectations des Enseignants</h1>
+    <p>Attribution des cours par enseignant, matière et classe pour l'année scolaire en cours.</p>
+  </div>
+</section>
+
+<!-- Formulaire Affectation -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #2563eb, #0ea5e9);">
+    <h2 class="h6 mb-0 fw-bold d-flex align-items-center gap-2">
+      <i class="fa-solid fa-link"></i>
+      Associer un Enseignant à une Matière et une Classe
+    </h2>
+  </div>
+  <div class="card-body p-4 bg-white">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">ENSEIGNANT</label>
+          <select class="form-select" name="teacher_id" required>
+            <option value="">Sélectionner l'enseignant...</option>
+            {% for t in teachers %}
+            <option value="{{ t.id }}">{{ t.full_name or t.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">MATIÈRE DISPENSÉE</label>
+          <select class="form-select" name="subject_id" required>
+            <option value="">Sélectionner la matière...</option>
+            {% for s in subjects %}
+            <option value="{{ s.id }}">{{ s.name }} ({{ s.level }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">CLASSE BÉNÉFICIAIRE</label>
+          <select class="form-select" name="class_id" required>
+            <option value="">Sélectionner la classe...</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">ANNÉE SCOLAIRE</label>
+          <input class="form-control" name="school_year" value="2026-2027">
+        </div>
+        <div class="col-md-1">
+          <button class="btn btn-primary w-100 justify-content-center py-2" type="submit">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Affectations -->
+<div class="card border-0 shadow-sm" style="border-radius:18px; overflow:hidden;">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa-solid fa-list-check text-primary"></i>
+      <strong>Affectations actives</strong>
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2">{{ assignments|length }}</span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Enseignant</th>
+          <th>Matière</th>
+          <th>Classe</th>
+          <th>Année scolaire</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="avatar" style="width:34px; height:34px; font-size:0.85rem;">
+                {{ a.teacher_name[:1]|upper }}
+              </span>
+              <strong class="text-dark">{{ a.teacher_name }}</strong>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+              <i class="fa-solid fa-book fa-xs me-1"></i>{{ a.subject_name }}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">
+              <i class="fa-solid fa-layer-group fa-xs me-1"></i>{{ a.class_name }}
+            </span>
+          </td>
+          <td>
+            <span class="text-muted small">
+              <i class="fa-regular fa-calendar fa-xs me-1"></i>{{ a.school_year }}
+            </span>
+          </td>
+          <td class="text-end">
+            <form method="post" action="{{ url_for('assignment_delete', assignment_id=a.id) }}" onsubmit="return confirm('Retirer cette affectation ?')">
+              <button class="btn btn-sm btn-outline-danger" style="border-radius:8px;">
+                <i class="fa-regular fa-trash-can fa-xs me-1"></i>Retirer
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-5 text-secondary">
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fa-solid fa-arrows-left-right"></i></div>
+              <h3>Aucune affectation active</h3>
+              <p>Affectez vos enseignants à des matières et classes pour organiser la vie pédagogique.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

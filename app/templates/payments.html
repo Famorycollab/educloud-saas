@@ -1,13 +1,250 @@
 {% extends 'base.html' %}{% block title %}Paiements{% endblock %}{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-<div><h1 class="h2 mb-1">Suivi des paiements</h1><p class="text-secondary mb-0">Enregistrement des règlements et historique financier.</p></div>
+
+{# ── Page heading ───────────────────────────────────────────────────── #}
+<section class="page-heading d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-coins me-1"></i>Finance</div>
+    <h1>Suivi des paiements</h1>
+    <p>Enregistrement des règlements et historique financier de l'établissement.</p>
+  </div>
+  {% if session.get('role') in ('admin','accountant') %}
+  <div class="d-flex gap-2 flex-wrap align-items-center">
+    <a class="btn btn-outline-primary" href="{{ url_for('payments_export') }}">
+      <i class="fa-solid fa-file-csv me-1"></i>Exporter CSV
+    </a>
+    <form method="post" action="{{ url_for('payments_send_reminders') }}"
+          onsubmit="return confirm('Envoyer une notification de rappel à tous les parents ayant des impayés ?')">
+      <button class="btn btn-warning" type="submit">
+        <i class="fa-solid fa-bolt me-1"></i>Relancer les impayés
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+
+{# ── KPI cards ───────────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4" id="kpi-row">
+  <div class="col-sm-4">
+    <div class="stat-card stat-payments" style="animation:pageSlideIn .5s var(--ease,.4s cubic-bezier(.22,1,.36,1)) .1s both">
+      <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
+      <div>
+        <strong id="kpi-total">—</strong>
+        <span>Total perçu (FCFA)</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-students" style="animation:pageSlideIn .5s var(--ease,.4s cubic-bezier(.22,1,.36,1)) .2s both">
+      <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+      <div>
+        <strong id="kpi-pending">—</strong>
+        <span>En attente</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-classes" style="animation:pageSlideIn .5s var(--ease,.4s cubic-bezier(.22,1,.36,1)) .3s both">
+      <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+      <div>
+        <strong id="kpi-count">{{ payments|length }}</strong>
+        <span>Paiements totaux</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Add payment form (admin/accountant) ─────────────────────────────── #}
 {% if session.get('role') in ('admin','accountant') %}
-<div class="d-flex gap-2">
-<a class="btn btn-outline-primary" href="{{ url_for('payments_export') }}">↓ Exporter CSV</a>
-<form method="post" action="{{ url_for('payments_send_reminders') }}" onsubmit="return confirm('Envoyer une notification de rappel à tous les parents ayant des impayés ?')">
-<button class="btn btn-outline-warning" type="submit">⚡ Relancer les impayés</button>
-</form>
+<div class="card border-0 shadow-sm mb-4" style="border-radius:16px;overflow:hidden">
+  <div class="card-header border-0 py-3 px-4"
+       style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff">
+    <h2 class="h6 mb-0 fw-bold"><i class="fa-solid fa-plus-circle me-2"></i>Enregistrer un paiement</h2>
+  </div>
+  <div class="card-body p-4">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small">Élève <span class="text-danger">*</span></label>
+          <select class="form-select" name="student_id" required>
+            <option value="">Choisir un élève…</option>
+            {% for x in students %}
+            <option value="{{ x.id }}">{{ x.first_name }} {{ x.last_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Montant (FCFA) <span class="text-danger">*</span></label>
+          <input class="form-control" name="amount" type="number" min="0.01" step="0.01" placeholder="Ex. 50000" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Mode de paiement</label>
+          <select class="form-select" name="method">
+            <option>Espèces</option>
+            <option>Virement</option>
+            <option>Mobile money</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Référence</label>
+          <input class="form-control" name="reference" placeholder="N° reçu…">
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 {% endif %}
+
+{# ── Filter bar ──────────────────────────────────────────────────────── #}
+<div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+  <label class="fw-semibold small text-secondary mb-0">Filtrer par statut :</label>
+  <select class="form-select form-select-sm w-auto" id="status-filter" onchange="filterPayments(this.value)">
+    <option value="">Tous</option>
+    <option value="paid">Payé</option>
+    <option value="pending">En attente</option>
+    <option value="cancelled">Annulé</option>
+  </select>
+  <input class="form-control form-control-sm" id="search-pay" style="max-width:220px"
+         placeholder="🔍 Rechercher un élève…" oninput="filterPayments()">
 </div>
-{% if session.get('role') in ('admin','accountant') %}<form method="post" class="card border-0 shadow-sm mb-4"><div class="card-body"><div class="row g-2"><div class="col-md-4"><select class="form-select" name="student_id" required><option value="">Choisir un élève</option>{% for x in students %}<option value="{{ x.id }}">{{ x.first_name }} {{ x.last_name }}</option>{% endfor %}</select></div><div class="col-md-2"><input class="form-control" name="amount" type="number" min="0.01" step="0.01" placeholder="Montant" required></div><div class="col-md-2"><select class="form-select" name="method"><option>Espèces</option><option>Virement</option><option>Mobile money</option></select></div><div class="col-md-2"><input class="form-control" name="reference" placeholder="Référence"></div><div class="col-md-2 d-grid"><button class="btn btn-primary">Enregistrer le paiement</button></div></div></div></form>{% endif %}<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Élève</th><th>Montant</th><th>Mode</th><th>Référence</th><th>Reçu</th>{% if session.get('role') in ('admin','accountant') %}<th>Actions</th>{% endif %}</tr></thead><tbody>{% for x in payments %}<tr><td>{{ x.paid_at }}</td><td>{{ x.first_name }} {{ x.last_name }}</td><td>{{ '%.2f'|format(x.amount) }}</td><td>{{ x.method }}</td><td>{{ x.reference or '—' }}</td><td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('payment_receipt',payment_id=x.id) }}">PDF</a></td>{% if session.get('role') in ('admin','accountant') %}<td class="text-nowrap"><a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('payment_edit', payment_id=x.id) }}">Modifier</a><form class="d-inline" method="post" action="{{ url_for('payment_delete', payment_id=x.id) }}" onsubmit="return confirm('Supprimer ce paiement ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td>{% endif %}</tr>{% else %}<tr><td colspan="7" class="text-center py-4">Aucun paiement enregistré.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+
+{# ── Payments table ──────────────────────────────────────────────────── #}
+<div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden">
+  <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 py-3"
+       style="background:#f8fafc">
+    <span class="fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i>Historique des paiements</span>
+    <span class="badge bg-primary rounded-pill" id="pay-count-badge">{{ payments|length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0" id="payments-table">
+      <thead style="background:#f1f5f9">
+        <tr>
+          <th class="ps-4">Date</th>
+          <th>Élève</th>
+          <th>Montant</th>
+          <th>Mode</th>
+          <th>Référence</th>
+          <th>Statut</th>
+          <th>Reçu</th>
+          {% if session.get('role') in ('admin','accountant') %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for x in payments %}
+        <tr class="pay-row" data-status="{{ x.status if x.status else 'paid' }}"
+            data-name="{{ (x.first_name ~ ' ' ~ x.last_name)|lower }}"
+            style="animation:pageSlideIn .4s ease {{ loop.index0 * 0.04 }}s both">
+          <td class="ps-4 text-secondary small">
+            <i class="fa-regular fa-calendar me-1"></i>{{ x.paid_at }}
+          </td>
+          <td>
+            {% set initials = (x.first_name[0] ~ x.last_name[0])|upper if x.first_name and x.last_name else '?' %}
+            {% set colors = ['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#0891b2'] %}
+            {% set ci = loop.index0 % 6 %}
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:34px;height:34px;border-radius:50%;background:{{ colors[ci] }};color:#fff;
+                          display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0">
+                {{ initials }}
+              </div>
+              <span class="fw-semibold">{{ x.first_name }} {{ x.last_name }}</span>
+            </div>
+          </td>
+          <td class="fw-bold" style="color:#059669">{{ '%.2f'|format(x.amount) }}</td>
+          <td>
+            {% if x.method == 'Mobile money' %}
+              <span class="badge" style="background:#fef3c7;color:#92400e;border-radius:8px">
+                <i class="fa-solid fa-mobile-screen me-1"></i>{{ x.method }}
+              </span>
+            {% elif x.method == 'Virement' %}
+              <span class="badge" style="background:#ede9fe;color:#5b21b6;border-radius:8px">
+                <i class="fa-solid fa-bank me-1"></i>{{ x.method }}
+              </span>
+            {% else %}
+              <span class="badge" style="background:#f0fdf4;color:#166534;border-radius:8px">
+                <i class="fa-solid fa-money-bill me-1"></i>{{ x.method or 'Espèces' }}
+              </span>
+            {% endif %}
+          </td>
+          <td class="text-secondary small">{{ x.reference or '—' }}</td>
+          <td>
+            {% set st = x.status if x.status else 'paid' %}
+            {% if st == 'paid' %}
+              <span class="badge" style="background:#dcfce7;color:#166534;border-radius:8px">
+                <i class="fa-solid fa-circle-check me-1"></i>Payé
+              </span>
+            {% elif st == 'pending' %}
+              <span class="badge" style="background:#fff7ed;color:#c2410c;border-radius:8px">
+                <i class="fa-solid fa-clock me-1"></i>En attente
+              </span>
+            {% else %}
+              <span class="badge" style="background:#fef2f2;color:#991b1b;border-radius:8px">
+                <i class="fa-solid fa-xmark-circle me-1"></i>Annulé
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('payment_receipt',payment_id=x.id) }}">
+              <i class="fa-solid fa-file-pdf me-1"></i>PDF
+            </a>
+          </td>
+          {% if session.get('role') in ('admin','accountant') %}
+          <td class="text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary me-1" href="{{ url_for('payment_edit', payment_id=x.id) }}">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('payment_delete', payment_id=x.id) }}"
+                  onsubmit="return confirm('Supprimer ce paiement ?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state py-5">
+              <div class="empty-state-icon"><i class="fa-solid fa-coins"></i></div>
+              <h3>Aucun paiement enregistré</h3>
+              <p class="text-secondary">Utilisez le formulaire ci-dessus pour enregistrer le premier paiement.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Compute KPIs
+  var rows = document.querySelectorAll('.pay-row');
+  var total = 0, pending = 0;
+  {% for x in payments %}
+  {% if x.status != 'cancelled' %}total += {{ x.amount }};{% endif %}
+  {% if x.status == 'pending' %}pending += {{ x.amount }};{% endif %}
+  {% endfor %}
+  document.getElementById('kpi-total').textContent = total.toLocaleString('fr-FR', {minimumFractionDigits:0});
+  document.getElementById('kpi-pending').textContent = pending.toLocaleString('fr-FR', {minimumFractionDigits:0});
+
+  // Filter function
+  window.filterPayments = function(statusVal) {
+    var status = statusVal !== undefined ? statusVal : document.getElementById('status-filter').value;
+    var search = document.getElementById('search-pay').value.toLowerCase();
+    var visible = 0;
+    rows.forEach(function(r){
+      var matchStatus = !status || r.dataset.status === status;
+      var matchSearch = !search || (r.dataset.name||'').includes(search);
+      var show = matchStatus && matchSearch;
+      r.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    document.getElementById('pay-count-badge').textContent = visible;
+  };
+})();
+</script>
+{% endblock %}

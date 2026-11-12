@@ -1,32 +1,356 @@
 {% extends 'base.html' %}{% block title %}Emploi du temps{% endblock %}{% block breadcrumb %}Emploi du temps{% endblock %}{% block content %}
-<section class="page-heading"><div><div class="page-eyebrow">Organisation</div><h1>Emploi du temps</h1><p>Vue semaine avec détection des conflits enseignant / classe / salle.</p></div></section>
+
+<style>
+/* ── Timetable page ── */
+
+/* Form card */
+.tt-form-card .card-header {
+  background: linear-gradient(90deg, #0ea5e9, #6366f1);
+  border-radius: 18px 18px 0 0;
+  padding: 1rem 1.5rem;
+}
+.tt-form-card {
+  border-radius: 18px;
+  box-shadow: 0 2px 20px rgba(14,165,233,.1);
+  overflow: hidden;
+}
+.tt-form-card .form-select,
+.tt-form-card .form-control {
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  font-size: .875rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+.tt-form-card .form-select:focus,
+.tt-form-card .form-control:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+}
+.tt-form-card .form-label-sm {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #64748b; margin-bottom: 4px;
+}
+
+/* Week header */
+.week-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(90deg,#f0f4ff,#fafbff);
+  border: 1px solid #e0e7ff; border-radius: 14px;
+  padding: .75rem 1.25rem; margin-bottom: 1.25rem;
+}
+.week-header .week-label {
+  font-weight: 700; font-size: 1rem; color: #3730a3;
+}
+.week-header .week-nav .btn { border-radius: 8px; }
+
+/* Week grid overrides */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: .75rem;
+  overflow-x: auto;
+  padding-bottom: .5rem;
+}
+@media (max-width: 1100px) { .week-grid { grid-template-columns: repeat(4, minmax(140px,1fr)); } }
+@media (max-width: 700px)  { .week-grid { grid-template-columns: repeat(2, minmax(140px,1fr)); } }
+
+.day-col {
+  background: #f8fafc; border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden; min-width: 130px;
+}
+.day-col-header {
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+  color: #fff; font-weight: 700; font-size: .78rem;
+  text-transform: uppercase; letter-spacing: .07em;
+  padding: .55rem .75rem; text-align: center;
+}
+.day-col-body { padding: .5rem; display: flex; flex-direction: column; gap: .45rem; }
+
+/* Slot chip */
+.slot-chip {
+  background: #fff;
+  border: 1px solid #e0e7ff;
+  border-left: 4px solid #6366f1;
+  border-radius: 10px;
+  padding: .55rem .7rem;
+  font-size: .78rem;
+  box-shadow: 0 1px 4px rgba(99,102,241,.07);
+  transition: transform .15s, box-shadow .15s;
+  animation: chipFadeIn .3s ease both;
+  position: relative;
+  overflow: hidden;
+}
+.slot-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99,102,241,.14);
+}
+.slot-chip.conflict {
+  border-left-color: #ef4444;
+  background: #fff5f5;
+}
+.slot-chip.conflict::before {
+  content: '\26A0';
+  position: absolute; top: 4px; right: 6px;
+  font-size: .75rem; color: #ef4444;
+}
+
+@keyframes chipFadeIn {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.chip-time {
+  font-weight: 700; color: #4f46e5; font-size: .8rem;
+  display: flex; align-items: center; gap: 4px; margin-bottom: 3px;
+}
+.chip-subject {
+  display: inline-block;
+  font-weight: 700; font-size: .72rem;
+  padding: 1px 7px; border-radius: 20px;
+  background: #ede9fe; color: #7c3aed;
+  margin-bottom: 3px;
+}
+.chip-class {
+  display: inline-block;
+  font-size: .68rem; font-weight: 600;
+  padding: 1px 7px; border-radius: 20px;
+  background: #dbeafe; color: #1d4ed8;
+  margin-left: 3px;
+}
+.chip-teacher {
+  color: #64748b; font-size: .72rem;
+  display: flex; align-items: center; gap: 3px;
+  margin-top: 3px;
+}
+.chip-room {
+  color: #94a3b8; font-size: .68rem;
+  display: flex; align-items: center; gap: 3px;
+  margin-top: 2px;
+}
+.chip-actions {
+  margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap;
+}
+.chip-actions .btn {
+  font-size: .68rem; padding: 1px 7px; border-radius: 6px; line-height: 1.6;
+}
+
+.empty-day {
+  text-align: center; padding: 1.2rem .5rem;
+  color: #c7d2fe; font-size: .78rem; font-style: italic;
+}
+.empty-day i { display: block; font-size: 1.5rem; margin-bottom: .3rem; opacity: .5; }
+
+/* Subject colors cycling */
+{% set subject_colors = [
+  ('ede9fe','7c3aed'), ('dbeafe','1d4ed8'), ('dcfce7','15803d'),
+  ('fef3c7','b45309'), ('fee2e2','b91c1c'), ('fce7f3','9d174d'),
+  ('e0f2fe','0369a1'), ('fef9c3','a16207')
+] %}
+</style>
+
+<!-- Page heading -->
+<section class="page-heading">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-calendar-week me-1"></i>Organisation</div>
+    <h1>Emploi du temps</h1>
+    <p class="text-secondary mb-0">Vue semaine avec détection des conflits enseignant / classe / salle.</p>
+  </div>
+</section>
+
 {% if session.get('role') in ('admin','teacher') %}
-<form method="post" class="card border-0 mb-4"><div class="card-body"><h2 class="h5 mb-3">Ajouter un créneau</h2>
-<div class="row g-2">
-<div class="col-md-2"><select class="form-select" name="class_id" required><option value="">Classe</option>{% for x in classes %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><select class="form-select" name="teacher_id" required><option value="">Enseignant</option>{% for x in teachers %}<option value="{{ x.id }}">{{ x.full_name or x.username }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><select class="form-select" name="subject_id" required><option value="">Matière</option>{% for x in subjects %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><select class="form-select" name="room_id"><option value="">Salle</option>{% for x in rooms %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}</select></div>
-<div class="col-md-1"><select class="form-select" name="weekday">{% for n,d in [(1,'Lun'),(2,'Mar'),(3,'Mer'),(4,'Jeu'),(5,'Ven'),(6,'Sam'),(7,'Dim')] %}<option value="{{ n }}">{{ d }}</option>{% endfor %}</select></div>
-<div class="col-md-1"><input class="form-control" type="time" name="start_time" required></div>
-<div class="col-md-1"><input class="form-control" type="time" name="end_time" required></div>
-<div class="col-md-1 d-grid"><button class="btn btn-primary">Ajouter</button></div>
+<!-- Add slot form card -->
+<div class="card border-0 mb-4 tt-form-card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="fa-solid fa-circle-plus text-white fa-lg"></i>
+    <span class="fw-700 text-white">Ajouter un créneau</span>
+  </div>
+  <div class="card-body p-4">
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label-sm">Classe</label>
+          <select class="form-select" name="class_id" required>
+            <option value="">— Classe —</option>
+            {% for x in classes %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label-sm">Enseignant</label>
+          <select class="form-select" name="teacher_id" required>
+            <option value="">— Enseignant —</option>
+            {% for x in teachers %}<option value="{{ x.id }}">{{ x.full_name or x.username }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label-sm">Matière</label>
+          <select class="form-select" name="subject_id" required>
+            <option value="">— Matière —</option>
+            {% for x in subjects %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label-sm">Salle</label>
+          <select class="form-select" name="room_id">
+            <option value="">— Salle —</option>
+            {% for x in rooms %}<option value="{{ x.id }}">{{ x.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1 col-sm-4">
+          <label class="form-label-sm">Jour</label>
+          <select class="form-select" name="weekday">
+            {% for n,d in [(1,'Lun'),(2,'Mar'),(3,'Mer'),(4,'Jeu'),(5,'Ven'),(6,'Sam'),(7,'Dim')] %}
+            <option value="{{ n }}">{{ d }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1 col-sm-4">
+          <label class="form-label-sm">Début</label>
+          <input class="form-control" type="time" name="start_time" required>
+        </div>
+        <div class="col-md-1 col-sm-4">
+          <label class="form-label-sm">Fin</label>
+          <input class="form-control" type="time" name="end_time" required>
+        </div>
+        <div class="col-md-1 col-sm-12 d-flex align-items-end">
+          <button class="btn btn-primary w-100" style="border-radius:10px;">
+            <i class="fa-solid fa-plus me-1"></i>Ajouter
+          </button>
+        </div>
+      </div>
+      <input type="hidden" name="school_year" value="2026-2027">
+    </form>
+  </div>
 </div>
-<input type="hidden" name="school_year" value="2026-2027">
-</div></form>
 {% endif %}
-<div class="week-grid mb-4">
-{% for n,d in [(1,'Lundi'),(2,'Mardi'),(3,'Mercredi'),(4,'Jeudi'),(5,'Vendredi'),(6,'Samedi'),(7,'Dimanche')] %}
-<div class="day-col"><h3>{{ d }}</h3>
-{% for s in slots if s.weekday == n %}
-<div class="slot-chip"><strong>{{ s.start_time }}–{{ s.end_time }}</strong><div>{{ s.subject_name }} · {{ s.class_name }}</div><div class="text-secondary">{{ s.teacher_name }}{% if s.room_name %} · {{ s.room_name }}{% endif %}</div>
-{% if session.get('role')=='admin' or (session.get('role')=='teacher' and s.teacher_id == session.get('user_id')) %}
-<div class="mt-1"><a class="small" href="{{ url_for('timetable_edit', slot_id=s.id) }}">Modifier</a>
-<form class="d-inline" method="post" action="{{ url_for('timetable_delete', slot_id=s.id) }}" onsubmit="return confirm('Supprimer ce créneau ?')"><button class="btn btn-link btn-sm p-0 text-danger">Supprimer</button></form></div>
-{% endif %}
+
+<!-- Week navigation header -->
+<div class="week-header mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <i class="fa-solid fa-calendar-days text-indigo-500" style="color:#6366f1; font-size:1.2rem;"></i>
+    <div>
+      <div class="week-label" id="currentWeekLabel">Semaine en cours</div>
+      <div class="text-secondary" style="font-size:.78rem;" id="weekDateRange"></div>
+    </div>
+  </div>
+  <div class="week-nav d-flex gap-2">
+    <button class="btn btn-sm btn-outline-secondary" onclick="changeWeek(-1)" title="Semaine précédente">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-primary" onclick="goToday()">
+      <i class="fa-solid fa-rotate-right me-1"></i>Aujourd'hui
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="changeWeek(1)" title="Semaine suivante">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
 </div>
-{% else %}<div class="small text-secondary">Aucun cours</div>{% endfor %}
+
+<!-- Week grid -->
+<div class="week-grid mb-5">
+  {% for n, d in [(1,'Lundi'),(2,'Mardi'),(3,'Mercredi'),(4,'Jeudi'),(5,'Vendredi'),(6,'Samedi'),(7,'Dimanche')] %}
+  <div class="day-col">
+    <div class="day-col-header">{{ d }}</div>
+    <div class="day-col-body">
+      {% set day_slots = slots | selectattr('weekday', 'equalto', n) | list %}
+      {% if day_slots %}
+        {% for s in day_slots %}
+        {% set has_conflict = s.has_conflict if s.has_conflict is defined else false %}
+        <div class="slot-chip{% if has_conflict %} conflict{% endif %}">
+          <!-- Time -->
+          <div class="chip-time">
+            <i class="fa-regular fa-clock fa-xs"></i>
+            {{ s.start_time }}–{{ s.end_time }}
+          </div>
+          <!-- Subject + class badges -->
+          <div>
+            <span class="chip-subject">{{ s.subject_name }}</span>
+            <span class="chip-class">{{ s.class_name }}</span>
+          </div>
+          <!-- Teacher -->
+          <div class="chip-teacher">
+            <i class="fa-solid fa-chalkboard-user fa-xs"></i>
+            {{ s.teacher_name }}
+          </div>
+          <!-- Room -->
+          {% if s.room_name %}
+          <div class="chip-room">
+            <i class="fa-solid fa-door-open fa-xs"></i>
+            {{ s.room_name }}
+          </div>
+          {% endif %}
+          <!-- Conflict alert -->
+          {% if has_conflict %}
+          <div class="mt-1">
+            <span class="badge bg-danger" style="font-size:.65rem; border-radius:6px;">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i>Conflit détecté
+            </span>
+          </div>
+          {% endif %}
+          <!-- Actions -->
+          {% if session.get('role') == 'admin' or (session.get('role') == 'teacher' and s.teacher_id == session.get('user_id')) %}
+          <div class="chip-actions mt-2">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('timetable_edit', slot_id=s.id) }}">
+              <i class="fa-solid fa-pen fa-xs me-1"></i>Modifier
+            </a>
+            <form class="d-inline" method="post"
+                  action="{{ url_for('timetable_delete', slot_id=s.id) }}"
+                  onsubmit="return confirm('Supprimer ce créneau ?')">
+              <button class="btn btn-sm btn-outline-danger">
+                <i class="fa-solid fa-trash fa-xs me-1"></i>Suppr.
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="empty-day">
+        <i class="fa-regular fa-calendar-xmark"></i>
+        Aucun cours
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
 </div>
-{% endfor %}
-</div>
+
+<script>
+// ── Week navigation display ──
+(function() {
+  var offset = 0; // weeks from today
+
+  function getMonday(d) {
+    var day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  }
+
+  function fmt(d) {
+    return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'long' });
+  }
+
+  function update() {
+    var base = new Date();
+    base.setDate(base.getDate() + offset * 7);
+    var mon = getMonday(new Date(base));
+    var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    var label  = document.getElementById('currentWeekLabel');
+    var range  = document.getElementById('weekDateRange');
+    var weekNo = getWeekNumber(mon);
+    if (label) label.textContent = offset === 0 ? 'Semaine en cours' : (offset > 0 ? 'Semaine +' + offset : 'Semaine ' + offset);
+    if (range) range.textContent = 'Semaine ' + weekNo + ' · ' + fmt(mon) + ' — ' + fmt(sun);
+  }
+
+  function getWeekNumber(d) {
+    var onejan = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d - onejan) / 86400000 + onejan.getDay() + 1) / 7);
+  }
+
+  window.changeWeek = function(dir) { offset += dir; update(); };
+  window.goToday    = function()    { offset = 0;    update(); };
+
+  update();
+})();
+</script>
+
 {% endblock %}

@@ -1,19 +1,113 @@
-{% extends 'base.html' %}{% block title %}Pré-inscription{% endblock %}{% block content %}
-<div class="login-panel" style="min-height:100vh">
-<div class="login-card" style="max-width:720px;margin:2rem auto">
-<a href="{{ url_for('login') }}">← Retour à la connexion</a>
-<h1 class="h3 mt-3">Demande de pré-inscription</h1>
-<p class="text-secondary">Formulaire ouvert aux parents. L’administration validera ensuite le dossier.</p>
-<form method="post" class="row g-3">
-<div class="col-md-6"><label class="form-label">Prénom de l’enfant *</label><input class="form-control" name="first_name" required></div>
-<div class="col-md-6"><label class="form-label">Nom de l’enfant *</label><input class="form-control" name="last_name" required></div>
-<div class="col-md-4"><label class="form-label">Date de naissance</label><input class="form-control" type="date" name="birth_date"></div>
-<div class="col-md-8"><label class="form-label">Nom du parent / tuteur *</label><input class="form-control" name="parent_name" required></div>
-<div class="col-md-6"><label class="form-label">E-mail du parent</label><input class="form-control" type="email" name="parent_email"></div>
-<div class="col-md-6"><label class="form-label">Téléphone</label><input class="form-control" name="parent_phone"></div>
-<div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" name="consent" value="1" required> J’autorise le traitement des données de mon enfant (RGPD) pour la scolarité.</label></div>
-<div class="col-12"><button class="btn btn-primary">Envoyer la demande</button></div>
-</form>
-</div>
+{% extends 'base.html' %}
+{% block title %}Dossier d'Admission · Pré-inscription en ligne{% endblock %}
+
+{% block content %}
+<style>
+.public-enrollment-wrap {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #091c33 0%, #10376d 50%, #0e6488 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.public-enrollment-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+.enrollment-card-lg {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2.5rem 3rem;
+  width: 100%;
+  max-width: 760px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 576px) {
+  .enrollment-card-lg { padding: 1.8rem 1.5rem; }
+}
+</style>
+
+<div class="public-enrollment-wrap">
+  <div class="enrollment-card-lg">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('login') }}" style="border-radius:10px;">
+        <i class="fa-solid fa-arrow-left me-1"></i> Retour à la connexion
+      </a>
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+        <i class="fa-solid fa-shield-halved me-1"></i>Portail Sécurisé
+      </span>
+    </div>
+
+    <div class="text-center mb-4">
+      <div class="brand-mark mx-auto mb-3" style="width:52px; height:52px; font-size:1.6rem;">🎓</div>
+      <h1 class="h3 fw-bold text-dark mb-1">Dossier de Pré-inscription</h1>
+      <p class="text-muted">Remplissez les informations ci-dessous pour déposer une demande d'admission. L’administration scolaire examinera votre dossier sous 48h.</p>
+    </div>
+
+    <form method="post" class="row g-3">
+      <div class="col-12">
+        <h3 class="h6 text-primary fw-bold text-uppercase border-bottom pb-2">
+          <i class="fa-solid fa-child me-1"></i> Informations sur l'enfant
+        </h3>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted">PRÉNOM DE L'ENFANT *</label>
+        <input class="form-control" name="first_name" placeholder="ex: Amadou" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted">NOM DE FAMILLE *</label>
+        <input class="form-control" name="last_name" placeholder="ex: Diallo" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted">DATE DE NAISSANCE</label>
+        <input class="form-control" type="date" name="birth_date">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted">ANNÉE SCOLAIRE VISÉE</label>
+        <input class="form-control" value="2026-2027" readonly style="background:#f8fafc;">
+      </div>
+
+      <div class="col-12 mt-4">
+        <h3 class="h6 text-primary fw-bold text-uppercase border-bottom pb-2">
+          <i class="fa-solid fa-users me-1"></i> Responsable légal / Parent
+        </h3>
+      </div>
+      <div class="col-md-12">
+        <label class="form-label small fw-bold text-muted">NOM COMPLET DU PARENT / TUTEUR *</label>
+        <input class="form-control" name="parent_name" placeholder="ex: Fatoumata Diallo" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted">ADRESSE EMAIL</label>
+        <input class="form-control" type="email" name="parent_email" placeholder="parent@exemple.com">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted">NUMÉRO DE TÉLÉPHONE</label>
+        <input class="form-control" name="parent_phone" placeholder="+221 77 000 00 00">
+      </div>
+
+      <div class="col-12 mt-3">
+        <div class="form-check p-3 bg-light rounded-3 border">
+          <input class="form-check-input" type="checkbox" name="consent" id="consentCheck" value="1" required>
+          <label class="form-check-label small text-muted ms-2" for="consentCheck">
+            J'atteste sur l'honneur l'exactitude des renseignements fournis et j'autorise le traitement des données pour la scolarité de mon enfant (conforme RGPD).
+          </label>
+        </div>
+      </div>
+
+      <div class="col-12 mt-4">
+        <button class="btn btn-primary w-100 py-3 fw-bold fs-6 justify-content-center" type="submit" style="border-radius:14px;">
+          <i class="fa-solid fa-paper-plane me-2"></i> Transmettre la demande d'admission
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

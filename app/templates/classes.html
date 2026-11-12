@@ -1,4 +1,181 @@
 {% extends 'base.html' %}{% block title %}Classes{% endblock %}{% block content %}
-<div class="mb-4"><h1 class="h2 mb-1">Classes</h1><p class="text-secondary mb-0">Organisation des niveaux et des effectifs</p></div>
-{% if session.get('role')=='admin' %}<form method="post" class="card border-0 shadow-sm mb-4"><div class="card-body"><h2 class="h5 mb-3">Créer une classe</h2><div class="row g-2"><div class="col-md-3"><input class="form-control" name="name" placeholder="Nom (ex. CP-A)" required></div><div class="col-md-2"><input class="form-control" name="level" placeholder="Niveau (ex. CP)" required></div><div class="col-md-2"><input class="form-control" name="section" placeholder="Section"></div><div class="col-md-2"><input class="form-control" type="number" min="1" name="capacity" value="30" required></div><div class="col-md-2"><input class="form-control" name="school_year" value="2026-2027" required></div><div class="col-md-1 d-grid"><button class="btn btn-primary">+</button></div></div><div class="form-text">Champs : nom, niveau, section, capacité, année scolaire.</div></div></form>{% endif %}
-<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Classe</th><th>Niveau</th><th>Section</th><th>Effectif</th><th>Année</th>{% if session.get('role')=='admin' %}<th>Actions</th>{% endif %}</tr></thead><tbody>{% for c in classes %}<tr><td class="fw-semibold">{{ c.name }}</td><td>{{ c.level }}</td><td>{{ c.section or '—' }}</td><td>{{ c.student_count }} / {{ c.capacity }}</td><td>{{ c.school_year }}</td>{% if session.get('role')=='admin' %}<td class="text-nowrap"><a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('class_edit', class_id=c.id) }}">Modifier</a><form class="d-inline" method="post" action="{{ url_for('class_delete', class_id=c.id) }}" onsubmit="return confirm('Supprimer cette classe ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form></td>{% endif %}</tr>{% else %}<tr><td colspan="6" class="text-center py-5 text-secondary">Aucune classe enregistrée.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+
+{# ── Page heading ───────────────────────────────────────────────────── #}
+<section class="page-heading d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <div class="page-eyebrow"><i class="fa-solid fa-school me-1"></i>Scolarité</div>
+    <h1>Classes</h1>
+    <p>Organisation des niveaux, sections et effectifs par année scolaire.</p>
+  </div>
+  {% if session.get('role') == 'admin' %}
+  <div class="d-flex gap-2 flex-wrap align-items-center">
+    <button class="btn btn-primary" onclick="document.getElementById('add-class-form').scrollIntoView({behavior:'smooth'})">
+      <i class="fa-solid fa-plus me-1"></i>Nouvelle classe
+    </button>
+  </div>
+  {% endif %}
+</section>
+
+{# ── Stats row ───────────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card stat-classes" style="animation:pageSlideIn .5s var(--ease,.4s cubic-bezier(.22,1,.36,1)) .1s both">
+      <div class="stat-icon"><i class="fa-solid fa-chalkboard"></i></div>
+      <div>
+        <strong>{{ classes|length }}</strong>
+        <span>Classes actives</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-students" style="animation:pageSlideIn .5s var(--ease,.4s cubic-bezier(.22,1,.36,1)) .2s both">
+      <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+      <div>
+        <strong>{{ classes|sum(attribute='student_count') if classes else 0 }}</strong>
+        <span>Élèves inscrits</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card stat-teachers" style="animation:pageSlideIn .5s var(--ease,.4s cubic-bezier(.22,1,.36,1)) .3s both">
+      <div class="stat-icon"><i class="fa-solid fa-layer-group"></i></div>
+      <div>
+        <strong>{{ classes|map(attribute='level')|unique|list|length if classes else 0 }}</strong>
+        <span>Niveaux distincts</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Add class form (admin only) ─────────────────────────────────────── #}
+{% if session.get('role') == 'admin' %}
+<div class="card border-0 shadow-sm mb-4" id="add-class-form" style="border-radius:16px;overflow:hidden">
+  <div class="card-header border-0 py-3 px-4"
+       style="background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff">
+    <h2 class="h6 mb-0 fw-bold"><i class="fa-solid fa-plus-circle me-2"></i>Créer une nouvelle classe</h2>
+  </div>
+  <div class="card-body p-4">
+    <form method="post">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold small">Nom de la classe <span class="text-danger">*</span></label>
+          <input class="form-control" name="name" placeholder="Ex. CP-A, 6ème-B…" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Niveau <span class="text-danger">*</span></label>
+          <input class="form-control" name="level" placeholder="Ex. CP, 6ème" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Section</label>
+          <input class="form-control" name="section" placeholder="A, B, C…">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Capacité <span class="text-danger">*</span></label>
+          <input class="form-control" type="number" min="1" name="capacity" value="30" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold small">Année scolaire <span class="text-danger">*</span></label>
+          <input class="form-control" name="school_year" value="2026-2027" required>
+        </div>
+        <div class="col-md-1 d-grid">
+          <button class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>
+          </button>
+        </div>
+      </div>
+      <div class="form-text mt-2"><i class="fa-solid fa-circle-info me-1 text-primary"></i>Champs obligatoires : nom, niveau, capacité, année scolaire.</div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{# ── Classes table ───────────────────────────────────────────────────── #}
+<div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden">
+  <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 py-3"
+       style="background:#f8fafc">
+    <span class="fw-bold"><i class="fa-solid fa-chalkboard me-2 text-purple" style="color:#7c3aed"></i>Liste des classes</span>
+    <span class="badge rounded-pill" style="background:#ede9fe;color:#5b21b6">{{ classes|length }} classe{{ 's' if classes|length != 1 else '' }}</span>
+  </div>
+
+  {% if classes %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead style="background:#f1f5f9">
+        <tr>
+          <th class="ps-4">Classe</th>
+          <th>Niveau</th>
+          <th>Section</th>
+          <th>Effectif</th>
+          <th>Occupation</th>
+          <th>Année</th>
+          {% if session.get('role') == 'admin' %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in classes %}
+        <tr style="animation:pageSlideIn .4s ease {{ loop.index0 * 0.05 }}s both">
+          <td class="ps-4">
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a78bfa);
+                          color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0">
+                {{ c.name[:3]|upper }}
+              </div>
+              <span class="fw-semibold">{{ c.name }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" style="background:#ede9fe;color:#5b21b6;border-radius:8px;font-size:.8rem">
+              {{ c.level }}
+            </span>
+          </td>
+          <td class="text-secondary">{{ c.section or '—' }}</td>
+          <td>
+            <span class="fw-semibold">{{ c.student_count }}</span>
+            <span class="text-secondary small">/ {{ c.capacity }}</span>
+          </td>
+          <td style="min-width:140px">
+            {% set pct = ((c.student_count / c.capacity) * 100)|int if c.capacity > 0 else 0 %}
+            {% set bar_color = '#dc2626' if pct >= 90 else ('#d97706' if pct >= 70 else '#059669') %}
+            <div class="d-flex align-items-center gap-2">
+              <div style="flex:1;height:6px;background:#e5e7eb;border-radius:99px">
+                <div style="width:{{ pct }}%;height:6px;background:{{ bar_color }};border-radius:99px;transition:width .6s ease"></div>
+              </div>
+              <span class="small text-secondary">{{ pct }}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" style="background:#f0fdf4;color:#166534;border-radius:8px">
+              <i class="fa-regular fa-calendar me-1"></i>{{ c.school_year }}
+            </span>
+          </td>
+          {% if session.get('role') == 'admin' %}
+          <td class="text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary me-1" href="{{ url_for('class_edit', class_id=c.id) }}">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('class_delete', class_id=c.id) }}"
+                  onsubmit="return confirm('Supprimer cette classe ?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state py-5">
+    <div class="empty-state-icon"><i class="fa-solid fa-chalkboard"></i></div>
+    <h3>Aucune classe enregistrée</h3>
+    <p class="text-secondary">Créez la première classe via le formulaire ci-dessus.</p>
+    {% if session.get('role') == 'admin' %}
+    <button class="btn btn-primary mt-3" onclick="document.getElementById('add-class-form').scrollIntoView({behavior:'smooth'})">
+      <i class="fa-solid fa-plus me-1"></i>Créer une classe
+    </button>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
