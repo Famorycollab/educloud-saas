@@ -69,9 +69,14 @@ def audit(action, entity, entity_id=None, old_values=None, new_values=None):
 
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DATABASE)
+        g.db = sqlite3.connect(DATABASE, timeout=60.0)
         g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA foreign_keys = ON")
+        try:
+            g.db.execute("PRAGMA journal_mode = WAL")
+            g.db.execute("PRAGMA busy_timeout = 60000")
+            g.db.execute("PRAGMA foreign_keys = ON")
+        except sqlite3.OperationalError:
+            pass
     return g.db
 
 
@@ -126,8 +131,14 @@ def close_db(_error=None):
 
 
 def init_db():
-    db = sqlite3.connect(DATABASE)
-    db.executescript("""
+    try:
+        db = sqlite3.connect(DATABASE, timeout=60.0)
+        try:
+            db.execute("PRAGMA journal_mode = WAL")
+            db.execute("PRAGMA busy_timeout = 60000")
+        except sqlite3.OperationalError:
+            pass
+        db.executescript("""
         PRAGMA foreign_keys = ON;
         CREATE TABLE IF NOT EXISTS schools (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -284,8 +295,17 @@ def init_db():
             db.execute("INSERT INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-v2", datetime.now().isoformat(timespec="seconds")))
         else:
             seed_demo_data(db)
-    db.commit()
-    db.close()
+        db.commit()
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e).lower() or "busy" in str(e).lower():
+            pass
+        else:
+            raise
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
 
 
 def seed_demo_data(db):
@@ -2014,8 +2034,11 @@ def room_delete(room_id):
     return redirect(url_for("rooms"))
 
 
-with app.app_context():
-    init_db()
+try:
+    with app.app_context():
+        init_db()
+except Exception:
+    pass
 
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
