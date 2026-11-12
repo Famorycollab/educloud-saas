@@ -26,33 +26,7 @@ L'application gère plusieurs établissements scolaires de manière totalement c
 
 ---
 
-## 🔑 Matrice des Comptes de Démonstration
 
-### Établissement 1 : Groupe Scolaire d'Excellence (Dakar)
-| Rôle | Identifiant | Mot de passe | Périmètre d'accès |
-|---|---|---|---|
-| **Directeur** | `directeur` | `directeur123` | **Centre Décisionnel BI (10 Dashboards)**, Simulateur N+1 |
-| **Administrateur** | `admin` | `admin123` | Gestion globale, élèves, classes, salles, journal d'audit |
-| **Comptable** | `comptable` | `compta123` | Module financier, reçus PDF, relances automatiques |
-| **Secrétaire** | `secretaire` | `secret123` | Pré-inscriptions, dossiers élèves et scolarité |
-| **Enseignant** | `enseignant` | `prof123` | Classes affectées, notes, devoirs, absences |
-| **Parent** | `parent` | `parent123` | Suivi des enfants, bulletins PDF, paiements |
-| **Élève** | `eleve` | `eleve123` | Devoirs, notes, emploi du temps personnel |
-
-### Établissement 2 : Institut Polyvalent Horizon (Abidjan)
-| Rôle | Identifiant | Mot de passe | Périmètre d'accès |
-|---|---|---|---|
-| **Directeur** | `directeur_horizon` | `directeur123` | Centre Décisionnel BI dédié à Abidjan |
-| **Administrateur** | `admin_horizon` | `admin123` | Gestion de l'établissement d'Abidjan |
-| **Comptable** | `comptable_horizon` | `compta123` | Trésorerie et facturation locale |
-| **Enseignant** | `enseignant_horizon` | `prof123` | Classes du collège |
-| **Parent** | `parent_horizon` | `parent123` | Suivi scolaire des enfants à Abidjan |
-| **Élève** | `eleve_horizon` | `eleve123` | Espace personnel élève |
-
-### SuperAdmin Global Plateforme SaaS
-| Rôle | Identifiant | Mot de passe | Privilèges |
-|---|---|---|---|
-| **SuperAdmin** | `superadmin` | `superadmin123` | Supervision transversale, bascule instantanée entre toutes les écoles |
 
 ---
 
