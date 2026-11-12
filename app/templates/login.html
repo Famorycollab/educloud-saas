@@ -1,21 +1,122 @@
-{% extends 'base.html' %}{% block title %}Connexion{% endblock %}{% block content %}
+{% extends 'base.html' %}
+{% block title %}Connexion · Portail SaaS Scolaire{% endblock %}
+{% block content %}
 <div class="login-screen">
   <section class="login-promo" aria-label="Présentation du portail scolaire">
-    <a class="login-brand" href="{{ url_for('login') }}"><span class="login-brand-icon">É</span><span><strong>École Primaire</strong><small>PORTAIL DE GESTION SCOLAIRE</small></span></a>
-    <div class="login-promo-copy"><span class="login-eyebrow"><i></i> UN ESPACE, TOUTE L’ÉCOLE</span><h1>La réussite scolaire<br>commence ici.</h1><p>Une plateforme pensée pour simplifier le quotidien de l’établissement, des équipes pédagogiques et des familles.</p>
-      <div class="login-feature-list"><div class="login-feature"><span class="feature-icon">01</span><span><strong>Une école mieux organisée</strong><small>Élèves, classes et emplois du temps réunis.</small></span></div><div class="login-feature"><span class="feature-icon">02</span><span><strong>Un suivi scolaire clair</strong><small>Notes, absences et devoirs accessibles au bon rôle.</small></span></div><div class="login-feature"><span class="feature-icon">03</span><span><strong>Une communication fluide</strong><small>Gardez les familles et les équipes informées.</small></span></div></div>
+    <a class="login-brand" href="{{ url_for('login') }}">
+      <span class="login-brand-icon">🏫</span>
+      <span><strong>EduCloud SaaS Pro</strong><small>GESTION & BUSINESS INTELLIGENCE</small></span>
+    </a>
+
+    <div class="login-promo-copy">
+      <span class="login-eyebrow text-uppercase">✦ SYSTÈME D’INFORMATION DÉCISIONNEL (SID)</span>
+      <h1>La gouvernance scolaire de nouvelle génération.</h1>
+      <p>Une plateforme SaaS multi-écoles conçue pour unifier scolarité, finances et aide stratégique à la décision grâce au Big Data.</p>
+
+      <div class="login-feature-list">
+        <div class="login-feature">
+          <span class="feature-icon">01</span>
+          <span><strong>Multi-Établissements (Multi-Tenant)</strong><small>Cloisonnement strict et bascule dynamique entre écoles.</small></span>
+        </div>
+        <div class="login-feature">
+          <span class="feature-icon">02</span>
+          <span><strong>10 Tableaux de Bord Décisionnels</strong><small>Analyses prédictives, trésorerie et Early Warning System.</small></span>
+        </div>
+        <div class="login-feature">
+          <span class="feature-icon">03</span>
+          <span><strong>Contrôle d'Accès Sécurisé (RBAC)</strong><small>8 profils dédiés de la Direction générale jusqu'aux familles.</small></span>
+        </div>
+      </div>
     </div>
-    <div class="login-promo-footer"><span class="secure-dot"></span> Accès sécurisé selon votre profil <span class="footer-divider">·</span> Espace scolaire</div>
-    <span class="login-decoration login-decoration-one"></span><span class="login-decoration login-decoration-two"></span>
+
+    <div class="login-promo-footer text-white-50 small mt-auto">
+      <span class="live-indicator d-inline-flex bg-transparent p-0 text-white me-2"><i></i> Système Cloud Opérationnel</span>
+      · Année Académique 2026-2027
+    </div>
   </section>
-  <section class="login-panel"><div class="login-card">
-    <div class="login-card-heading"><span class="login-card-mark">É</span><div><span class="login-card-overline">VOTRE ESPACE</span><h2>Ravi de vous revoir</h2></div></div>
-    <p class="login-subtitle">Connectez-vous avec les identifiants fournis par votre établissement.</p>
-    <form method="post" class="login-form"><div class="login-field"><label for="username">Identifiant</label><div class="login-input-wrap"><span aria-hidden="true">♙</span><input id="username" name="username" autocomplete="username" placeholder="Votre identifiant" required autofocus></div></div><div class="login-field"><label for="password">Mot de passe</label><div class="login-input-wrap"><span aria-hidden="true">▣</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required></div></div><button class="login-submit" type="submit">Se connecter <span aria-hidden="true">→</span></button></form>
-    <div class="login-divider"><span></span><small>OU</small><span></span></div>
-    <a class="login-enrollment" href="{{ url_for('pre_enrollment') }}"><span class="enrollment-icon">＋</span><span><strong>Première inscription ?</strong><small>Déposer une demande de pré-inscription</small></span><span class="enrollment-arrow">→</span></a>
-    <div class="login-security"><span aria-hidden="true">◈</span> Vos informations restent protégées par votre accès personnel.</div>
-  </div><div class="login-copyright">© {{ 2026 }} Espace École <span>·</span> Gestion scolaire</div></section>
+
+  <section class="login-panel">
+    <div class="login-card">
+      <div class="login-card-heading">
+        <span class="login-card-mark">🔐</span>
+        <div>
+          <span class="login-card-overline">ESPACE AUTHENTIFICATION</span>
+          <h2>Connexion Sécurisée</h2>
+        </div>
+      </div>
+      <p class="login-subtitle">Sélectionnez un compte de test ci-dessous ou entrez vos identifiants.</p>
+
+      <!-- 1-Click Fast Autofill Bar for Jury / Evaluator -->
+      <div class="demo-accounts-box mb-4">
+        <p>⚡ Connexion Rapide Démo (1-Clic) :</p>
+        <div class="d-flex flex-wrap gap-1">
+          <button type="button" class="demo-pill-btn text-primary fw-bold" onclick="fillLogin('directeur', 'directeur123')">🎓 Directeur (BI)</button>
+          <button type="button" class="demo-pill-btn" onclick="fillLogin('admin', 'admin123')">🛡️ Admin</button>
+          <button type="button" class="demo-pill-btn" onclick="fillLogin('comptable', 'compta123')">💰 Comptable</button>
+          <button type="button" class="demo-pill-btn" onclick="fillLogin('enseignant', 'prof123')">👨‍🏫 Prof</button>
+          <button type="button" class="demo-pill-btn" onclick="fillLogin('parent', 'parent123')">👨‍👩‍👦 Parent</button>
+          <button type="button" class="demo-pill-btn" onclick="fillLogin('eleve', 'eleve123')">🎒 Élève</button>
+          <button type="button" class="demo-pill-btn text-info" onclick="fillLogin('directeur_horizon', 'directeur123')">🏛️ École Abidjan</button>
+        </div>
+      </div>
+
+      <form method="post" class="login-form">
+        <div class="login-field mb-3">
+          <label for="username" class="form-label small fw-bold">Identifiant</label>
+          <div class="login-input-wrap">
+            <span aria-hidden="true">👤</span>
+            <input id="username" name="username" autocomplete="username" placeholder="ex: directeur" required autofocus>
+          </div>
+        </div>
+
+        <div class="login-field mb-3">
+          <label for="password" class="form-label small fw-bold">Mot de passe</label>
+          <div class="login-input-wrap">
+            <span aria-hidden="true">🔒</span>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required>
+          </div>
+        </div>
+
+        <button class="login-submit" type="submit">
+          Accéder à la plateforme <span aria-hidden="true">→</span>
+        </button>
+      </form>
+
+      <div class="login-divider">
+        <span></span><small>OU</small><span></span>
+      </div>
+
+      <a class="login-enrollment" href="{{ url_for('pre_enrollment') }}">
+        <span class="enrollment-icon fs-5">✍️</span>
+        <div>
+          <strong class="d-block">Nouvelle admission scolaire ?</strong>
+          <small class="text-muted">Déposer un dossier de pré-inscription en ligne</small>
+        </div>
+        <span class="enrollment-arrow ms-auto">→</span>
+      </a>
+
+      <div class="login-security text-muted small mt-3">
+        🛡️ Vos échanges sont chiffrés et protégés par jeton de sécurité CSRF.
+      </div>
+    </div>
+    <div class="login-copyright text-muted small text-center mt-3">
+      © 2026 EduCloud SaaS <span>·</span> Projet Cloud & Big Data · TOURE
+    </div>
+  </section>
 </div>
+
+<script>
+  function fillLogin(u, p) {
+    var uField = document.getElementById('username');
+    var pField = document.getElementById('password');
+    uField.value = u;
+    pField.value = p;
+    uField.classList.add('bg-warning-subtle');
+    pField.classList.add('bg-warning-subtle');
+    setTimeout(function() {
+      uField.classList.remove('bg-warning-subtle');
+      pField.classList.remove('bg-warning-subtle');
+    }, 600);
+  }
+</script>
 {% endblock %}
-</strong></small>

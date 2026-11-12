@@ -1,6 +1,145 @@
-{% extends 'base.html' %}{% block title %}Tableau de bord{% endblock %}{% block breadcrumb %}Vue d’ensemble{% endblock %}{% block content %}
-<section class="dashboard-hero"><div class="hero-copy"><span class="hero-kicker">PORTAIL DE L’ÉTABLISSEMENT</span><h1>Bonjour, {{ session.get('username') }} <span class="wave">✦</span></h1><p>Tout ce dont vous avez besoin pour suivre la vie scolaire, au même endroit.</p></div>{% if session.get('role') in ('admin','secretary') %}<a class="btn hero-action" href="{{ url_for('student_new') }}"><span>＋</span> Ajouter un élève</a>{% endif %}<span class="hero-orb hero-orb-one"></span><span class="hero-orb hero-orb-two"></span></section>
-<div class="section-heading"><div><span class="section-kicker">EN UN COUP D’ŒIL</span><h2>Les indicateurs clés</h2></div><span class="live-indicator"><i></i> Données actualisées</span></div>
-<div class="row g-3 mb-4 dashboard-stats"><div class="col-sm-6 col-xl-4"><div class="stat-card stat-students"><div class="stat-top"><span>Élèves actifs</span><span class="stat-icon">♧</span></div><strong>{{ totals.students }}</strong><small class="stat-note">Effectif enregistré dans l’établissement</small></div></div><div class="col-sm-6 col-xl-4"><div class="stat-card stat-classes"><div class="stat-top"><span>Classes</span><span class="stat-icon">▦</span></div><strong>{{ totals.classes }}</strong><small class="stat-note">Groupes scolaires organisés</small></div></div><div class="col-sm-6 col-xl-4"><div class="stat-card stat-teachers"><div class="stat-top"><span>Enseignants</span><span class="stat-icon">♙</span></div><strong>{{ totals.teachers }}</strong><small class="stat-note">Membres de l’équipe pédagogique</small></div></div></div>
-<section class="card activity-card border-0"><div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center"><div class="activity-title"><span class="activity-mark">↗</span><div><strong>Activité récente</strong><div class="small text-secondary mt-1">Les derniers dossiers élèves enregistrés</div></div></div><a class="btn btn-sm btn-outline-primary" href="{{ url_for('students') }}">Tous les élèves <span aria-hidden="true">→</span></a></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Élève</th><th>Classe</th><th>Année scolaire</th></tr></thead><tbody>{% for s in recent %}<tr><td class="fw-semibold">{{ s.first_name }} {{ s.last_name }}</td><td>{{ s.class_name or 'Non affecté' }}</td><td>{{ s.school_year }}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-secondary py-5">Aucun élève enregistré. Commencez par ajouter une classe puis un élève.</td></tr>{% endfor %}</tbody></table></div></section>
+{% extends 'base.html' %}
+{% block title %}Tableau de bord · Vue d'ensemble{% endblock %}
+{% block breadcrumb %}Vue d’ensemble{% endblock %}
+
+{% block content %}
+<section class="dashboard-hero mb-4">
+  <div class="hero-copy">
+    <span class="hero-kicker">
+      {% if g.current_school %}
+      🏫 {{ g.current_school.name }} ({{ g.current_school.city }})
+      {% else %}
+      PORTAIL SCOLAIRE GLOBAL
+      {% endif %}
+    </span>
+    <h1>Bonjour, {{ session.get('username')|capitalize }} <span class="wave">✦</span></h1>
+    <p>Bienvenue sur votre espace de gestion. Toutes vos données scolaires et indicateurs clés en temps réel.</p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    {% if session.get('role') in ('admin', 'director', 'superadmin') %}
+    <a class="btn btn-light text-primary fw-bold shadow-sm d-flex align-items-center gap-2" href="{{ url_for('bi_hub') }}">
+      <span class="fs-5">📊</span>
+      <span>Centre Décisionnel BI (10 Dashboards)</span>
+    </a>
+    {% endif %}
+
+    {% if session.get('role') in ('admin', 'secretary') %}
+    <a class="btn hero-action" href="{{ url_for('student_new') }}">
+      <span>＋</span> Inscrire un élève
+    </a>
+    {% endif %}
+  </div>
+
+  <span class="hero-orb hero-orb-one"></span>
+  <span class="hero-orb hero-orb-two"></span>
+</section>
+
+<!-- BI Callout Banner for Direction & Admin -->
+{% if session.get('role') in ('admin', 'director', 'superadmin') %}
+<div class="card border-0 shadow-sm p-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #ebf5ff 0%, #f0fdf4 100%); border-left: 6px solid #1a56db !important;">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-primary text-white fw-bold">NOUVEAU · MODULE DÉCISIONNEL</span>
+        <span class="badge bg-danger-subtle text-danger fw-bold">Early Warning System Actif</span>
+      </div>
+      <h4 class="fw-bold mb-1 text-dark">Business Intelligence & Aide à la Décision (10 Tableaux de Bord)</h4>
+      <p class="text-secondary small mb-0">Anticipation des saturations de classe, détection des risques d'échec scolaire, simulation budgétaire N+1 et projection de trésorerie.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('bi_hub') }}" class="btn btn-primary d-flex align-items-center gap-2 shadow">
+        <span>Ouvrir les 10 Dashboards</span>
+        <span>→</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="section-heading">
+  <div>
+    <span class="section-kicker">EN UN COUP D’ŒIL</span>
+    <h2>Les indicateurs clés de l'établissement</h2>
+  </div>
+  <span class="live-indicator"><i></i> Synchronisation en direct</span>
+</div>
+
+<div class="row g-3 mb-4 dashboard-stats">
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Élèves Actifs</span>
+        <span class="stat-icon">🎓</span>
+      </div>
+      <strong>{{ totals.students }}</strong>
+      <small class="stat-note">Effectif enregistré dans cet établissement</small>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Classes & Niveaux</span>
+        <span class="stat-icon">▦</span>
+      </div>
+      <strong>{{ totals.classes }}</strong>
+      <small class="stat-note">Groupes pédagogiques actifs</small>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Enseignants & Personnel</span>
+        <span class="stat-icon">👨‍🏫</span>
+      </div>
+      <strong>{{ totals.teachers }}</strong>
+      <small class="stat-note">Corps professoral affecté</small>
+    </div>
+  </div>
+</div>
+
+<section class="card activity-card border-0 shadow-sm">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+    <div class="activity-title d-flex align-items-center gap-2">
+      <span class="fs-4 text-primary">📁</span>
+      <div>
+        <strong class="d-block">Derniers dossiers scolaires</strong>
+        <div class="small text-secondary">Élèves récemment enregistrés dans l'établissement</div>
+      </div>
+    </div>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('students') }}">
+      Consulter tous les élèves <span aria-hidden="true">→</span>
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Élève</th>
+          <th>Classe</th>
+          <th>Année scolaire</th>
+          <th class="text-end">Fiche</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in recent %}
+        <tr>
+          <td class="fw-bold">{{ s.first_name }} {{ s.last_name }}</td>
+          <td><span class="badge bg-secondary-subtle text-secondary">{{ s.class_name or 'Non affecté' }}</span></td>
+          <td>{{ s.school_year }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('student_detail', student_id=s.id) }}" class="btn btn-xs btn-outline-secondary btn-sm">Dossier</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-center text-secondary py-5">
+            Aucun élève enregistré pour cet établissement.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}
