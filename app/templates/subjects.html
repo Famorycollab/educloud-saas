@@ -26,7 +26,7 @@
     <h1>Matières &amp; Coefficients</h1>
     <p>Gestion des disciplines scolaires, pondérations de notation et niveaux d'enseignement.</p>
   </div>
-  {% if session.get('role') == 'admin' %}
+  {% if session.get('role') in ('admin', 'director', 'superadmin') %}
   <div>
     <button class="btn btn-primary" onclick="document.getElementById('formMatiere').scrollIntoView({behavior:'smooth'})">
       <i class="fa-solid fa-plus me-1"></i> Ajouter une matière
@@ -75,7 +75,7 @@
   </div>
 </div>
 
-{% if session.get('role') == 'admin' %}
+{% if session.get('role') in ('admin', 'director', 'superadmin') %}
 <!-- Formulaire ajout -->
 <div class="card border-0 shadow-sm mb-4" id="formMatiere" style="border-radius:18px; overflow:hidden;">
   <div class="card-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #2563eb, #0ea5e9);">
@@ -163,7 +163,7 @@
               <i class="fa-regular fa-calendar fa-xs me-1"></i>{{ s.school_year }}
             </span>
           </td>
-          {% if session.get('role') == 'admin' %}
+          {% if session.get('role') in ('admin', 'director', 'superadmin') %}
           <td class="text-end text-nowrap">
             <a class="btn btn-sm btn-outline-primary me-1" href="{{ url_for('subject_edit', item_id=s.id) }}" style="border-radius:8px;">
               <i class="fa-solid fa-pen-to-square fa-xs me-1"></i>Modifier

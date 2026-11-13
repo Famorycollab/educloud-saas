@@ -385,7 +385,19 @@
       {% endif %}
     </span>
     <h1>Bonjour, {{ session.get('username')|capitalize }} <span class="wave">✦</span></h1>
-    <p>Bienvenue sur votre espace de gestion. Toutes vos données scolaires et indicateurs clés en temps réel.</p>
+    <p>
+      {% if session.get('role') == 'student' %}
+        Bienvenue sur votre espace élève. Retrouvez votre emploi du temps, vos devoirs et vos notes.
+      {% elif session.get('role') == 'parent' %}
+        Bienvenue sur votre espace famille. Suivez en temps réel la scolarité et les résultats de vos enfants.
+      {% elif session.get('role') == 'teacher' %}
+        Bienvenue sur votre espace enseignant. Gérez vos cours, vos évaluations et vos devoirs.
+      {% elif session.get('role') == 'accountant' %}
+        Bienvenue sur l'espace comptabilité. Suivi des règlements, encaissements et tarifs scolaires.
+      {% else %}
+        Bienvenue sur votre portail de direction. Pilotez l'établissement et suivez les indicateurs clés.
+      {% endif %}
+    </p>
   </div>
 
   <div class="hero-actions-wrap">
@@ -399,6 +411,18 @@
     {% if session.get('role') in ('admin', 'secretary') %}
     <a class="btn hero-action" href="{{ url_for('student_new') }}">
       <i class="fa-solid fa-user-plus fa-sm"></i> Inscrire un élève
+    </a>
+    {% elif session.get('role') == 'teacher' %}
+    <a class="btn hero-action" href="{{ url_for('grades') }}">
+      <i class="fa-solid fa-star-half-stroke fa-sm"></i> Saisir une note
+    </a>
+    {% elif session.get('role') == 'parent' %}
+    <a class="btn hero-action" href="{{ url_for('payments') }}">
+      <i class="fa-solid fa-receipt fa-sm"></i> Historique des paiements
+    </a>
+    {% elif session.get('role') == 'student' %}
+    <a class="btn hero-action" href="{{ url_for('homework') }}">
+      <i class="fa-solid fa-pencil fa-sm"></i> Mes devoirs à rendre
     </a>
     {% endif %}
   </div>
@@ -448,25 +472,217 @@
 <div class="section-heading">
   <div>
     <span class="section-kicker">EN UN COUP D'ŒIL</span>
-    <h2>Les indicateurs clés de l'établissement</h2>
+    <h2>
+      {% if session.get('role') == 'student' %}Mes indicateurs scolaires
+      {% elif session.get('role') == 'parent' %}Indicateurs de la famille
+      {% elif session.get('role') == 'teacher' %}Mes indicateurs pédagogiques
+      {% elif session.get('role') == 'accountant' %}Indicateurs financiers
+      {% else %}Les indicateurs clés de l'établissement{% endif %}
+    </h2>
   </div>
   <span class="live-indicator"><i></i> Synchronisation en direct</span>
 </div>
 
-<!-- ======== STAT CARDS ======== -->
+<!-- ======== STAT CARDS ADAPTÉES AU RÔLE ======== -->
 <div class="row g-3 mb-4 dashboard-stats">
 
-  <!-- Élèves -->
+  {% if session.get('role') == 'student' %}
+  <!-- Carte 1 Élève : Devoirs -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Devoirs à rendre</span>
+        <span class="stat-icon"><i class="fa-solid fa-pencil"></i></span>
+      </div>
+      <strong>{{ totals.homework_due }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Travaux en cours à rendre</small>
+        <span class="stat-trend neutral"><i class="fa-solid fa-clock fa-xs"></i> En attente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 2 Élève : Notes -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Notes enregistrées</span>
+        <span class="stat-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+      </div>
+      <strong>{{ totals.grades_count }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Évaluations notées</small>
+        <span class="stat-trend up"><i class="fa-solid fa-check fa-xs"></i> À jour</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 3 Élève : Absences -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Total Absences</span>
+        <span class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+      </div>
+      <strong>{{ totals.absences }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Journées signalées</small>
+        <span class="stat-trend {% if totals.absences == 0 %}up{% else %}down{% endif %}">
+          {{ 'Assiduité parfaite' if totals.absences == 0 else 'Présences' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% elif session.get('role') == 'parent' %}
+  <!-- Carte 1 Parent : Enfants -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Enfants scolarisés</span>
+        <span class="stat-icon"><i class="fa-solid fa-children"></i></span>
+      </div>
+      <strong>{{ totals.students }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Dossiers d'enfants rattachés</small>
+        <span class="stat-trend up"><i class="fa-solid fa-check fa-xs"></i> Inscrit(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 2 Parent : Devoirs -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Devoirs actifs</span>
+        <span class="stat-icon"><i class="fa-solid fa-book-bookmark"></i></span>
+      </div>
+      <strong>{{ totals.homework_due }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Devoirs à faire pour vos enfants</small>
+        <span class="stat-trend neutral"><i class="fa-solid fa-list-check fa-xs"></i> Suivi</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 3 Parent : Absences -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Absences signalées</span>
+        <span class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+      </div>
+      <strong>{{ totals.absences }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Absences à justifier si nécessaire</small>
+        <span class="stat-trend {% if totals.absences == 0 %}up{% else %}down{% endif %}">
+          {{ 'Aucune absence' if totals.absences == 0 else 'À surveiller' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% elif session.get('role') == 'teacher' %}
+  <!-- Carte 1 Enseignant : Élèves -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Élèves suivis</span>
+        <span class="stat-icon"><i class="fa-solid fa-user-graduate"></i></span>
+      </div>
+      <strong>{{ totals.students }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Total dans vos classes assignées</small>
+        <span class="stat-trend up"><i class="fa-solid fa-users fa-xs"></i> Actifs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 2 Enseignant : Classes -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Classes assignées</span>
+        <span class="stat-icon"><i class="fa-solid fa-chalkboard"></i></span>
+      </div>
+      <strong>{{ totals.classes }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Groupes sous votre responsabilité</small>
+        <span class="stat-trend neutral"><i class="fa-solid fa-layer-group fa-xs"></i> En cours</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 3 Enseignant : Devoirs / Évals -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Devoirs publiés</span>
+        <span class="stat-icon"><i class="fa-solid fa-pencil"></i></span>
+      </div>
+      <strong>{{ totals.homework_active }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Devoirs et devoirs corrigés</small>
+        <span class="stat-trend up"><i class="fa-solid fa-file-signature fa-xs"></i> En ligne</span>
+      </div>
+    </div>
+  </div>
+
+  {% elif session.get('role') == 'accountant' %}
+  <!-- Carte 1 Comptable : Total Encaissé -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-students">
+      <div class="stat-top">
+        <span>Total Encaissé</span>
+        <span class="stat-icon"><i class="fa-solid fa-coins"></i></span>
+      </div>
+      <strong>{{ "{:,.0f}".format(totals.paid_total|default(0)).replace(',', ' ') }} FCFA</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Paiements validés pour l'année</small>
+        <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> Rentrées</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 2 Comptable : Paiements Reçus -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-classes">
+      <div class="stat-top">
+        <span>Reçus émis</span>
+        <span class="stat-icon"><i class="fa-solid fa-receipt"></i></span>
+      </div>
+      <strong>{{ totals.payments_count }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Transactions comptabilisées</small>
+        <span class="stat-trend neutral"><i class="fa-solid fa-file-invoice fa-xs"></i> Justifiés</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte 3 Comptable : Élèves Concernés -->
+  <div class="col-sm-6 col-xl-4 stat-card-anim">
+    <div class="stat-card stat-teachers">
+      <div class="stat-top">
+        <span>Élèves Facturables</span>
+        <span class="stat-icon"><i class="fa-solid fa-user-graduate"></i></span>
+      </div>
+      <strong>{{ totals.students }}</strong>
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="stat-note">Base d'élèves pour les frais</small>
+        <span class="stat-trend up"><i class="fa-solid fa-check fa-xs"></i> Actifs</span>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Admin / Direction générale -->
   <div class="col-sm-6 col-xl-4 stat-card-anim">
     <div class="stat-card stat-students">
       <div class="stat-top">
         <span>Élèves Actifs</span>
-        <span class="stat-icon">
-          <i class="fa-solid fa-user-graduate"></i>
-        </span>
+        <span class="stat-icon"><i class="fa-solid fa-user-graduate"></i></span>
       </div>
       <strong>{{ totals.students }}</strong>
-      <!-- Mini sparkline SVG -->
       <div class="stat-sparkline">
         <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" fill="none">
           <polyline points="0,24 20,20 40,22 60,14 80,16 100,8 120,10"
@@ -485,26 +701,14 @@
         <small class="stat-note">Effectif enregistré dans cet établissement</small>
         <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> +12%</span>
       </div>
-      <div class="stat-progress-wrap">
-        <div class="stat-progress-label">
-          <span>Taux de remplissage</span>
-          <span>78%</span>
-        </div>
-        <div class="stat-progress-bar">
-          <div class="stat-progress-fill" data-width="78%"></div>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- Classes -->
   <div class="col-sm-6 col-xl-4 stat-card-anim">
     <div class="stat-card stat-classes">
       <div class="stat-top">
         <span>Classes &amp; Niveaux</span>
-        <span class="stat-icon">
-          <i class="fa-solid fa-layer-group"></i>
-        </span>
+        <span class="stat-icon"><i class="fa-solid fa-layer-group"></i></span>
       </div>
       <strong>{{ totals.classes }}</strong>
       <div class="stat-sparkline">
@@ -525,26 +729,14 @@
         <small class="stat-note">Groupes pédagogiques actifs</small>
         <span class="stat-trend neutral"><i class="fa-solid fa-minus fa-xs"></i> Stable</span>
       </div>
-      <div class="stat-progress-wrap">
-        <div class="stat-progress-label">
-          <span>Capacité utilisée</span>
-          <span>65%</span>
-        </div>
-        <div class="stat-progress-bar">
-          <div class="stat-progress-fill" data-width="65%"></div>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- Enseignants -->
   <div class="col-sm-6 col-xl-4 stat-card-anim">
     <div class="stat-card stat-teachers">
       <div class="stat-top">
         <span>Enseignants &amp; Personnel</span>
-        <span class="stat-icon">
-          <i class="fa-solid fa-chalkboard-user"></i>
-        </span>
+        <span class="stat-icon"><i class="fa-solid fa-chalkboard-user"></i></span>
       </div>
       <strong>{{ totals.teachers }}</strong>
       <div class="stat-sparkline">
@@ -563,69 +755,204 @@
       </div>
       <div class="d-flex align-items-center justify-content-between">
         <small class="stat-note">Corps professoral affecté</small>
-        <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> +2</span>
-      </div>
-      <div class="stat-progress-wrap">
-        <div class="stat-progress-label">
-          <span>Affectation aux classes</span>
-          <span>91%</span>
-        </div>
-        <div class="stat-progress-bar">
-          <div class="stat-progress-fill" data-width="91%"></div>
-        </div>
+        <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> Actifs</span>
       </div>
     </div>
   </div>
+  {% endif %}
+
 </div>
 
-<!-- ======== QUICK ACCESS ======== -->
+<!-- ======== QUICK ACCESS SPÉCIFIQUE AU RÔLE ======== -->
 <div class="section-heading">
   <div>
     <span class="section-kicker">NAVIGATION RAPIDE</span>
-    <h2>Accès rapide</h2>
+    <h2>Accès rapide à vos fonctionnalités</h2>
   </div>
 </div>
 
 <div class="quick-access-grid mb-4">
-  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
-    <span class="quick-card-icon"><i class="fa-solid fa-user-graduate"></i></span>
-    <span class="quick-card-label">Élèves</span>
-    <span class="quick-card-desc">Gérer les dossiers</span>
-  </a>
 
-  <a href="{{ url_for('classes') }}" class="quick-card qc-purple">
-    <span class="quick-card-icon"><i class="fa-solid fa-layer-group"></i></span>
-    <span class="quick-card-label">Classes</span>
-    <span class="quick-card-desc">Groupes pédagogiques</span>
-  </a>
-
+  {# --- CAS ÉLÈVE --- #}
+  {% if session.get('role') == 'student' %}
   <a href="{{ url_for('timetable') }}" class="quick-card qc-cyan">
     <span class="quick-card-icon"><i class="fa-solid fa-calendar-week"></i></span>
     <span class="quick-card-label">Emploi du temps</span>
-    <span class="quick-card-desc">Planification</span>
+    <span class="quick-card-desc">Mes cours de la semaine</span>
   </a>
 
   <a href="{{ url_for('grades') }}" class="quick-card qc-orange">
     <span class="quick-card-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
     <span class="quick-card-label">Notes &amp; Bulletins</span>
-    <span class="quick-card-desc">Résultats scolaires</span>
+    <span class="quick-card-desc">Mes résultats &amp; bulletin PDF</span>
+  </a>
+
+  <a href="{{ url_for('homework') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-pencil"></i></span>
+    <span class="quick-card-label">Devoirs à rendre</span>
+    <span class="quick-card-desc">Dépôt de devoirs &amp; corrigés</span>
+  </a>
+
+  <a href="{{ url_for('absences') }}" class="quick-card qc-pink">
+    <span class="quick-card-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+    <span class="quick-card-label">Mes Absences</span>
+    <span class="quick-card-desc">Historique des présences</span>
+  </a>
+
+  {# --- CAS PARENT --- #}
+  {% elif session.get('role') == 'parent' %}
+  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-children"></i></span>
+    <span class="quick-card-label">Mes Enfants</span>
+    <span class="quick-card-desc">Dossiers scolaires complets</span>
+  </a>
+
+  <a href="{{ url_for('timetable') }}" class="quick-card qc-cyan">
+    <span class="quick-card-icon"><i class="fa-solid fa-calendar-week"></i></span>
+    <span class="quick-card-label">Emploi du temps</span>
+    <span class="quick-card-desc">Horaires de cours des enfants</span>
+  </a>
+
+  <a href="{{ url_for('grades') }}" class="quick-card qc-orange">
+    <span class="quick-card-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+    <span class="quick-card-label">Notes &amp; Bulletins</span>
+    <span class="quick-card-desc">Bulletins scolaires PDF</span>
   </a>
 
   <a href="{{ url_for('absences') }}" class="quick-card qc-pink">
     <span class="quick-card-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
     <span class="quick-card-label">Absences</span>
-    <span class="quick-card-desc">Suivi des présences</span>
+    <span class="quick-card-desc">Justifier une absence en 1 clic</span>
   </a>
 
-  {% if session.get('role') in ('admin', 'director', 'accountant', 'parent') %}
+  <a href="{{ url_for('homework') }}" class="quick-card qc-purple">
+    <span class="quick-card-icon"><i class="fa-solid fa-book-bookmark"></i></span>
+    <span class="quick-card-label">Devoirs</span>
+    <span class="quick-card-desc">Cahier de texte des enfants</span>
+  </a>
+
+  <a href="{{ url_for('payments') }}" class="quick-card qc-green">
+    <span class="quick-card-icon"><i class="fa-solid fa-receipt"></i></span>
+    <span class="quick-card-label">Paiements &amp; Reçus</span>
+    <span class="quick-card-desc">Reçus officiels de scolarité</span>
+  </a>
+
+  {# --- CAS ENSEIGNANT --- #}
+  {% elif session.get('role') == 'teacher' %}
+  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-user-graduate"></i></span>
+    <span class="quick-card-label">Mes Élèves</span>
+    <span class="quick-card-desc">Trombinoscope &amp; fiches</span>
+  </a>
+
+  <a href="{{ url_for('classes') }}" class="quick-card qc-purple">
+    <span class="quick-card-icon"><i class="fa-solid fa-chalkboard"></i></span>
+    <span class="quick-card-label">Mes Classes</span>
+    <span class="quick-card-desc">Groupes pédagogiques</span>
+  </a>
+
+  <a href="{{ url_for('timetable') }}" class="quick-card qc-cyan">
+    <span class="quick-card-icon"><i class="fa-solid fa-calendar-week"></i></span>
+    <span class="quick-card-label">Mon Emploi du temps</span>
+    <span class="quick-card-desc">Planning de vos cours</span>
+  </a>
+
+  <a href="{{ url_for('grades') }}" class="quick-card qc-orange">
+    <span class="quick-card-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+    <span class="quick-card-label">Saisie des Notes</span>
+    <span class="quick-card-desc">Évaluations et notes</span>
+  </a>
+
+  <a href="{{ url_for('homework') }}" class="quick-card qc-green">
+    <span class="quick-card-icon"><i class="fa-solid fa-pencil"></i></span>
+    <span class="quick-card-label">Devoirs &amp; Travaux</span>
+    <span class="quick-card-desc">Publier un devoir ou corriger</span>
+  </a>
+
+  <a href="{{ url_for('absences') }}" class="quick-card qc-pink">
+    <span class="quick-card-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+    <span class="quick-card-label">Absences &amp; Appel</span>
+    <span class="quick-card-desc">Signaler les absences</span>
+  </a>
+
+  {# --- CAS COMPTABLE --- #}
+  {% elif session.get('role') == 'accountant' %}
+  <a href="{{ url_for('payments') }}" class="quick-card qc-green">
+    <span class="quick-card-icon"><i class="fa-solid fa-credit-card"></i></span>
+    <span class="quick-card-label">Paiements &amp; Reçus</span>
+    <span class="quick-card-desc">Encaissements &amp; export CSV</span>
+  </a>
+
+  <a href="{{ url_for('fee_schedules') }}" class="quick-card qc-orange">
+    <span class="quick-card-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+    <span class="quick-card-label">Tarifs Scolaires</span>
+    <span class="quick-card-desc">Grille tarifaire annuelle</span>
+  </a>
+
+  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-user-graduate"></i></span>
+    <span class="quick-card-label">Dossiers Élèves</span>
+    <span class="quick-card-desc">Situation financière par élève</span>
+  </a>
+
+  {# --- CAS SECRÉTAIRE --- #}
+  {% elif session.get('role') == 'secretary' %}
+  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-user-graduate"></i></span>
+    <span class="quick-card-label">Dossiers Élèves</span>
+    <span class="quick-card-desc">Inscriptions &amp; modifications</span>
+  </a>
+
+  <a href="{{ url_for('pre_enrollments') }}" class="quick-card qc-green">
+    <span class="quick-card-icon"><i class="fa-solid fa-user-plus"></i></span>
+    <span class="quick-card-label">Pré-inscriptions</span>
+    <span class="quick-card-desc">Validation des candidatures</span>
+  </a>
+
+  <a href="{{ url_for('classes') }}" class="quick-card qc-purple">
+    <span class="quick-card-icon"><i class="fa-solid fa-layer-group"></i></span>
+    <span class="quick-card-label">Classes</span>
+    <span class="quick-card-desc">Capacités &amp; effectifs</span>
+  </a>
+
+  <a href="{{ url_for('absences') }}" class="quick-card qc-pink">
+    <span class="quick-card-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+    <span class="quick-card-label">Absences</span>
+    <span class="quick-card-desc">Registre des présences</span>
+  </a>
+
+  {# --- CAS DIRECTION / ADMIN --- #}
+  {% else %}
+  <a href="{{ url_for('students') }}" class="quick-card qc-blue">
+    <span class="quick-card-icon"><i class="fa-solid fa-user-graduate"></i></span>
+    <span class="quick-card-label">Élèves</span>
+    <span class="quick-card-desc">Gestion des inscriptions</span>
+  </a>
+
+  <a href="{{ url_for('classes') }}" class="quick-card qc-purple">
+    <span class="quick-card-icon"><i class="fa-solid fa-layer-group"></i></span>
+    <span class="quick-card-label">Classes</span>
+    <span class="quick-card-desc">Effectifs &amp; niveaux</span>
+  </a>
+
+  <a href="{{ url_for('timetable') }}" class="quick-card qc-cyan">
+    <span class="quick-card-icon"><i class="fa-solid fa-calendar-week"></i></span>
+    <span class="quick-card-label">Emploi du temps</span>
+    <span class="quick-card-desc">Planification &amp; salles</span>
+  </a>
+
+  <a href="{{ url_for('grades') }}" class="quick-card qc-orange">
+    <span class="quick-card-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+    <span class="quick-card-label">Notes &amp; Bulletins</span>
+    <span class="quick-card-desc">Moyennes &amp; bulletins PDF</span>
+  </a>
+
   <a href="{{ url_for('payments') }}" class="quick-card qc-green">
     <span class="quick-card-icon"><i class="fa-solid fa-credit-card"></i></span>
     <span class="quick-card-label">Paiements</span>
-    <span class="quick-card-desc">Frais de scolarité</span>
+    <span class="quick-card-desc">Recouvrement &amp; reçus</span>
   </a>
-  {% endif %}
 
-  {% if session.get('role') in ('admin', 'director', 'superadmin') %}
   <a href="{{ url_for('bi_hub') }}" class="quick-card" style="background:linear-gradient(135deg,#0f2d6e,#1d4ed8);border-color:transparent;color:#fff;">
     <span class="quick-card-icon" style="background:rgba(255,255,255,0.15);color:#fff;"><i class="fa-solid fa-chart-pie"></i></span>
     <span class="quick-card-label" style="color:#fff;">Tableaux BI</span>
@@ -633,27 +960,45 @@
   </a>
   {% endif %}
 
+  <!-- Lien communication commun à tous -->
   <a href="{{ url_for('messages') }}" class="quick-card qc-blue">
     <span class="quick-card-icon"><i class="fa-solid fa-envelope"></i></span>
-    <span class="quick-card-label">Messages</span>
-    <span class="quick-card-desc">Communication</span>
+    <span class="quick-card-label">Messagerie</span>
+    <span class="quick-card-desc">Communication interne</span>
   </a>
+
 </div>
 
 <!-- ======== RECENT STUDENTS TABLE ======== -->
 <section class="card activity-card border-0 shadow-sm mb-4">
   <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
     <div class="activity-title d-flex align-items-center gap-2">
-      <span class="fs-4 text-primary"><i class="fa-solid fa-folder-open"></i></span>
+      <span class="fs-4 text-primary">
+        {% if session.get('role') == 'parent' %}<i class="fa-solid fa-children"></i>
+        {% elif session.get('role') == 'student' %}<i class="fa-solid fa-id-card"></i>
+        {% else %}<i class="fa-solid fa-folder-open"></i>{% endif %}
+      </span>
       <div>
-        <strong class="d-block">Derniers dossiers scolaires</strong>
-        <div class="small text-secondary">Élèves récemment enregistrés dans l'établissement</div>
+        <strong class="d-block">
+          {% if session.get('role') == 'parent' %}Dossiers de mes enfants
+          {% elif session.get('role') == 'student' %}Mes informations scolaires
+          {% elif session.get('role') == 'teacher' %}Élèves de mes classes
+          {% else %}Derniers dossiers scolaires{% endif %}
+        </strong>
+        <div class="small text-secondary">
+          {% if session.get('role') == 'parent' %}Fiches et livrets scolaires de vos enfants
+          {% elif session.get('role') == 'student' %}Votre profil et classe actuelle
+          {% elif session.get('role') == 'teacher' %}Élèves inscrits dans vos matières
+          {% else %}Élèves récemment enregistrés dans l'établissement{% endif %}
+        </div>
       </div>
     </div>
+    {% if session.get('role') in ('admin', 'director', 'secretary', 'accountant') %}
     <a class="btn btn-sm btn-outline-primary" href="{{ url_for('students') }}">
       <i class="fa-solid fa-users fa-xs"></i> Consulter tous les élèves
       <i class="fa-solid fa-arrow-right fa-xs"></i>
     </a>
+    {% endif %}
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
@@ -662,7 +1007,7 @@
           <th>Élève</th>
           <th>Classe</th>
           <th>Année scolaire</th>
-          <th class="text-end">Fiche</th>
+          <th class="text-end">Fiche &amp; Bulletin</th>
         </tr>
       </thead>
       <tbody>
@@ -691,8 +1036,12 @@
           </td>
           <td class="text-end">
             <a href="{{ url_for('student_detail', student_id=s.id) }}"
-               class="btn btn-xs btn-outline-secondary btn-sm">
+               class="btn btn-xs btn-outline-secondary btn-sm me-1">
               <i class="fa-solid fa-eye fa-xs me-1"></i>Dossier
+            </a>
+            <a href="{{ url_for('bulletin_pdf', student_id=s.id) }}"
+               class="btn btn-xs btn-outline-primary btn-sm">
+              <i class="fa-solid fa-file-pdf fa-xs me-1"></i>Bulletin
             </a>
           </td>
         </tr>
@@ -701,7 +1050,7 @@
           <td colspan="4" class="text-center py-5">
             <div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;opacity:0.5;">
               <i class="fa-solid fa-inbox fa-2x text-muted"></i>
-              <span class="text-secondary">Aucun élève enregistré pour cet établissement.</span>
+              <span class="text-secondary">Aucun dossier disponible.</span>
             </div>
           </td>
         </tr>

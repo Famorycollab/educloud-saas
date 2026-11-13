@@ -7,7 +7,7 @@
     <h1>Classes</h1>
     <p>Organisation des niveaux, sections et effectifs par année scolaire.</p>
   </div>
-  {% if session.get('role') == 'admin' %}
+  {% if session.get('role') in ('admin', 'director', 'superadmin') %}
   <div class="d-flex gap-2 flex-wrap align-items-center">
     <button class="btn btn-primary" onclick="document.getElementById('add-class-form').scrollIntoView({behavior:'smooth'})">
       <i class="fa-solid fa-plus me-1"></i>Nouvelle classe
@@ -48,7 +48,7 @@
 </div>
 
 {# ── Add class form (admin only) ─────────────────────────────────────── #}
-{% if session.get('role') == 'admin' %}
+{% if session.get('role') in ('admin', 'director', 'superadmin') %}
 <div class="card border-0 shadow-sm mb-4" id="add-class-form" style="border-radius:16px;overflow:hidden">
   <div class="card-header border-0 py-3 px-4"
        style="background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff">
@@ -148,7 +148,7 @@
               <i class="fa-regular fa-calendar me-1"></i>{{ c.school_year }}
             </span>
           </td>
-          {% if session.get('role') == 'admin' %}
+          {% if session.get('role') in ('admin', 'director', 'superadmin') %}
           <td class="text-nowrap">
             <a class="btn btn-sm btn-outline-secondary me-1" href="{{ url_for('class_edit', class_id=c.id) }}">
               <i class="fa-solid fa-pen"></i>

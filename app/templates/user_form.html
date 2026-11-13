@@ -6,6 +6,7 @@
 <div class="col-md-6"><label class="form-label">Adresse e-mail</label><input class="form-control" name="email" type="email" value="{{ user.email }}"></div>
 <div class="col-md-6"><label class="form-label">Rôle *</label><select class="form-select" name="role" {% if user.id == session.get('user_id') or user.role == 'admin' %}disabled{% endif %}>
 <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Administrateur</option>
+<option value="director" {% if user.role == 'director' %}selected{% endif %}>Directeur</option>
 <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Enseignant</option>
 <option value="parent" {% if user.role == 'parent' %}selected{% endif %}>Parent</option>
 <option value="accountant" {% if user.role == 'accountant' %}selected{% endif %}>Comptable</option>

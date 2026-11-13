@@ -95,11 +95,24 @@
 <!-- Page heading -->
 <section class="page-heading">
   <div>
-    <div class="page-eyebrow"><i class="fa-solid fa-user-graduate me-1"></i>Scolarité</div>
-    <h1>Élèves</h1>
-    <p class="text-secondary mb-0">Consultez et gérez les dossiers scolaires de l'établissement.</p>
+    <div class="page-eyebrow">
+      <i class="fa-solid {% if session.get('role') == 'parent' %}fa-children{% else %}fa-user-graduate{% endif %} me-1"></i>
+      {% if session.get('role') == 'parent' %}Espace Famille{% else %}Scolarité{% endif %}
+    </div>
+    <h1>
+      {% if session.get('role') == 'parent' %}Mes Enfants
+      {% elif session.get('role') == 'teacher' %}Mes Élèves
+      {% elif session.get('role') == 'accountant' %}Dossiers Élèves &amp; Scolarité
+      {% else %}Gestion des Élèves{% endif %}
+    </h1>
+    <p class="text-secondary mb-0">
+      {% if session.get('role') == 'parent' %}Retrouvez les dossiers scolaires, classes et bulletins officiels de vos enfants.
+      {% elif session.get('role') == 'teacher' %}Liste des élèves inscrits dans vos classes pour l'année scolaire en cours.
+      {% elif session.get('role') == 'accountant' %}Consultez les coordonnées familiales et l'historique financier par élève.
+      {% else %}Consultez, inscrivez et gérez les dossiers scolaires de l'établissement.{% endif %}
+    </p>
   </div>
-  {% if session.get('role') in ('admin','secretary') %}
+  {% if session.get('role') in ('admin', 'director', 'superadmin', 'secretary') %}
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-outline-primary" href="{{ url_for('students_export') }}">
       <i class="fa-solid fa-download me-1"></i>Exporter CSV
@@ -111,7 +124,7 @@
   {% endif %}
 </section>
 
-{% if session.get('role') in ('admin','secretary') %}
+{% if session.get('role') in ('admin', 'director', 'superadmin', 'secretary') %}
 <!-- CSV import card -->
 <div class="card border-0 mb-4" style="border-radius:18px; box-shadow:0 2px 16px rgba(99,102,241,.07);">
   <div class="card-header border-0 d-flex align-items-center gap-2"
@@ -217,13 +230,13 @@
                data-bs-toggle="tooltip" title="Voir le dossier">
               <i class="fa-solid fa-eye fa-xs"></i>
             </a>
-            {% if session.get('role') in ('admin','secretary') %}
+            {% if session.get('role') in ('admin', 'director', 'superadmin', 'secretary') %}
             <a class="btn btn-sm btn-outline-primary me-1"
                href="{{ url_for('student_edit', student_id=s.id) }}"
                data-bs-toggle="tooltip" title="Modifier">
               <i class="fa-solid fa-pen fa-xs"></i>
             </a>
-            {% if session.get('role') == 'admin' %}
+            {% if session.get('role') in ('admin', 'director', 'superadmin') %}
             <form class="d-inline" method="post"
                   action="{{ url_for('student_delete', student_id=s.id) }}"
                   onsubmit="return confirm('Archiver ce dossier élève ?')">

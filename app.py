@@ -477,27 +477,66 @@ def logout():
 @login_required()
 def dashboard():
     db = get_db()
-    if session.get("role") == "parent":
-        parent_id=session["user_id"]
-        totals={"students":db.execute("SELECT COUNT(*) FROM students WHERE active=1 AND parent_user_id=?",(parent_id,)).fetchone()[0],"classes":db.execute("SELECT COUNT(DISTINCT class_id) FROM students WHERE active=1 AND parent_user_id=?",(parent_id,)).fetchone()[0],"teachers":0}
-        recent=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.parent_user_id=? ORDER BY s.id DESC LIMIT 5",(parent_id,)).fetchall()
-    elif session.get("role")=="teacher":
-        teacher_id=session["user_id"]
-        totals={"students":db.execute("SELECT COUNT(*) FROM students WHERE active=1 AND class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)",(teacher_id,)).fetchone()[0],"classes":db.execute("SELECT COUNT(DISTINCT class_id) FROM teacher_assignments WHERE teacher_id=?",(teacher_id,)).fetchone()[0],"teachers":0}
-        recent=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY s.id DESC LIMIT 5",(teacher_id,)).fetchall()
-    elif session.get("role")=="student":
-        totals={"students":db.execute("SELECT COUNT(*) FROM students WHERE student_user_id=?",(session["user_id"],)).fetchone()[0],"classes":db.execute("SELECT COUNT(DISTINCT class_id) FROM students WHERE student_user_id=?",(session["user_id"],)).fetchone()[0],"teachers":0}
-        recent=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.student_user_id=?",(session["user_id"],)).fetchall()
-    elif session.get("role")=="accountant":
-        totals={"students":0,"classes":0,"teachers":0}
-        recent=[]
+    role = session.get("role")
+    user_id = session.get("user_id")
+
+    if role == "parent":
+        totals = {
+            "students": db.execute("SELECT COUNT(*) FROM students WHERE active=1 AND parent_user_id=?", (user_id,)).fetchone()[0],
+            "classes": db.execute("SELECT COUNT(DISTINCT class_id) FROM students WHERE active=1 AND parent_user_id=?", (user_id,)).fetchone()[0],
+            "teachers": db.execute("SELECT COUNT(DISTINCT ta.teacher_id) FROM students s JOIN teacher_assignments ta ON ta.class_id=s.class_id WHERE s.active=1 AND s.parent_user_id=?", (user_id,)).fetchone()[0],
+            "homework_due": db.execute("SELECT COUNT(*) FROM homework h JOIN students s ON s.class_id=h.class_id WHERE s.parent_user_id=? AND h.active=1 AND h.due_date >= date('now')", (user_id,)).fetchone()[0],
+            "absences": db.execute("SELECT COUNT(*) FROM absences a JOIN students s ON s.id=a.student_id WHERE s.parent_user_id=?", (user_id,)).fetchone()[0],
+        }
+        recent = db.execute("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.parent_user_id=? ORDER BY s.id DESC", (user_id,)).fetchall()
+
+    elif role == "student":
+        student_rec = db.execute("SELECT * FROM students WHERE student_user_id=? AND active=1", (user_id,)).fetchone()
+        class_id = student_rec["class_id"] if student_rec else None
+        totals = {
+            "students": 1 if student_rec else 0,
+            "classes": 1 if class_id else 0,
+            "teachers": db.execute("SELECT COUNT(DISTINCT teacher_id) FROM teacher_assignments WHERE class_id=?", (class_id,)).fetchone()[0] if class_id else 0,
+            "homework_due": db.execute("SELECT COUNT(*) FROM homework WHERE class_id=? AND active=1 AND due_date >= date('now')", (class_id,)).fetchone()[0] if class_id else 0,
+            "grades_count": db.execute("SELECT COUNT(*) FROM grades WHERE student_id=?", (student_rec["id"],)).fetchone()[0] if student_rec else 0,
+            "absences": db.execute("SELECT COUNT(*) FROM absences WHERE student_id=?", (student_rec["id"],)).fetchone()[0] if student_rec else 0,
+        }
+        recent = [student_rec] if student_rec else []
+
+    elif role == "teacher":
+        totals = {
+            "students": db.execute("SELECT COUNT(*) FROM students WHERE active=1 AND class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)", (user_id,)).fetchone()[0],
+            "classes": db.execute("SELECT COUNT(DISTINCT class_id) FROM teacher_assignments WHERE teacher_id=?", (user_id,)).fetchone()[0],
+            "teachers": 1,
+            "homework_active": db.execute("SELECT COUNT(*) FROM homework WHERE teacher_id=? AND active=1", (user_id,)).fetchone()[0],
+            "evaluations_count": db.execute("SELECT COUNT(*) FROM evaluations WHERE class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)", (user_id,)).fetchone()[0],
+        }
+        recent = db.execute("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY s.id DESC LIMIT 5", (user_id,)).fetchall()
+
+    elif role == "accountant":
+        due_total = db.execute("SELECT COALESCE(SUM(amount), 0) FROM fee_schedules WHERE school_year='2026-2027'").fetchone()[0]
+        paid_total = db.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE school_year='2026-2027'").fetchone()[0]
+        students_count = db.execute("SELECT COUNT(*) FROM students WHERE active=1").fetchone()[0]
+        totals = {
+            "students": students_count,
+            "classes": db.execute("SELECT COUNT(*) FROM classes").fetchone()[0],
+            "teachers": 0,
+            "paid_total": paid_total,
+            "due_total": due_total * students_count,
+            "payments_count": db.execute("SELECT COUNT(*) FROM payments").fetchone()[0],
+        }
+        recent = db.execute("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 ORDER BY s.id DESC LIMIT 5").fetchall()
+
     else:
+        # Admin / Director / Secretary
         totals = {
             "students": db.execute("SELECT COUNT(*) FROM students WHERE active=1").fetchone()[0],
             "classes": db.execute("SELECT COUNT(*) FROM classes").fetchone()[0],
             "teachers": db.execute("SELECT COUNT(*) FROM users WHERE role='teacher' AND active=1").fetchone()[0],
+            "pre_enrollments": db.execute("SELECT COUNT(*) FROM pre_enrollments WHERE status='pending'").fetchone()[0],
         }
         recent = db.execute("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 ORDER BY s.id DESC LIMIT 5").fetchall()
+
     return render_template("dashboard.html", totals=totals, recent=recent)
 
 
@@ -1711,7 +1750,7 @@ def users():
         full_name=request.form.get("full_name","").strip()
         password=request.form.get("password","")
         role=request.form.get("role","")
-        if role not in ("teacher","parent","accountant","secretary","student") or not username or not password or len(password)<8:
+        if role not in ("teacher", "parent", "accountant", "secretary", "student", "director", "admin") or not username or not password or len(password) < 8:
             flash("Rôle invalide ou champs incomplets (mot de passe : 8 caractères minimum).", "danger")
         else:
             try:

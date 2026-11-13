@@ -37,13 +37,23 @@
     <!-- Nav -->
     <nav class="side-nav">
 
-      <div class="sidebar-caption">ESPACE DE TRAVAIL</div>
+      {# ==================== VUE D'ENSEMBLE ==================== #}
+      <div class="sidebar-caption">
+        {% if session.get('role') == 'student' %}MON ESPACE
+        {% elif session.get('role') == 'parent' %}ESPACE FAMILLE
+        {% elif session.get('role') == 'teacher' %}ESPACE ENSEIGNANT
+        {% elif session.get('role') == 'accountant' %}COMPTABILITÉ
+        {% elif session.get('role') == 'secretary' %}SECRÉTARIAT
+        {% else %}ESPACE DE TRAVAIL{% endif %}
+      </div>
       <a class="side-link" href="{{ url_for('dashboard') }}">
         <span class="nav-icon"><i class="fa-solid fa-house-chimney"></i></span>
-        Vue d'ensemble
+        Tableau de bord
       </a>
 
-      <div class="sidebar-caption">SCOLARITÉ</div>
+      {# ==================== SCOLARITÉ / PÉDAGOGIE (ADMIN & DIRECTEUR) ==================== #}
+      {% if session.get('role') in ('admin', 'director', 'superadmin') %}
+      <div class="sidebar-caption">SCOLARITÉ &amp; PÉDAGOGIE</div>
       <a class="side-link" href="{{ url_for('students') }}">
         <span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span>
         Élèves
@@ -72,21 +82,146 @@
         <span class="nav-icon"><i class="fa-solid fa-pencil"></i></span>
         Devoirs
       </a>
+      {% endif %}
 
-      {% if session.get('role') in ('admin','director','accountant','parent') %}
-      <div class="sidebar-caption">FINANCES</div>
-      <a class="side-link" href="{{ url_for('payments') }}">
-        <span class="nav-icon"><i class="fa-solid fa-credit-card"></i></span>
-        Paiements
+      {# ==================== ENSEIGNANT ==================== #}
+      {% if session.get('role') == 'teacher' %}
+      <div class="sidebar-caption">MES COURS &amp; CLASSES</div>
+      <a class="side-link" href="{{ url_for('students') }}">
+        <span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span>
+        Mes Élèves
+      </a>
+      <a class="side-link" href="{{ url_for('classes') }}">
+        <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+        Mes Classes
+      </a>
+      <a class="side-link" href="{{ url_for('subjects') }}">
+        <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
+        Mes Matières
+      </a>
+      <a class="side-link" href="{{ url_for('timetable') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
+        Mon Emploi du temps
+      </a>
+      <div class="sidebar-caption">ÉVALUATIONS &amp; SUIVI</div>
+      <a class="side-link" href="{{ url_for('grades') }}">
+        <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+        Saisie des Notes
+      </a>
+      <a class="side-link" href="{{ url_for('absences') }}">
+        <span class="nav-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+        Absences &amp; Appel
+      </a>
+      <a class="side-link" href="{{ url_for('homework') }}">
+        <span class="nav-icon"><i class="fa-solid fa-pencil"></i></span>
+        Devoirs &amp; Corrections
       </a>
       {% endif %}
-      {% if session.get('role') in ('admin','director','accountant') %}
+
+      {# ==================== PARENT ==================== #}
+      {% if session.get('role') == 'parent' %}
+      <div class="sidebar-caption">SUIVI DE MES ENFANTS</div>
+      <a class="side-link" href="{{ url_for('students') }}">
+        <span class="nav-icon"><i class="fa-solid fa-children"></i></span>
+        Mes Enfants
+      </a>
+      <a class="side-link" href="{{ url_for('timetable') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
+        Emploi du temps
+      </a>
+      <a class="side-link" href="{{ url_for('grades') }}">
+        <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+        Notes &amp; Bulletins
+      </a>
+      <a class="side-link" href="{{ url_for('absences') }}">
+        <span class="nav-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+        Absences &amp; Justification
+      </a>
+      <a class="side-link" href="{{ url_for('homework') }}">
+        <span class="nav-icon"><i class="fa-solid fa-book-bookmark"></i></span>
+        Devoirs &amp; Leçons
+      </a>
+      <div class="sidebar-caption">FINANCES &amp; RÈGLEMENTS</div>
+      <a class="side-link" href="{{ url_for('payments') }}">
+        <span class="nav-icon"><i class="fa-solid fa-receipt"></i></span>
+        Mes Paiements &amp; Reçus
+      </a>
+      {% endif %}
+
+      {# ==================== ÉLÈVE ==================== #}
+      {% if session.get('role') == 'student' %}
+      <div class="sidebar-caption">MA SCOLARITÉ</div>
+      <a class="side-link" href="{{ url_for('timetable') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
+        Mon Emploi du temps
+      </a>
+      <a class="side-link" href="{{ url_for('grades') }}">
+        <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+        Mes Notes &amp; Mon Bulletin
+      </a>
+      <a class="side-link" href="{{ url_for('homework') }}">
+        <span class="nav-icon"><i class="fa-solid fa-pencil"></i></span>
+        Mes Devoirs à rendre
+      </a>
+      <a class="side-link" href="{{ url_for('absences') }}">
+        <span class="nav-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+        Mes Absences
+      </a>
+      {% endif %}
+
+      {# ==================== COMPTABLE ==================== #}
+      {% if session.get('role') == 'accountant' %}
+      <div class="sidebar-caption">GESTION FINANCIÈRE</div>
+      <a class="side-link" href="{{ url_for('payments') }}">
+        <span class="nav-icon"><i class="fa-solid fa-credit-card"></i></span>
+        Encaissements &amp; Paiements
+      </a>
+      <a class="side-link" href="{{ url_for('fee_schedules') }}">
+        <span class="nav-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+        Grille des Tarifs
+      </a>
+      <div class="sidebar-caption">SCOLARITÉ &amp; DOSSIERS</div>
+      <a class="side-link" href="{{ url_for('students') }}">
+        <span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span>
+        Dossiers Élèves
+      </a>
+      {% endif %}
+
+      {# ==================== SECRÉTAIRE ==================== #}
+      {% if session.get('role') == 'secretary' %}
+      <div class="sidebar-caption">INSCRIPTIONS &amp; SCOLARITÉ</div>
+      <a class="side-link" href="{{ url_for('students') }}">
+        <span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span>
+        Dossiers Élèves
+      </a>
+      <a class="side-link" href="{{ url_for('pre_enrollments') }}">
+        <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+        Pré-inscriptions
+      </a>
+      <a class="side-link" href="{{ url_for('classes') }}">
+        <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+        Consultation Classes
+      </a>
+      <a class="side-link" href="{{ url_for('absences') }}">
+        <span class="nav-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+        Absences
+      </a>
+      {% endif %}
+
+      {# ==================== FINANCES (ADMIN & DIRECTEUR) ==================== #}
+      {% if session.get('role') in ('admin', 'director') %}
+      <div class="sidebar-caption">FINANCES &amp; COMPTABILITÉ</div>
+      <a class="side-link" href="{{ url_for('payments') }}">
+        <span class="nav-icon"><i class="fa-solid fa-credit-card"></i></span>
+        Paiements &amp; Reçus
+      </a>
       <a class="side-link" href="{{ url_for('fee_schedules') }}">
         <span class="nav-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
         Tarifs scolaires
       </a>
       {% endif %}
 
+      {# ==================== COMMUNICATION (TOUS) ==================== #}
       <div class="sidebar-caption">COMMUNICATION</div>
       <a class="side-link" href="{{ url_for('messages') }}">
         <span class="nav-icon"><i class="fa-solid fa-envelope"></i></span>
@@ -101,7 +236,8 @@
         Notifications
       </a>
 
-      {% if session.get('role') in ('admin','director','superadmin') %}
+      {# ==================== DÉCISIONNEL & BI ==================== #}
+      {% if session.get('role') in ('admin', 'director', 'superadmin') %}
       <div class="sidebar-caption">DÉCISIONNEL &amp; BI</div>
       <a class="side-link" href="{{ url_for('bi_hub') }}">
         <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
@@ -109,23 +245,16 @@
       </a>
       {% endif %}
 
-      {% if session.get('role') in ('admin','director','secretary') %}
+      {# ==================== ADMINISTRATION ==================== #}
+      {% if session.get('role') in ('admin', 'director') %}
       <div class="sidebar-caption">ADMINISTRATION</div>
-      {% endif %}
-      {% if session.get('role') == 'secretary' %}
-      <a class="side-link" href="{{ url_for('pre_enrollments') }}">
-        <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
-        Pré-inscriptions
-      </a>
-      {% endif %}
-      {% if session.get('role') in ('admin','director') %}
       <a class="side-link" href="{{ url_for('rooms') }}">
         <span class="nav-icon"><i class="fa-solid fa-door-open"></i></span>
         Salles
       </a>
       <a class="side-link" href="{{ url_for('assignments') }}">
         <span class="nav-icon"><i class="fa-solid fa-arrows-left-right"></i></span>
-        Affectations
+        Affectations Enseignants
       </a>
       <a class="side-link" href="{{ url_for('pre_enrollments') }}">
         <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
@@ -133,10 +262,11 @@
       </a>
       <a class="side-link" href="{{ url_for('users') }}">
         <span class="nav-icon"><i class="fa-solid fa-users-gear"></i></span>
-        Utilisateurs
+        Utilisateurs &amp; Rôles
       </a>
       {% endif %}
 
+      {# ==================== COMPTE ==================== #}
       <div class="sidebar-caption">COMPTE</div>
       <a class="side-link" href="{{ url_for('profile') }}">
         <span class="nav-icon"><i class="fa-solid fa-circle-user"></i></span>
@@ -145,6 +275,27 @@
 
     </nav>
 
+      {% set role_label = {
+        'admin': 'Administrateur',
+        'director': 'Directeur',
+        'superadmin': 'Super Administrateur',
+        'teacher': 'Enseignant',
+        'parent': 'Parent d’élève',
+        'student': 'Élève',
+        'accountant': 'Comptable',
+        'secretary': 'Secrétaire'
+      }[session.get('role')] | default(session.get('role')|capitalize) %}
+      {% set role_icon = {
+        'admin': 'fa-shield-halved',
+        'director': 'fa-graduation-cap',
+        'superadmin': 'fa-crown',
+        'teacher': 'fa-chalkboard-user',
+        'parent': 'fa-people-roof',
+        'student': 'fa-user-graduate',
+        'accountant': 'fa-coins',
+        'secretary': 'fa-clipboard-user'
+      }[session.get('role')] | default('fa-user') %}
+
     <!-- User footer -->
     <div class="sidebar-user">
       <a href="{{ url_for('profile') }}" class="avatar" title="Mon profil">
@@ -152,7 +303,7 @@
       </a>
       <span class="user-meta">
         <strong>{{ session.get('username') }}</strong>
-        <small>{{ session.get('role')|capitalize }}</small>
+        <small><i class="fa-solid {{ role_icon }} fa-xs me-1"></i>{{ role_label }}</small>
       </span>
       <form method="post" action="{{ url_for('logout') }}" style="margin:0;">
         <button class="logout-button" aria-label="Déconnexion" title="Déconnexion">
@@ -203,8 +354,8 @@
         {% endif %}
 
         <div class="topbar-role">
-          <i class="fa-solid fa-shield-halved fa-xs me-1"></i>
-          {{ session.get('role')|capitalize }}
+          <i class="fa-solid {{ role_icon }} fa-xs me-1"></i>
+          {{ role_label }}
         </div>
       </div>
     </header>
