@@ -70,6 +70,14 @@
         <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
         Emploi du temps
       </a>
+      <a class="side-link" href="{{ url_for('calendar_view') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
+        Calendrier scolaire
+      </a>
+      <a class="side-link" href="{{ url_for('exams') }}">
+        <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+        Contrôles &amp; Examens
+      </a>
       <a class="side-link" href="{{ url_for('grades') }}">
         <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
         Notes &amp; bulletins
@@ -103,7 +111,15 @@
         <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
         Mon Emploi du temps
       </a>
+      <a class="side-link" href="{{ url_for('calendar_view') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
+        Mon Calendrier
+      </a>
       <div class="sidebar-caption">ÉVALUATIONS &amp; SUIVI</div>
+      <a class="side-link" href="{{ url_for('exams') }}">
+        <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+        Contrôles &amp; DS
+      </a>
       <a class="side-link" href="{{ url_for('grades') }}">
         <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
         Saisie des Notes
@@ -128,6 +144,14 @@
       <a class="side-link" href="{{ url_for('timetable') }}">
         <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
         Emploi du temps
+      </a>
+      <a class="side-link" href="{{ url_for('calendar_view') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
+        Calendrier scolaire
+      </a>
+      <a class="side-link" href="{{ url_for('exams') }}">
+        <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+        Contrôles &amp; Examens
       </a>
       <a class="side-link" href="{{ url_for('grades') }}">
         <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
@@ -154,6 +178,14 @@
       <a class="side-link" href="{{ url_for('timetable') }}">
         <span class="nav-icon"><i class="fa-solid fa-calendar-week"></i></span>
         Mon Emploi du temps
+      </a>
+      <a class="side-link" href="{{ url_for('calendar_view') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
+        Mon Calendrier
+      </a>
+      <a class="side-link" href="{{ url_for('exams') }}">
+        <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+        Mes Contrôles &amp; Examens
       </a>
       <a class="side-link" href="{{ url_for('grades') }}">
         <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
@@ -205,6 +237,14 @@
       <a class="side-link" href="{{ url_for('absences') }}">
         <span class="nav-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
         Absences
+      </a>
+      <a class="side-link" href="{{ url_for('calendar_view') }}">
+        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
+        Calendrier scolaire
+      </a>
+      <a class="side-link" href="{{ url_for('exams') }}">
+        <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+        Contrôles &amp; Examens
       </a>
       {% endif %}
 

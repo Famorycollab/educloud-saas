@@ -72,6 +72,61 @@ class StudentFeaturesTests(unittest.TestCase):
         db.close()
         self.assertEqual(notes, "Allergie aux arachides.")
 
+    def test_exams_and_calendar_access(self):
+        # Admin can view exams and calendar
+        self.login("admin", "admin", self.admin_id)
+        resp_exams = self.client.get("/exams")
+        self.assertEqual(resp_exams.status_code, 200)
+        self.assertIn("Contrôles", resp_exams.get_data(as_text=True))
+
+        resp_cal = self.client.get("/calendar")
+        self.assertEqual(resp_cal.status_code, 200)
+        self.assertIn("Calendrier", resp_cal.get_data(as_text=True))
+
+        # Parent can view exams and calendar
+        self.login("parent", "parent", self.parent_id)
+        resp_p_exams = self.client.get("/exams")
+        self.assertEqual(resp_p_exams.status_code, 200)
+
+        resp_p_cal = self.client.get("/calendar")
+        self.assertEqual(resp_p_cal.status_code, 200)
+
+    def test_plan_exam_and_school_event(self):
+        self.login("admin", "admin", self.admin_id)
+        db = sqlite3.connect(school_app.DATABASE)
+        cid = db.execute("SELECT id FROM classes LIMIT 1").fetchone()[0]
+        sid = db.execute("SELECT id FROM subjects WHERE level=(SELECT level FROM classes WHERE id=?)", (cid,)).fetchone()[0]
+        db.close()
+
+        # Admin plans an exam
+        resp = self.client.post("/exams", data={
+            "csrf_token": "valid-token",
+            "title": "Devoir Surveillé Algèbre",
+            "eval_type": "Devoir Surveillé",
+            "subject_id": sid,
+            "class_id": cid,
+            "max_score": "20",
+            "evaluation_date": "2026-12-10",
+            "start_time": "08:30",
+            "end_time": "10:30",
+            "instructions": "Calculatrice interdite.",
+        }, follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        # Admin adds school event
+        resp_ev = self.client.post("/calendar", data={
+            "csrf_token": "valid-token",
+            "title": "Conseil Pédagogique",
+            "event_type": "meeting",
+            "audience": "teachers",
+            "start_date": "2026-12-15",
+            "end_date": "2026-12-15",
+            "start_time": "14:00",
+            "end_time": "16:00",
+            "description": "Coordination du trimestre.",
+        }, follow_redirects=True)
+        self.assertEqual(resp_ev.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()

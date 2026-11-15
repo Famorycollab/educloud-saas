@@ -5,6 +5,7 @@ import math
 import re
 import secrets
 import uuid
+import calendar as py_calendar
 from datetime import date, datetime, timedelta
 from functools import wraps
 from pathlib import Path
@@ -241,7 +242,12 @@ def init_db():
         CREATE TABLE IF NOT EXISTS evaluations (
             id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, subject_id INTEGER NOT NULL REFERENCES subjects(id),
             class_id INTEGER NOT NULL REFERENCES classes(id), evaluation_date TEXT NOT NULL, max_score REAL NOT NULL DEFAULT 20,
-            school_year TEXT NOT NULL DEFAULT '2026-2027'
+            school_year TEXT NOT NULL DEFAULT '2026-2027',
+            eval_type TEXT NOT NULL DEFAULT 'Devoir Surveillé',
+            start_time TEXT DEFAULT '',
+            end_time TEXT DEFAULT '',
+            room_id INTEGER REFERENCES rooms(id) DEFAULT NULL,
+            instructions TEXT DEFAULT ''
         );
         CREATE TABLE IF NOT EXISTS grades (
             id INTEGER PRIMARY KEY AUTOINCREMENT, evaluation_id INTEGER NOT NULL REFERENCES evaluations(id),
@@ -295,12 +301,33 @@ def init_db():
             birth_date TEXT DEFAULT '', parent_name TEXT NOT NULL, parent_email TEXT DEFAULT '', parent_phone TEXT DEFAULT '',
             status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS school_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            event_type TEXT NOT NULL DEFAULT 'event',
+            start_date TEXT NOT NULL,
+            end_date TEXT DEFAULT '',
+            start_time TEXT DEFAULT '',
+            end_time TEXT DEFAULT '',
+            description TEXT DEFAULT '',
+            audience TEXT NOT NULL DEFAULT 'all',
+            school_year TEXT NOT NULL DEFAULT '2026-2027',
+            created_by INTEGER REFERENCES users(id),
+            created_at TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS demo_seed (seed_key TEXT PRIMARY KEY, created_at TEXT NOT NULL);
     """)
         migrations = {
             "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1", "school_id": "INTEGER REFERENCES schools(id) DEFAULT 1"},
             "students": {"medical_notes": "TEXT DEFAULT ''", "photo_path": "TEXT DEFAULT ''", "parent_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "student_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL"},
             "messages": {"is_draft": "INTEGER NOT NULL DEFAULT 0", "attachment_path": "TEXT DEFAULT ''", "hidden_by_sender": "INTEGER NOT NULL DEFAULT 0", "hidden_by_recipient": "INTEGER NOT NULL DEFAULT 0"},
+            "evaluations": {
+                "eval_type": "TEXT DEFAULT 'Devoir Surveillé'",
+                "start_time": "TEXT DEFAULT ''",
+                "end_time": "TEXT DEFAULT ''",
+                "room_id": "INTEGER REFERENCES rooms(id) DEFAULT NULL",
+                "instructions": "TEXT DEFAULT ''",
+            },
         }
         for table, columns in migrations.items():
             existing = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
@@ -536,25 +563,43 @@ def seed_demo_data(db):
 
     # 7. Évaluations & Notes (Échelle 0-20)
     ev_cp = db.execute(
-        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
-        ("Évaluation de français - période 1", subject_ids[("CP", "Français")], class_map["CP-A"], (today - timedelta(days=2)).isoformat(), 20, year),
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Évaluation de français - période 1", subject_ids[("CP", "Français")], class_map["CP-A"], (today - timedelta(days=2)).isoformat(), 20, year, "Contrôle Continu", "08:30", "09:30", room_ids[0], "Dictée et lecture suivie."),
     ).lastrowid
     ev_ce1 = db.execute(
-        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
-        ("Évaluation de français - période 1", subject_ids[("CE1", "Français")], class_map["CE1-A"], (today - timedelta(days=2)).isoformat(), 20, year),
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Évaluation de français - période 1", subject_ids[("CE1", "Français")], class_map["CE1-A"], (today - timedelta(days=2)).isoformat(), 20, year, "Contrôle Continu", "08:30", "09:30", room_ids[1], "Grammaire et conjugaison."),
     ).lastrowid
     ev_ce2 = db.execute(
-        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
-        ("Évaluation de français - période 1", subject_ids[("CE2", "Français")], class_map["CE2-A"], (today - timedelta(days=2)).isoformat(), 20, year),
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Évaluation de français - période 1", subject_ids[("CE2", "Français")], class_map["CE2-A"], (today - timedelta(days=2)).isoformat(), 20, year, "Contrôle Continu", "08:30", "09:30", room_ids[2], "Vocabulaire et compréhension."),
     ).lastrowid
     ev_math = db.execute(
-        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
-        ("Devoir de Contrôle N°1 - Algèbre & Géométrie", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], (today - timedelta(days=5)).isoformat(), 20, year),
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Devoir de Contrôle N°1 - Algèbre & Géométrie", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], (today - timedelta(days=5)).isoformat(), 20, year, "Devoir Surveillé", "09:15", "10:45", room_ids[0], "Algèbre, calcul littéral et théorème de Thalès."),
     ).lastrowid
     ev_math_pilote = db.execute(
-        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
-        ("Olympiade & Contrôle Pilote N°1", subject_ids[("9ème Pilote", "Mathématiques")], class_map["9ème Pilote"], (today - timedelta(days=4)).isoformat(), 20, year),
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Olympiade & Contrôle Pilote N°1", subject_ids[("9ème Pilote", "Mathématiques")], class_map["9ème Pilote"], (today - timedelta(days=4)).isoformat(), 20, year, "Devoir Surveillé", "10:15", "12:15", room_ids[0], "Niveau concours d'excellence."),
     ).lastrowid
+
+    # Évaluations à venir (Devoirs surveillés & Synthèses planifiés)
+    db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Devoir Surveillé N°2 - Calcul & Équations", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], (today + timedelta(days=4)).isoformat(), 20, year, "Devoir Surveillé", "08:30", "10:30", room_ids[0], "Chapitres 3 et 4 du manuel officiel. Calculatrice non autorisée."),
+    )
+    db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Devoir de Synthèse N°1 - Expression Écrite", subject_ids[("7ème Base", "Français")], class_map["7ème Base"], (today + timedelta(days=8)).isoformat(), 20, year, "Devoir de Synthèse", "10:00", "12:00", room_ids[1], "Production écrite argumentative et analyse stylistique."),
+    )
+    db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Examen Blanc - Session Pilote", subject_ids[("9ème Pilote", "Mathématiques")], class_map["9ème Pilote"], (today + timedelta(days=12)).isoformat(), 20, year, "Examen Blanc", "08:00", "11:00", room_ids[0], "Simulateur d'épreuve du concours d'accès aux lycées pilotes."),
+    )
+    db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,start_time,end_time,room_id,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ("Oral de Synthèse - Éloquence & Débat", subject_ids[("9ème Pilote", "Français")], class_map["9ème Pilote"], (today + timedelta(days=15)).isoformat(), 20, year, "Oral de Synthèse", "14:00", "16:00", room_ids[2], "Exposé oral de 10 min suivi de 5 min de questions du jury."),
+    )
 
     grades_data = [
         (ev_cp, students[0][0], 15.5, "Très bon travail."),
@@ -700,6 +745,19 @@ def seed_demo_data(db):
         db.execute(
             "INSERT INTO pre_enrollments(first_name,last_name,birth_date,parent_name,parent_email,parent_phone,status,created_at) VALUES(?,?,?,?,?,?,?,?)",
             (fn, ln, bd, pn, pe, pp, st, now_min),
+        )
+
+    # 15b. Événements scolaires du calendrier
+    school_events_data = [
+        ("Conseil Pédagogique du 1er Trimestre", "meeting", (today + timedelta(days=3)).isoformat(), (today + timedelta(days=3)).isoformat(), "15:30", "17:30", "Harmonisation des barèmes et suivi des progressions pédagogiques.", "teachers"),
+        ("Rencontre Parents - Professeurs", "meeting", (today + timedelta(days=6)).isoformat(), (today + timedelta(days=6)).isoformat(), "09:00", "13:00", "Échanges individuels sur les résultats et l'adaptation des élèves.", "all"),
+        ("Journée Portes Ouvertes & Exposition Robotique", "event", (today + timedelta(days=14)).isoformat(), (today + timedelta(days=14)).isoformat(), "10:00", "16:00", "Démonstration des robots et projets scientifiques conçus par les collégiens.", "all"),
+        ("Session des Devoirs de Synthèse Trimestriels", "exam", (today + timedelta(days=20)).isoformat(), (today + timedelta(days=25)).isoformat(), "08:00", "12:30", "Semaine bloquée pour les devoirs de synthèse de toutes les matières.", "all"),
+    ]
+    for se_title, se_type, se_start, se_end, se_stime, se_etime, se_desc, se_aud in school_events_data:
+        db.execute(
+            "INSERT INTO school_events(title,event_type,start_date,end_date,start_time,end_time,description,audience,school_year,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (se_title, se_type, se_start, se_end, se_stime, se_etime, se_desc, se_aud, year, admin_id, now_sec),
         )
 
     # 16. Journal d'audit initial
@@ -1511,6 +1569,317 @@ def grades():
         classes=db.execute("SELECT * FROM classes ORDER BY name").fetchall())
 
 
+@app.route("/exams", methods=["GET", "POST"])
+@app.route("/controles", methods=["GET", "POST"])
+@login_required("admin", "teacher", "parent", "student", "secretary", "director")
+def exams():
+    db = get_db()
+    today_str = date.today().isoformat()
+    role = session.get("role")
+    user_id = session.get("user_id")
+
+    if request.method == "POST":
+        if role not in ("admin", "teacher", "director"):
+            abort(403)
+        try:
+            title = request.form["title"].strip()
+            eval_type = request.form.get("eval_type", "Devoir Surveillé").strip()
+            subject_id = int(request.form["subject_id"])
+            class_id = int(request.form["class_id"])
+            maximum = float(request.form.get("max_score", 20))
+            room_id = int(request.form["room_id"]) if request.form.get("room_id") else None
+            evaluation_date = parse_iso_date(request.form["evaluation_date"]).isoformat()
+            start_time = request.form.get("start_time", "").strip()
+            end_time = request.form.get("end_time", "").strip()
+            instructions = request.form.get("instructions", "").strip()
+
+            school_class = db.execute("SELECT level, school_year FROM classes WHERE id=?", (class_id,)).fetchone()
+            subject = db.execute("SELECT level, school_year FROM subjects WHERE id=? AND active=1", (subject_id,)).fetchone()
+            if not title or not math.isfinite(maximum) or maximum <= 0 or not school_class or not subject or school_class["level"] != subject["level"] or school_class["school_year"] != subject["school_year"]:
+                raise ValueError
+            if role == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=? AND school_year=?", (user_id, class_id, subject_id, school_class["school_year"])).fetchone():
+                abort(403)
+
+            db.execute("""
+                INSERT INTO evaluations(title, subject_id, class_id, evaluation_date, max_score, school_year, eval_type, start_time, end_time, room_id, instructions)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?)
+            """, (title, subject_id, class_id, evaluation_date, maximum, school_class["school_year"], eval_type, start_time, end_time, room_id, instructions))
+            db.commit()
+            flash("Contrôle / Évaluation planifié(e) avec succès.", "success")
+        except (ValueError, KeyError):
+            flash("Vérifie les informations de l'évaluation.", "danger")
+        return redirect(url_for("exams"))
+
+    # Query evaluations based on user role
+    query = """
+        SELECT e.*, s.name AS subject_name, s.coefficient AS subject_coeff, c.name AS class_name,
+               r.name AS room_name,
+               (SELECT COUNT(*) FROM grades g WHERE g.evaluation_id = e.id) AS grades_count
+        FROM evaluations e
+        JOIN subjects s ON s.id = e.subject_id
+        JOIN classes c ON c.id = e.class_id
+        LEFT JOIN rooms r ON r.id = e.room_id
+    """
+    params = []
+    if role == "student":
+        query += " WHERE e.class_id IN (SELECT class_id FROM students WHERE student_user_id=?)"
+        params.append(user_id)
+    elif role == "parent":
+        query += " WHERE e.class_id IN (SELECT class_id FROM students WHERE parent_user_id=?)"
+        params.append(user_id)
+    elif role == "teacher":
+        query += " WHERE EXISTS (SELECT 1 FROM teacher_assignments a WHERE a.teacher_id=? AND a.class_id=e.class_id AND a.subject_id=e.subject_id)"
+        params.append(user_id)
+
+    query += " ORDER BY e.evaluation_date ASC, e.start_time ASC"
+    raw_exams = db.execute(query, params).fetchall()
+    exam_rows = [dict(row) for row in raw_exams]
+
+    if role == "teacher":
+        subjects = db.execute("SELECT * FROM subjects WHERE active=1 AND id IN (SELECT subject_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY name", (user_id,)).fetchall()
+        classes = db.execute("SELECT * FROM classes WHERE id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY name", (user_id,)).fetchall()
+    else:
+        subjects = db.execute("SELECT * FROM subjects WHERE active=1 ORDER BY name").fetchall()
+        classes = db.execute("SELECT * FROM classes ORDER BY name").fetchall()
+
+    rooms = db.execute("SELECT * FROM rooms ORDER BY name").fetchall()
+
+    return render_template("exams.html", exams=exam_rows, subjects=subjects, classes=classes, rooms=rooms, today=today_str)
+
+
+@app.route("/calendar", methods=["GET", "POST"])
+@app.route("/agenda", methods=["GET", "POST"])
+@login_required()
+def calendar_view():
+    db = get_db()
+    today = date.today()
+    today_str = today.isoformat()
+    role = session.get("role")
+    user_id = session.get("user_id")
+
+    if request.method == "POST":
+        if role not in ("admin", "teacher", "director"):
+            abort(403)
+        try:
+            title = request.form["title"].strip()
+            event_type = request.form.get("event_type", "event").strip()
+            audience = request.form.get("audience", "all").strip()
+            start_date = parse_iso_date(request.form["start_date"]).isoformat()
+            end_date_raw = request.form.get("end_date", "").strip()
+            end_date = parse_iso_date(end_date_raw).isoformat() if end_date_raw else ""
+            start_time = request.form.get("start_time", "").strip()
+            end_time = request.form.get("end_time", "").strip()
+            description = request.form.get("description", "").strip()
+
+            if not title:
+                raise ValueError
+            if end_date and end_date < start_date:
+                raise ValueError("La date de fin ne peut être antérieure à la date de début.")
+
+            db.execute("""
+                INSERT INTO school_events(title, event_type, start_date, end_date, start_time, end_time, description, audience, school_year, created_by, created_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?)
+            """, (title, event_type, start_date, end_date, start_time, end_time, description, audience, "2026-2027", user_id, datetime.now().isoformat(timespec="seconds")))
+            db.commit()
+            flash("Événement ajouté au calendrier scolaire.", "success")
+        except (ValueError, KeyError) as exc:
+            flash(str(exc) or "Vérifie les informations de l'événement.", "danger")
+        return redirect(url_for("calendar_view"))
+
+    try:
+        req_month = int(request.args.get("month", today.month))
+        req_year = int(request.args.get("year", today.year))
+        if not (1 <= req_month <= 12 and 2000 <= req_year <= 2100):
+            req_month, req_year = today.month, today.year
+    except (ValueError, TypeError):
+        req_month, req_year = today.month, today.year
+
+    if req_month == 1:
+        prev_month, prev_year = 12, req_year - 1
+    else:
+        prev_month, prev_year = req_month - 1, req_year
+
+    if req_month == 12:
+        next_month, next_year = 1, req_year + 1
+    else:
+        next_month, next_year = req_month + 1, req_year
+
+    month_names_fr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+    month_name = month_names_fr[req_month - 1]
+
+    # 1. Homeworks
+    hw_query = """
+        SELECT h.id, h.title, h.due_date, h.description, s.name AS subject_name, c.name AS class_name, u.username AS teacher_name
+        FROM homework h
+        JOIN subjects s ON s.id = h.subject_id
+        JOIN classes c ON c.id = h.class_id
+        JOIN users u ON u.id = h.teacher_id
+        WHERE h.active = 1
+    """
+    hw_params = []
+    if role == "student":
+        hw_query += " AND h.class_id IN (SELECT class_id FROM students WHERE student_user_id=?)"
+        hw_params.append(user_id)
+    elif role == "parent":
+        hw_query += " AND h.class_id IN (SELECT class_id FROM students WHERE parent_user_id=?)"
+        hw_params.append(user_id)
+    elif role == "teacher":
+        hw_query += " AND EXISTS (SELECT 1 FROM teacher_assignments a WHERE a.teacher_id=? AND a.class_id=h.class_id AND a.subject_id=h.subject_id)"
+        hw_params.append(user_id)
+
+    homeworks = db.execute(hw_query, hw_params).fetchall()
+
+    # 2. Evaluations / Exams
+    ev_query = """
+        SELECT e.id, e.title, e.evaluation_date, e.eval_type, e.start_time, e.end_time, e.instructions,
+               s.name AS subject_name, c.name AS class_name, r.name AS room_name
+        FROM evaluations e
+        JOIN subjects s ON s.id = e.subject_id
+        JOIN classes c ON c.id = e.class_id
+        LEFT JOIN rooms r ON r.id = e.room_id
+    """
+    ev_params = []
+    if role == "student":
+        ev_query += " WHERE e.class_id IN (SELECT class_id FROM students WHERE student_user_id=?)"
+        ev_params.append(user_id)
+    elif role == "parent":
+        ev_query += " WHERE e.class_id IN (SELECT class_id FROM students WHERE parent_user_id=?)"
+        ev_params.append(user_id)
+    elif role == "teacher":
+        ev_query += " WHERE EXISTS (SELECT 1 FROM teacher_assignments a WHERE a.teacher_id=? AND a.class_id=e.class_id AND a.subject_id=e.subject_id)"
+        ev_params.append(user_id)
+
+    evals = db.execute(ev_query, ev_params).fetchall()
+
+    # 3. School events
+    se_query = "SELECT * FROM school_events WHERE school_year='2026-2027'"
+    if role == "student":
+        se_query += " AND audience IN ('all', 'students')"
+    elif role == "parent":
+        se_query += " AND audience IN ('all', 'parents')"
+    elif role == "teacher":
+        se_query += " AND audience IN ('all', 'teachers')"
+    school_ev_list = db.execute(se_query).fetchall()
+
+    date_events = {}
+    upcoming_list = []
+
+    for hw in homeworks:
+        d = hw["due_date"]
+        item = {
+            "id": f"hw-{hw['id']}",
+            "title": hw["title"],
+            "type": "homework",
+            "type_label": "Devoir à rendre",
+            "badge_class": "badge-homework",
+            "color": "#7c3aed",
+            "icon": "fa-book-bookmark",
+            "subject": hw["subject_name"],
+            "class": hw["class_name"],
+            "date": d,
+            "time": "Date limite",
+            "room": "",
+            "teacher": hw["teacher_name"],
+            "details": hw["description"] or "Consulter l'espace devoirs pour les détails et le dépôt.",
+        }
+        date_events.setdefault(d, []).append(item)
+        if d >= today_str:
+            upcoming_list.append(item)
+
+    for ex in evals:
+        d = ex["evaluation_date"]
+        time_display = f"{ex['start_time']} - {ex['end_time']}" if ex["start_time"] and ex["end_time"] else (ex["start_time"] or "Heure de cours")
+        etype = ex["eval_type"] or "Contrôle"
+        item = {
+            "id": f"ex-{ex['id']}",
+            "title": ex["title"],
+            "type": "exam",
+            "type_label": etype,
+            "badge_class": "badge-exam",
+            "color": "#dc2626",
+            "icon": "fa-stopwatch",
+            "subject": ex["subject_name"],
+            "class": ex["class_name"],
+            "date": d,
+            "time": time_display,
+            "room": ex["room_name"] or "",
+            "teacher": "",
+            "details": ex["instructions"] or "Révisions recommandées.",
+        }
+        date_events.setdefault(d, []).append(item)
+        if d >= today_str:
+            upcoming_list.append(item)
+
+    for se in school_ev_list:
+        start_d = se["start_date"]
+        end_d = se["end_date"] or start_d
+        time_display = f"{se['start_time']} - {se['end_time']}" if se["start_time"] and se["end_time"] else (se["start_time"] or "Journée entière")
+        item = {
+            "id": f"se-{se['id']}",
+            "title": se["title"],
+            "type": "event",
+            "type_label": "Événement scolaire",
+            "badge_class": "badge-event",
+            "color": "#2563eb",
+            "icon": "fa-calendar-check",
+            "subject": "",
+            "class": "",
+            "date": start_d,
+            "time": time_display,
+            "room": "",
+            "teacher": "",
+            "details": se["description"] or "",
+        }
+        try:
+            curr = parse_iso_date(start_d)
+            finish = parse_iso_date(end_d)
+            step_limit = 35
+            while curr <= finish and step_limit > 0:
+                date_events.setdefault(curr.isoformat(), []).append(item)
+                curr += timedelta(days=1)
+                step_limit -= 1
+        except Exception:
+            date_events.setdefault(start_d, []).append(item)
+
+        if end_d >= today_str:
+            upcoming_list.append(item)
+
+    upcoming_list.sort(key=lambda x: (x["date"], x.get("time", "")))
+
+    cal = py_calendar.Calendar(firstweekday=0)
+    month_dates = cal.monthdatescalendar(req_year, req_month)
+    cells = []
+    for week in month_dates:
+        for day_obj in week:
+            day_str = day_obj.isoformat()
+            cells.append({
+                "day": day_obj.day,
+                "date": day_str,
+                "is_current_month": (day_obj.month == req_month),
+                "is_today": (day_obj == today),
+                "events": date_events.get(day_str, [])
+            })
+
+    classes = db.execute("SELECT * FROM classes ORDER BY name").fetchall()
+    subjects = db.execute("SELECT * FROM subjects WHERE active=1 ORDER BY name").fetchall()
+
+    return render_template(
+        "calendar.html",
+        cells=cells,
+        upcoming=upcoming_list[:30],
+        current_year=req_year,
+        current_month=req_month,
+        month_name=month_name,
+        prev_month=prev_month,
+        prev_year=prev_year,
+        next_month=next_month,
+        next_year=next_year,
+        classes=classes,
+        subjects=subjects,
+        today=today_str,
+    )
+
+
 @app.route("/evaluations", methods=["GET", "POST"])
 @login_required("admin", "teacher")
 def evaluations():
@@ -1791,11 +2160,11 @@ def payment_delete(payment_id):
 
 
 @app.route("/homework", methods=["GET", "POST"])
-@login_required("admin", "teacher", "parent", "student")
+@login_required("admin", "teacher", "parent", "student", "director", "secretary")
 def homework():
     db=get_db()
     if request.method == "POST":
-        if session.get("role") not in ("admin","teacher"): abort(403)
+        if session.get("role") not in ("admin","teacher","director"): abort(403)
         try:
             subject_id=int(request.form["subject_id"]); class_id=int(request.form["class_id"])
             school_class=db.execute("SELECT level,school_year FROM classes WHERE id=?",(class_id,)).fetchone()
@@ -1830,7 +2199,7 @@ def homework():
         submission_list=db.execute("SELECT sub.*,s.first_name,s.last_name FROM submissions sub JOIN students s ON s.id=sub.student_id WHERE s.parent_user_id=? ORDER BY sub.submitted_at DESC",(session["user_id"],)).fetchall()
     elif session.get("role")=="teacher":
         submission_list=db.execute("SELECT sub.*,s.first_name,s.last_name FROM submissions sub JOIN students s ON s.id=sub.student_id JOIN homework h ON h.id=sub.homework_id WHERE EXISTS(SELECT 1 FROM teacher_assignments a WHERE a.teacher_id=? AND a.class_id=h.class_id AND a.subject_id=h.subject_id) ORDER BY sub.submitted_at DESC",(session["user_id"],)).fetchall()
-    elif session.get("role")=="admin":
+    elif session.get("role") in ("admin", "director", "secretary"):
         submission_list=db.execute("SELECT sub.*,s.first_name,s.last_name FROM submissions sub JOIN students s ON s.id=sub.student_id ORDER BY sub.submitted_at DESC").fetchall()
     else:
         submission_list=[]

@@ -213,6 +213,7 @@ class AccessControlTests(unittest.TestCase):
             "/", "/students", "/classes", "/subjects", "/timetable", "/grades",
             "/payments", "/fee-schedules", "/homework", "/messages", "/announcements",
             "/notifications", "/rooms", "/users", "/assignments", "/pre-enrollments", "/absences",
+            "/exams", "/calendar",
         ]
         for page in pages:
             with self.subTest(page=page):
