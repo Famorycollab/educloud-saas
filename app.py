@@ -87,10 +87,13 @@ def get_db():
 
 @app.before_request
 def protect_post_requests():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_urlsafe(32)
+
     if request.method == "POST":
-        submitted = request.form.get("csrf_token", "")
+        submitted = request.form.get("csrf_token", "") or request.headers.get("X-CSRFToken", "") or request.headers.get("X-CSRF-Token", "")
         expected = session.get("csrf_token", "")
-        if not expected or not secrets.compare_digest(submitted, expected):
+        if not expected or not submitted or not secrets.compare_digest(submitted, expected):
             abort(400, description="Jeton de sécurité invalide. Rechargez la page et réessayez.")
 
     # Multi-tenant scoping
@@ -126,6 +129,29 @@ def inject_csrf_token():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_urlsafe(32)
     return {"csrf_token": session["csrf_token"]}
+
+
+@app.errorhandler(400)
+def handle_bad_request(e):
+    msg = getattr(e, "description", "La requête formulée est invalide ou le jeton de sécurité a expiré.")
+    return render_template("error.html", code=400, title="Requête Invalide (400)", message=msg), 400
+
+
+@app.errorhandler(403)
+def handle_forbidden(e):
+    msg = getattr(e, "description", "Vous n'avez pas l'autorisation d'accéder à cette ressource ou cette fonctionnalité.")
+    return render_template("error.html", code=403, title="Accès Refusé (403)", message=msg), 403
+
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    msg = getattr(e, "description", "La page ou la ressource que vous recherchez n'existe pas ou a été déplacée.")
+    return render_template("error.html", code=404, title="Page Introuvable (404)", message=msg), 404
+
+
+@app.errorhandler(500)
+def handle_server_error(e):
+    return render_template("error.html", code=500, title="Erreur Interne (500)", message="Une erreur inattendue est survenue. Veuillez rafraîchir la page ou réessayer ultérieurement."), 500
 
 
 @app.teardown_appcontext
@@ -1203,11 +1229,12 @@ def student_detail(student_id):
 
 
 @app.route("/classes", methods=["GET", "POST"])
-@login_required("admin", "teacher")
+@login_required("admin", "teacher", "secretary")
 def classes():
     db = get_db()
+    role = session.get("role")
     if request.method == "POST":
-        if session.get("role") != "admin":
+        if role not in ("admin", "director", "superadmin"):
             abort(403)
         name, level = request.form.get("name", "").strip(), request.form.get("level", "").strip()
         try:
@@ -1221,7 +1248,7 @@ def classes():
             return redirect(url_for("classes"))
         except ValueError:
             flash("Vérifie le nom, le niveau et la capacité de la classe.", "danger")
-    rows = db.execute("SELECT c.*, COUNT(s.id) AS student_count FROM classes c LEFT JOIN students s ON s.class_id=c.id AND s.active=1 WHERE (?='admin' OR c.id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)) GROUP BY c.id ORDER BY c.level,c.name",(session.get("role"),session["user_id"])).fetchall()
+    rows = db.execute("SELECT c.*, COUNT(s.id) AS student_count FROM classes c LEFT JOIN students s ON s.class_id=c.id AND s.active=1 WHERE (? IN ('admin', 'director', 'superadmin', 'secretary') OR c.id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)) GROUP BY c.id ORDER BY c.level,c.name",(role, session["user_id"])).fetchall()
     return render_template("classes.html", classes=rows)
 
 
@@ -1274,7 +1301,7 @@ def class_edit(class_id):
 def subjects():
     db = get_db()
     if request.method == "POST":
-        if session.get("role") != "admin": abort(403)
+        if session.get("role") not in ("admin", "director", "superadmin"): abort(403)
         name, level = request.form.get("name", "").strip(), request.form.get("level", "").strip()
         try:
             coefficient = float(request.form.get("coefficient", "1"))
@@ -1338,7 +1365,7 @@ def subject_edit(item_id):
 def timetable():
     db = get_db()
     if request.method == "POST":
-        if session.get("role") != "admin": abort(403)
+        if session.get("role") not in ("admin", "director", "superadmin"): abort(403)
         try:
             class_id, teacher_id, subject_id = (int(request.form[k]) for k in ("class_id", "teacher_id", "subject_id"))
             room_id = int(request.form["room_id"]) if request.form.get("room_id") else None
@@ -2260,7 +2287,7 @@ def profile_password():
 
 
 @app.route("/absences", methods=["GET", "POST"])
-@login_required("admin", "teacher", "parent", "student")
+@login_required("admin", "teacher", "parent", "student", "secretary")
 def absences():
     db=get_db()
     if request.method == "POST":

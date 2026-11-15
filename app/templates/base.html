@@ -306,6 +306,7 @@
         <small><i class="fa-solid {{ role_icon }} fa-xs me-1"></i>{{ role_label }}</small>
       </span>
       <form method="post" action="{{ url_for('logout') }}" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="logout-button" aria-label="Déconnexion" title="Déconnexion">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>

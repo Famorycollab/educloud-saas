@@ -79,6 +79,7 @@
       </div>
       <div class="profile-card-body">
         <form method="post" action="{{ url_for('profile_info') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="mb-3">
             <label class="form-label small fw-bold text-muted">IDENTIFIANT SYSTÈME</label>
             <input class="form-control" value="{{ user.username }}" readonly style="background:#f8fafc;">
@@ -112,6 +113,7 @@
       </div>
       <div class="profile-card-body">
         <form method="post" action="{{ url_for('profile_password') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="mb-3">
             <label class="form-label small fw-bold text-muted">MOT DE PASSE ACTUEL *</label>
             <input class="form-control" name="current_password" type="password" placeholder="Mot de passe actuel" required>

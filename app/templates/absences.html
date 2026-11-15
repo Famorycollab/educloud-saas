@@ -1,7 +1,8 @@
 {% extends 'base.html' %}{% block title %}Absences{% endblock %}{% block breadcrumb %}Absences{% endblock %}{% block content %}
 <section class="page-heading"><div><div class="page-eyebrow">Vie scolaire</div><h1>Absences</h1><p>Suivi et justification parentale.</p></div></section>
 {% if session.get('role') in ('admin','teacher') %}
-<form method="post" class="card border-0 mb-4"><div class="card-body"><div class="row g-2">
+<form method="post" class="card border-0 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="card-body"><div class="row g-2">
 <div class="col-md-4"><select class="form-select" name="student_id" required><option value="">Élève</option>{% for s in students %}<option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }}</option>{% endfor %}</select></div>
 <div class="col-md-3"><input class="form-control" type="date" name="absence_date" required></div>
 <div class="col-md-3"><input class="form-control" name="reason" placeholder="Motif"></div>
@@ -13,11 +14,13 @@
 <td>{% if a.justified %}<span class="badge text-bg-success">Justifiée</span>{% else %}<span class="badge text-bg-danger">Non justifiée</span>{% endif %}</td>
 <td class="text-nowrap">
 {% if session.get('role')=='parent' and not a.justified %}
-<form class="d-inline" method="post" action="{{ url_for('absence_justify', absence_id=a.id) }}"><button class="btn btn-sm btn-outline-success">Justifier</button></form>
+<form class="d-inline" method="post" action="{{ url_for('absence_justify', absence_id=a.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline-success">Justifier</button></form>
 {% endif %}
 {% if session.get('role') in ('admin','teacher') %}
 <a class="btn btn-sm btn-outline-primary" href="{{ url_for('absence_edit', absence_id=a.id) }}">Modifier</a>
-<form class="d-inline" method="post" action="{{ url_for('absence_delete', absence_id=a.id) }}" onsubmit="return confirm('Supprimer cette absence ?')"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>
+<form class="d-inline" method="post" action="{{ url_for('absence_delete', absence_id=a.id) }}" onsubmit="return confirm('Supprimer cette absence ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline-danger">Supprimer</button></form>
 {% endif %}
 </td></tr>{% else %}<tr><td colspan="5" class="text-center py-5 text-secondary">Aucune absence.</td></tr>{% endfor %}</tbody></table></div></div>
 {% endblock %}

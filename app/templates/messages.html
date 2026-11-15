@@ -139,6 +139,7 @@
       </div>
     </div>
     <form method="post" enctype="multipart/form-data" class="compose-body">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="mb-3">
         <label class="form-label small fw-bold text-muted">DESTINATAIRE</label>
         <div class="input-group">
@@ -228,12 +229,14 @@
               </span>
               {% if m.is_draft and is_me %}
               <form class="d-inline" method="post" action="{{ url_for('message_send_draft', message_id=m.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button class="btn btn-sm btn-success py-1 px-2" title="Envoyer le brouillon">
                   <i class="fa-solid fa-paper-plane fa-xs me-1"></i>Envoyer
                 </button>
               </form>
               {% endif %}
               <form class="d-inline" method="post" action="{{ url_for('message_hide', message_id=m.id) }}" onsubmit="return confirm('Masquer cette conversation ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button class="btn btn-sm btn-outline-danger py-1 px-2" title="Supprimer">
                   <i class="fa-regular fa-trash-can fa-xs"></i>
                 </button>

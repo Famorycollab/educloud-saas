@@ -74,6 +74,7 @@
 
 {# --- Créer une évaluation --- #}
 <form method="post" action="{{ url_for('evaluations') }}" class="form-card card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="eval-card-header">
     <i class="fa-solid fa-clipboard-list"></i>
     <h2>Créer une évaluation</h2>
@@ -125,6 +126,7 @@
 
 {# --- Saisir une note --- #}
 <form method="post" class="form-card card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="grade-card-header">
     <i class="fa-solid fa-pen-to-square"></i>
     <h2>Saisir une note</h2>
@@ -211,6 +213,7 @@
               <i class="fa-solid fa-pen"></i>
             </a>
             <form class="d-inline" method="post" action="{{ url_for('evaluation_delete', eval_id=e.id) }}" onsubmit="return confirm('Supprimer cette évaluation et ses notes ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
             </form>
           </td>
@@ -285,6 +288,7 @@
           {% if session.get('role') in ('admin','teacher') %}
           <td>
             <form method="post" action="{{ url_for('grade_delete', grade_id=g.id) }}" onsubmit="return confirm('Supprimer cette note ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
             </form>
           </td>

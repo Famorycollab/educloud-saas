@@ -1,6 +1,7 @@
 {% extends 'base.html' %}{% block title %}{{ 'Modifier le créneau' if slot else 'Nouveau créneau' }}{% endblock %}{% block content %}
 <div class="mb-4"><a class="text-decoration-none" href="{{ url_for('timetable') }}">← Retour à l’emploi du temps</a><h1 class="h2 mt-3">{{ 'Modifier le créneau' if slot else 'Ajouter un créneau' }}</h1></div>
-<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<form method="post" class="card border-0 shadow-sm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="card-body p-4"><div class="row g-3">
 <div class="col-md-6"><label class="form-label">Classe *</label><select class="form-select" name="class_id" required><option value="">Choisir une classe</option>{% for c in classes %}<option value="{{ c.id }}" {% if slot and slot.class_id == c.id %}selected{% endif %}>{{ c.name }} ({{ c.level }})</option>{% endfor %}</select></div>
 <div class="col-md-6"><label class="form-label">Enseignant *</label><select class="form-select" name="teacher_id" required><option value="">Choisir un enseignant</option>{% for t in teachers %}<option value="{{ t.id }}" {% if slot and slot.teacher_id == t.id %}selected{% endif %}>{{ t.full_name or t.username }}</option>{% endfor %}</select></div>
 <div class="col-md-6"><label class="form-label">Matière *</label><select class="form-select" name="subject_id" required><option value="">Choisir une matière</option>{% for s in subjects %}<option value="{{ s.id }}" {% if slot and slot.subject_id == s.id %}selected{% endif %}>{{ s.name }} ({{ s.level }})</option>{% endfor %}</select></div>

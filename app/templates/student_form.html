@@ -1,6 +1,7 @@
 {% extends 'base.html' %}{% block title %}{{ 'Modifier le dossier' if student else 'Nouvel élève' }}{% endblock %}{% block content %}
 <div class="mb-4"><a class="text-decoration-none" href="{{ url_for('students') }}">← Retour aux élèves</a><h1 class="h2 mt-3">{{ 'Modifier le dossier' if student else 'Ajouter un élève' }}</h1></div>
-<form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="card-body p-4"><div class="row g-3">
 <div class="col-md-6"><label class="form-label">Prénom *</label><input class="form-control" name="first_name" required value="{{ student.first_name if student else '' }}"></div>
 <div class="col-md-6"><label class="form-label">Nom *</label><input class="form-control" name="last_name" required value="{{ student.last_name if student else '' }}"></div>
 <div class="col-md-4"><label class="form-label">Date de naissance</label><input class="form-control" name="birth_date" type="date" value="{{ student.birth_date if student else '' }}"></div>

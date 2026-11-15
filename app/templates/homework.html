@@ -68,6 +68,7 @@
   </div>
   <div class="card-body p-4 bg-white">
     <form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label small fw-bold text-muted">TITRE DU DEVOIR</label>
@@ -132,6 +133,7 @@
             <i class="fa-solid fa-pen fa-xs"></i>
           </a>
           <form class="d-inline" method="post" action="{{ url_for('homework_delete', homework_id=x.id) }}" onsubmit="return confirm('Supprimer ce devoir ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-sm btn-outline-danger p-1 px-2" title="Supprimer">
               <i class="fa-regular fa-trash-can fa-xs"></i>
             </button>
@@ -172,6 +174,7 @@
         {% set my_submission = submissions.get(x.id) %}
         <div class="border-top pt-3 mt-auto">
           <form method="post" enctype="multipart/form-data" action="{{ url_for('homework_submit', homework_id=x.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label class="form-label small fw-bold text-dark mb-1">
               {{ 'Remplacer mon dépôt' if my_submission else 'Déposer mon travail' }}
             </label>
@@ -199,6 +202,7 @@
         {% if session.get('role') in ('admin','teacher') %}
         <div class="border-top pt-3 mt-auto">
           <form method="post" enctype="multipart/form-data" action="{{ url_for('homework_correction', homework_id=x.id) }}" class="mb-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="input-group input-group-sm">
               <input class="form-control" type="file" name="file" required accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.odt">
               <button class="btn btn-outline-success"><i class="fa-solid fa-upload me-1"></i>Corrigé</button>
@@ -224,6 +228,7 @@
           </div>
           {% if session.get('role') in ('admin','teacher') %}
           <form method="post" action="{{ url_for('submission_grade', submission_id=sub.id) }}" class="row g-1 mt-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="col-4">
               <input class="form-control form-control-sm" name="score" type="number" min="0" max="20" step="0.25" value="{{ sub.score if sub.score is not none else '' }}" placeholder="Note/20" required>
             </div>

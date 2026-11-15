@@ -137,6 +137,7 @@
           <td class="text-end text-nowrap">
             {% if a.status == 'pending' %}
             <form method="post" class="d-inline-flex gap-2 align-items-center justify-content-end">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input type="hidden" name="application_id" value="{{ a.id }}">
               <select class="form-select form-select-sm" name="class_id" style="width:160px; font-size:0.8rem; border-radius:8px;">
                 <option value="">Classe (auto)</option>

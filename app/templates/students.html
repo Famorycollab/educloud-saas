@@ -134,6 +134,7 @@
   </div>
   <div class="card-body p-4">
     <form method="post" action="{{ url_for('students_import') }}" enctype="multipart/form-data" id="importForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="csv-dropzone" id="dropzone">
         <input type="file" id="csvfile" name="file" accept=".csv" required onchange="showFilename(this)">
         <div class="dz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
@@ -240,6 +241,7 @@
             <form class="d-inline" method="post"
                   action="{{ url_for('student_delete', student_id=s.id) }}"
                   onsubmit="return confirm('Archiver ce dossier élève ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Archiver">
                 <i class="fa-solid fa-box-archive fa-xs"></i>
               </button>

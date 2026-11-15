@@ -14,6 +14,7 @@
     </a>
     <form method="post" action="{{ url_for('payments_send_reminders') }}"
           onsubmit="return confirm('Envoyer une notification de rappel à tous les parents ayant des impayés ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="btn btn-warning" type="submit">
         <i class="fa-solid fa-bolt me-1"></i>Relancer les impayés
       </button>
@@ -62,6 +63,7 @@
   </div>
   <div class="card-body p-4">
     <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
           <label class="form-label fw-semibold small">Élève <span class="text-danger">*</span></label>
@@ -198,6 +200,7 @@
             </a>
             <form class="d-inline" method="post" action="{{ url_for('payment_delete', payment_id=x.id) }}"
                   onsubmit="return confirm('Supprimer ce paiement ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
             </form>
           </td>

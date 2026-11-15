@@ -21,6 +21,7 @@
   </div>
   <div class="card-body p-4 bg-white">
     <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="row g-3 align-items-end">
         <div class="col-md-3">
           <label class="form-label small fw-bold text-muted">ENSEIGNANT</label>
@@ -112,6 +113,7 @@
           </td>
           <td class="text-end">
             <form method="post" action="{{ url_for('assignment_delete', assignment_id=a.id) }}" onsubmit="return confirm('Retirer cette affectation ?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-sm btn-outline-danger" style="border-radius:8px;">
                 <i class="fa-regular fa-trash-can fa-xs me-1"></i>Retirer
               </button>

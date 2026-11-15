@@ -1,6 +1,7 @@
 {% extends 'base.html' %}{% block title %}Modifier l’utilisateur{% endblock %}{% block content %}
 <div class="mb-4"><a class="text-decoration-none" href="{{ url_for('users') }}">← Retour aux utilisateurs</a><h1 class="h2 mt-3">Modifier l’utilisateur : {{ user.username }}</h1></div>
-<form method="post" class="card border-0 shadow-sm"><div class="card-body p-4"><div class="row g-3">
+<form method="post" class="card border-0 shadow-sm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="card-body p-4"><div class="row g-3">
 <div class="col-md-6"><label class="form-label">Identifiant (lecture seule)</label><input class="form-control bg-light" value="{{ user.username }}" readonly></div>
 <div class="col-md-6"><label class="form-label">Nom complet *</label><input class="form-control" name="full_name" value="{{ user.full_name }}" required></div>
 <div class="col-md-6"><label class="form-label">Adresse e-mail</label><input class="form-control" name="email" type="email" value="{{ user.email }}"></div>

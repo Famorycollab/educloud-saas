@@ -1,7 +1,8 @@
 {% extends 'base.html' %}{% block title %}Annonces{% endblock %}{% block breadcrumb %}Annonces{% endblock %}{% block content %}
 <section class="page-heading"><div><div class="page-eyebrow">Communication</div><h1>Annonces générales</h1><p>Une annonce publiée est immuable. En cas d’erreur, publiez une annonce corrective.</p></div></section>
 {% if session.get('role') in ('admin','teacher') %}
-<form method="post" class="card border-0 mb-4"><div class="card-body">
+<form method="post" class="card border-0 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="card-body">
 <div class="row g-2">
 <div class="col-md-4"><input class="form-control" name="title" placeholder="Titre" required></div>
 <div class="col-md-5"><input class="form-control" name="body" placeholder="Contenu" required></div>

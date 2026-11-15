@@ -90,6 +90,7 @@
   </div>
   <div class="card-body p-4 bg-white">
     <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="row g-3 align-items-end">
         <div class="col-md-2">
           <label class="form-label small fw-bold text-muted">IDENTIFIANT</label>
@@ -214,6 +215,7 @@
               <i class="fa-solid fa-pen fa-xs me-1"></i>Modifier
             </a>
             <form class="d-inline" method="post" action="{{ url_for('user_toggle', user_id=u.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-sm {{ 'btn-outline-danger' if u.active else 'btn-outline-success' }}" style="border-radius:8px;">
                 {% if u.active %}
                 <i class="fa-solid fa-ban fa-xs me-1"></i>Désactiver
