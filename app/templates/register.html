@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% block title %}EduCloud · Inscription & Création de compte{% endblock %}
+{% block content %}
+
+<style>
+body {
+  background: #f0f6fd !important;
+  color: #0f2e5a;
+  overflow-x: hidden;
+}
+
+.edu-login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(191, 219, 254, 0.45) 0%, transparent 40%),
+    radial-gradient(circle at 95% 85%, rgba(147, 197, 253, 0.4) 0%, transparent 45%),
+    linear-gradient(135deg, #eef6fd 0%, #ffffff 50%, #eaf3fc 100%);
+  padding: 1.5rem 3rem 1rem;
+}
+
+.edu-register-container {
+  max-width: 680px;
+  width: 100%;
+  margin: auto;
+  position: relative;
+  z-index: 1;
+  padding: 1rem 0;
+}
+
+.edu-register-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 28px;
+  box-shadow: 0 20px 60px rgba(15, 46, 90, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+  padding: 2.5rem 2.8rem;
+}
+
+.edu-badge-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e0edff 0%, #d0e4ff 100%);
+  display: grid;
+  place-items: center;
+  color: #1d70f5;
+  font-size: 1.5rem;
+  margin: 0 auto 1rem;
+  box-shadow: 0 8px 20px rgba(29, 112, 245, 0.15);
+}
+
+.edu-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  text-align: center;
+  color: #0f2e5a;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.3rem;
+}
+
+.edu-subtitle {
+  font-size: 0.9rem;
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 1.8rem;
+}
+
+.edu-field-group {
+  margin-bottom: 1.15rem;
+}
+
+.edu-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e3a66;
+  margin-bottom: 0.4rem;
+}
+
+.edu-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.edu-input-box i.input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.edu-input {
+  width: 100%;
+  padding: 0.72rem 1rem 0.72rem 2.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  background: #f8fafc;
+  color: #0f2e5a;
+  transition: all 0.2s ease;
+}
+
+.edu-input:focus {
+  outline: none;
+  border-color: #1d70f5;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(29, 112, 245, 0.12);
+}
+
+.edu-input:focus + i.input-icon {
+  color: #1d70f5;
+}
+
+.edu-select {
+  width: 100%;
+  padding: 0.72rem 1rem 0.72rem 2.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  background: #f8fafc;
+  color: #0f2e5a;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.edu-select:focus {
+  outline: none;
+  border-color: #1d70f5;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(29, 112, 245, 0.12);
+}
+
+.edu-btn-submit {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d70f5 0%, #1754cc 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(29, 112, 245, 0.28);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.edu-btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(29, 112, 245, 0.38);
+}
+
+.edu-login-link {
+  text-align: center;
+  margin-top: 1.4rem;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.edu-login-link a {
+  color: #1d70f5;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.edu-login-link a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .edu-login-wrapper { padding: 1rem; }
+  .edu-register-card { padding: 1.8rem 1.2rem; }
+}
+</style>
+
+<div class="edu-login-wrapper">
+
+  <!-- Logo header -->
+  <div class="d-flex align-items-center justify-content-between mb-3" style="max-width: 1200px; width: 100%; margin: 0 auto;">
+    <a href="{{ url_for('login') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+      <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#1d70f5,#38bdf8);display:grid;place-items:center;color:#fff;font-size:1.1rem;">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <span style="font-weight:800;font-size:1.25rem;color:#0f2e5a;">Edu<span style="color:#1d70f5;">Cloud</span></span>
+    </a>
+    <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary" style="border-radius:10px;font-weight:600;">
+      <i class="fa-solid fa-arrow-left me-1"></i> Se connecter
+    </a>
+  </div>
+
+  <div class="edu-register-container">
+    <div class="edu-register-card">
+
+      <div class="edu-badge-icon">
+        <i class="fa-solid fa-user-plus"></i>
+      </div>
+
+      <h1 class="edu-title">Créer votre compte</h1>
+      <p class="edu-subtitle">Rejoignez la plateforme EduCloud de votre établissement scolaire</p>
+
+      <form method="post" id="registerForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <!-- Établissement -->
+        <div class="edu-field-group">
+          <label class="edu-field-label" for="school_id">
+            <i class="fa-solid fa-school text-primary"></i> Établissement scolaire
+          </label>
+          <div class="edu-input-box">
+            <select class="edu-select" id="school_id" name="school_id" required>
+              {% for school in schools %}
+              <option value="{{ school.id }}" {% if form.school_id == school.id|string %}selected{% endif %}>
+                {{ school.name }}{% if school.city %} ({{ school.city }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <i class="fa-solid fa-building input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Profil / Rôle -->
+        <div class="edu-field-group">
+          <label class="edu-field-label" for="role">
+            <i class="fa-solid fa-user-tag text-primary"></i> Vous êtes
+          </label>
+          <div class="edu-input-box">
+            <select class="edu-select" id="role" name="role" required>
+              <option value="parent" {% if form.role == 'parent' %}selected{% endif %}>👨‍👩‍👧 Parent d'élève</option>
+              <option value="student" {% if form.role == 'student' %}selected{% endif %}>🎒 Élève</option>
+              <option value="teacher" {% if form.role == 'teacher' %}selected{% endif %}>👨‍🏫 Enseignant</option>
+            </select>
+            <i class="fa-solid fa-id-badge input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Nom complet -->
+        <div class="edu-field-group">
+          <label class="edu-field-label" for="full_name">
+            <i class="fa-solid fa-user text-primary"></i> Nom complet
+          </label>
+          <div class="edu-input-box">
+            <input class="edu-input" type="text" id="full_name" name="full_name"
+                   placeholder="Ex: Fatou Ndiaye" value="{{ form.full_name }}" required minlength="3">
+            <i class="fa-regular fa-circle-user input-icon"></i>
+          </div>
+        </div>
+
+        <!-- Identifiant & Email en 2 colonnes -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="edu-field-group">
+              <label class="edu-field-label" for="username">
+                <i class="fa-solid fa-at text-primary"></i> Identifiant
+              </label>
+              <div class="edu-input-box">
+                <input class="edu-input" type="text" id="username" name="username"
+                       placeholder="Ex: fndiaye" value="{{ form.username }}" required minlength="3" maxlength="40">
+                <i class="fa-solid fa-user-check input-icon"></i>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="edu-field-group">
+              <label class="edu-field-label" for="email">
+                <i class="fa-solid fa-envelope text-primary"></i> E-mail (optionnel)
+              </label>
+              <div class="edu-input-box">
+                <input class="edu-input" type="email" id="email" name="email"
+                       placeholder="contact@example.com" value="{{ form.email }}">
+                <i class="fa-regular fa-envelope input-icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mot de passe & Confirmation -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="edu-field-group">
+              <label class="edu-field-label" for="password">
+                <i class="fa-solid fa-lock text-primary"></i> Mot de passe
+              </label>
+              <div class="edu-input-box">
+                <input class="edu-input" type="password" id="password" name="password"
+                       placeholder="8 caractères minimum" required minlength="8">
+                <i class="fa-solid fa-key input-icon"></i>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="edu-field-group">
+              <label class="edu-field-label" for="confirm_password">
+                <i class="fa-solid fa-shield text-primary"></i> Confirmer
+              </label>
+              <div class="edu-input-box">
+                <input class="edu-input" type="password" id="confirm_password" name="confirm_password"
+                       placeholder="Retapez le mot de passe" required minlength="8">
+                <i class="fa-solid fa-shield-halved input-icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="edu-btn-submit">
+          <i class="fa-solid fa-user-check"></i> Créer mon compte EduCloud
+        </button>
+
+      </form>
+
+      <div class="edu-login-link">
+        Vous avez déjà un compte ?
+        <a href="{{ url_for('login') }}">Connectez-vous ici</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="text-center py-2" style="font-size:0.8rem;color:#94a3b8;">
+    © 2026 EduCloud SaaS Pro · Tous droits réservés
+  </div>
+
+</div>
+
+{% endblock %}
