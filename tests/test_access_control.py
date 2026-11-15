@@ -62,7 +62,10 @@ class AccessControlTests(unittest.TestCase):
 
     def tearDown(self):
         school_app.DATABASE = self.previous_database
-        self.temp_dir.cleanup()
+        try:
+            self.temp_dir.cleanup()
+        except Exception:
+            pass
 
     def client_for(self, user_id, role):
         client = school_app.app.test_client()

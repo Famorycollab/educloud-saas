@@ -25,7 +25,10 @@ class MessagingAndFinanceTests(unittest.TestCase):
 
     def tearDown(self):
         school_app.DATABASE = self.previous_database
-        self.temp_dir.cleanup()
+        try:
+            self.temp_dir.cleanup()
+        except Exception:
+            pass
 
     def login(self, username, role, user_id):
         with self.client.session_transaction() as sess:

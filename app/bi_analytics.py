@@ -567,10 +567,10 @@ def get_dashboard_9_early_warning(db, school_id):
             financial_pct = due / fee_per_student
             if financial_pct >= 0.5:
                 risk_score += 25
-                risk_factors.append(f"Impayé important ({int(due):,} FCFA)")
+                risk_factors.append(f"Impayé important ({int(due):,} DT)")
             elif financial_pct > 0:
                 risk_score += 10
-                risk_factors.append(f"Solde restant ({int(due):,} FCFA)")
+                risk_factors.append(f"Solde restant ({int(due):,} DT)")
 
         risk_score = min(100, risk_score)
 

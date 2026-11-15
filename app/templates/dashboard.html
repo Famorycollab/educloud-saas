@@ -636,7 +636,7 @@
         <span>Total Encaissé</span>
         <span class="stat-icon"><i class="fa-solid fa-coins"></i></span>
       </div>
-      <strong>{{ "{:,.0f}".format(totals.paid_total|default(0)).replace(',', ' ') }} FCFA</strong>
+      <strong>{{ "{:,.0f}".format(totals.paid_total|default(0)).replace(',', ' ') }} {{ g.current_school.currency or 'DT' }}</strong>
       <div class="d-flex align-items-center justify-content-between mt-2">
         <small class="stat-note">Paiements validés pour l'année</small>
         <span class="stat-trend up"><i class="fa-solid fa-arrow-trend-up fa-xs"></i> Rentrées</span>

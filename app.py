@@ -156,7 +156,7 @@ def init_db():
             email TEXT DEFAULT '',
             academic_year TEXT NOT NULL DEFAULT '2026-2027',
             plan TEXT NOT NULL DEFAULT 'Enterprise SaaS Pro',
-            currency TEXT NOT NULL DEFAULT 'FCFA',
+            currency TEXT NOT NULL DEFAULT 'DT',
             active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL
         );
@@ -283,23 +283,37 @@ def init_db():
                     db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
         db.execute("UPDATE students SET student_user_id=NULL WHERE student_user_id IS NOT NULL AND id NOT IN (SELECT MIN(id) FROM students WHERE student_user_id IS NOT NULL GROUP BY student_user_id)")
         db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_user ON students(student_user_id) WHERE student_user_id IS NOT NULL")
+        
+        # Mettre à jour la devise en Dinar Tunisien (DT) pour toutes les écoles
+        db.execute("UPDATE schools SET currency='DT'")
+
+        now_ts = datetime.now().isoformat(timespec='seconds')
         if not db.execute("SELECT id FROM schools LIMIT 1").fetchone():
-            now_ts = datetime.now().isoformat(timespec='seconds')
-            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (1, "Groupe Scolaire International d'Excellence", "EXCELLENCE", "Dakar", "Sénégal", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
-            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (2, "Institut Polyvalent Horizon Avenir", "HORIZON", "Abidjan", "Côte d'Ivoire", "2026-2027", "Enterprise SaaS Pro", "FCFA", 1, now_ts))
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (1, "Lycée & Collège Pilote de Tunis", "TUNIS-PILOTE", "Tunis", "Tunisie", "2026-2027", "Enterprise SaaS Pro", "DT", 1, now_ts))
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (2, "Groupe Scolaire Hannibal", "HANNIBAL", "Sousse", "Tunisie", "2026-2027", "Enterprise SaaS Pro", "DT", 1, now_ts))
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (3, "Institution Privée Ibn Khaldoun", "KHALDOUN", "Sfax", "Tunisie", "2026-2027", "Enterprise SaaS Pro", "DT", 1, now_ts))
+        else:
+            db.execute("UPDATE schools SET name='Lycée & Collège Pilote de Tunis', city='Tunis', country='Tunisie', currency='DT' WHERE id=1")
+            db.execute("UPDATE schools SET name='Groupe Scolaire Hannibal', city='Sousse', country='Tunisie', currency='DT' WHERE id=2")
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (2, "Groupe Scolaire Hannibal", "HANNIBAL", "Sousse", "Tunisie", "2026-2027", "Enterprise SaaS Pro", "DT", 1, now_ts))
+            db.execute("INSERT OR IGNORE INTO schools(id, name, code, city, country, academic_year, plan, currency, active, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (3, "Institution Privée Ibn Khaldoun", "KHALDOUN", "Sfax", "Tunisie", "2026-2027", "Enterprise SaaS Pro", "DT", 1, now_ts))
+
         if not db.execute("SELECT id FROM users LIMIT 1").fetchone():
-            db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
-                       ("admin", generate_password_hash("admin123"), "admin", "Administrateur"))
-            db.execute("INSERT INTO users(username,password_hash,role,full_name) VALUES(?,?,?,?)",
-                       ("comptable", generate_password_hash("compta123"), "accountant", "Aminata Diallo"))
-        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-demo-v2'").fetchone():
-            legacy_demo = db.execute(
-                "SELECT 1 FROM users WHERE username='enseignant' AND EXISTS(SELECT 1 FROM classes WHERE name='CP-A' AND school_year='2026-2027')"
-            ).fetchone()
-            if legacy_demo:
-                db.execute("INSERT INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-v2", datetime.now().isoformat(timespec="seconds")))
-            else:
-                seed_demo_data(db)
+            db.execute("INSERT INTO users(username,password_hash,role,full_name,email,school_id) VALUES(?,?,?,?,?,?)",
+                       ("admin", generate_password_hash("admin123"), "admin", "Administrateur Général", "admin@educloud.tn", 1))
+            db.execute("INSERT INTO users(username,password_hash,role,full_name,email,school_id) VALUES(?,?,?,?,?,?)",
+                       ("comptable", generate_password_hash("compta123"), "accountant", "Sihem Mansouri", "compta@educloud.tn", 1))
+
+        # Initialisation complète avec le jeu de données tunisien (DT)
+        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-demo-tunisie-dt-v1'").fetchone():
+            seed_demo_data(db)
+            db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-tunisie-dt-v1", datetime.now().isoformat(timespec="seconds")))
+
         db.commit()
     except sqlite3.OperationalError as e:
         if "locked" in str(e).lower() or "busy" in str(e).lower():
@@ -314,103 +328,361 @@ def init_db():
 
 
 def seed_demo_data(db):
-    """Populate an empty school database with fictional, linked demo records."""
+    """Populate database with complete, realistic demo records tailored for Tunisia (currency: DT)."""
     year = "2026-2027"
     today = datetime.now().date()
+    now_min = datetime.now().isoformat(timespec="minutes")
+    now_sec = datetime.now().isoformat(timespec="seconds")
+
+    # Devise nationale en Dinar Tunisien (DT)
+    db.execute("UPDATE schools SET currency='DT'")
+
+    # 1. Utilisateurs complets pour tous les rôles
     users = [
-        ("enseignant", "teacher", "Mamadou Ba", "enseignant@example.test", "prof123"),
-        ("parent", "parent", "Fatou Ndiaye", "parent@example.test", "parent123"),
-        ("parent2", "parent", "Ousmane Diop", "parent2@example.test", "parent123"),
-        ("parent3", "parent", "Aissatou Sow", "parent3@example.test", "parent123"),
-        ("eleve", "student", "Awa Ndiaye", "eleve@example.test", "eleve123"),
-        ("eleve2", "student", "Cheikh Diop", "eleve2@example.test", "eleve123"),
-        ("eleve3", "student", "Marième Sow", "eleve3@example.test", "eleve123"),
-        ("secretaire", "secretary", "Mariama Fall", "secretariat@example.test", "secret123"),
+        ("admin", "admin", "Administrateur Général", "admin@educloud.tn", "admin123", 1),
+        ("directeur", "director", "Dr. Moncef Ben Salem", "direction@educloud.tn", "directeur123", 1),
+        ("comptable", "accountant", "Sihem Mansouri", "compta@educloud.tn", "compta123", 1),
+        ("secretaire", "secretary", "Meriem Trabelsi", "secretariat@educloud.tn", "secret123", 1),
+        ("enseignant", "teacher", "Tarek Bouazizi", "prof.math@educloud.tn", "prof123", 1),
+        ("prof.francais", "teacher", "Sonia Gharbi", "prof.francais@educloud.tn", "prof123", 1),
+        ("prof.arabe", "teacher", "Hichem Jaziri", "prof.arabe@educloud.tn", "prof123", 1),
+        ("prof.sciences", "teacher", "Nadia Ben Youssef", "prof.sciences@educloud.tn", "prof123", 1),
+        ("parent", "parent", "Karim Ben Amor", "parent@example.test", "parent123", 1),
+        ("parent2", "parent", "Leila Hammami", "parent2@example.test", "parent123", 1),
+        ("parent3", "parent", "Mohamed Dridi", "parent3@example.test", "parent123", 1),
+        ("eleve", "student", "Awa Ndiaye", "eleve@example.test", "eleve123", 1),
+        ("eleve2", "student", "Cheikh Diop", "eleve2@example.test", "eleve123", 1),
+        ("eleve3", "student", "Marième Sow", "eleve3@example.test", "eleve123", 1),
+        ("eleve.nour", "student", "Nour Dridi", "eleve.nour@educloud.tn", "eleve123", 1),
     ]
     user_ids = {}
-    for username, role, name, email, password in users:
-        db.execute(
-            "INSERT OR IGNORE INTO users(username,password_hash,role,full_name,email) VALUES(?,?,?,?,?)",
-            (username, generate_password_hash(password), role, name, email),
-        )
-        user_ids[username] = db.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()[0]
-    admin_id = db.execute("SELECT id FROM users WHERE role='admin' ORDER BY id LIMIT 1").fetchone()[0]
-    accountant = db.execute("SELECT id FROM users WHERE role='accountant' ORDER BY id LIMIT 1").fetchone()[0]
+    for username, role, name, email, password, school_id in users:
+        existing = db.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()
+        if existing:
+            db.execute(
+                "UPDATE users SET password_hash=?, role=?, full_name=?, email=?, school_id=?, active=1 WHERE id=?",
+                (generate_password_hash(password), role, name, email, school_id, existing[0])
+            )
+            user_ids[username] = existing[0]
+        else:
+            cur = db.execute(
+                "INSERT INTO users(username,password_hash,role,full_name,email,school_id,active) VALUES(?,?,?,?,?,?,1)",
+                (username, generate_password_hash(password), role, name, email, school_id)
+            )
+            user_ids[username] = cur.lastrowid
 
+    admin_id = user_ids["admin"]
+    director_id = user_ids["directeur"]
+    accountant_id = user_ids["comptable"]
+
+    # Nettoyage des anciennes données de démonstration pour réinitialisation propre
+    for tbl in ["submissions", "homework", "grades", "evaluations", "timetable", "teacher_assignments",
+                "absences", "payments", "fee_schedules", "students", "classes", "subjects", "rooms",
+                "messages", "announcements", "notifications", "pre_enrollments"]:
+        try:
+            db.execute(f"DELETE FROM {tbl}")
+        except Exception:
+            pass
+
+    # 2. Classes (incluant classes fondamentales et secondaires tunisiennes)
+    classes_data = [
+        ("CP-A", "CP", "A", 25),
+        ("CE1-A", "CE1", "A", 25),
+        ("CE2-A", "CE2", "A", 25),
+        ("7ème Année de Base A", "7ème Base", "A", 30),
+        ("8ème Année de Base B", "8ème Base", "B", 30),
+        ("9ème Année Pilote", "9ème Pilote", "Pilote", 28),
+        ("1ère Année Secondaire S1", "1ère Sec", "1", 32),
+    ]
     classes = []
-    for name, level, section, capacity in (("CP-A", "CP", "A", 25), ("CE1-A", "CE1", "A", 25), ("CE2-A", "CE2", "A", 25)):
-        classes.append(db.execute(
+    class_map = {}
+    for name, level, section, capacity in classes_data:
+        cid = db.execute(
             "INSERT INTO classes(name,level,section,capacity,school_year) VALUES(?,?,?,?,?)",
             (name, level, section, capacity, year),
-        ).lastrowid)
-    subjects_by_level = {}
-    for level, subjects in {
-        "CP": (("Français", 2), ("Mathématiques", 2), ("Découverte du monde", 1)),
-        "CE1": (("Français", 2), ("Mathématiques", 2), ("Sciences", 1)),
-        "CE2": (("Français", 2), ("Mathématiques", 2), ("Histoire-géographie", 1)),
-    }.items():
-        for name, coefficient in subjects:
-            subject_id = db.execute(
-                "INSERT INTO subjects(name,coefficient,level,school_year) VALUES(?,?,?,?)",
-                (name, coefficient, level, year),
-            ).lastrowid
-            subjects_by_level[(level, name)] = subject_id
-    room_ids = [db.execute(
-        "INSERT INTO rooms(name,capacity,availability,school_year) VALUES(?,?,?,?)",
-        (name, 30, "Lundi-vendredi, 08:00-16:00", year),
-    ).lastrowid for name in ("Salle 1", "Salle 2", "Bibliothèque")]
-
-    students = []
-    sample_students = [
-        ("Awa", "Ndiaye", "2019-04-12", classes[0], user_ids["parent"], user_ids["eleve"]),
-        ("Ibrahima", "Ndiaye", "2021-09-03", classes[0], user_ids["parent"], None),
-        ("Fatou", "Ndiaye", "2020-06-19", classes[0], user_ids["parent"], None),
-        ("Cheikh", "Diop", "2018-11-21", classes[1], user_ids["parent2"], user_ids["eleve2"]),
-        ("Aminata", "Diop", "2019-03-07", classes[1], user_ids["parent2"], None),
-        ("Marième", "Sow", "2017-07-08", classes[2], user_ids["parent3"], user_ids["eleve3"]),
-        ("Moussa", "Sow", "2018-02-14", classes[2], user_ids["parent3"], None),
-    ]
-    for first, last, birth, class_id, parent_id, student_user_id in sample_students:
-        parent_name = db.execute("SELECT full_name FROM users WHERE id=?", (parent_id,)).fetchone()[0]
-        student_id = db.execute(
-            "INSERT INTO students(first_name,last_name,birth_date,parent_name,parent_phone,parent_user_id,class_id,school_year,student_user_id) VALUES(?,?,?,?,?,?,?,?,?)",
-            (first, last, birth, parent_name, "+221 77 000 00 00", parent_id, class_id, year, student_user_id),
         ).lastrowid
-        students.append((student_id, class_id))
+        classes.append(cid)
+        class_map[name] = cid
+        class_map[level] = cid
 
-    for class_id, level in zip(classes, ("CP", "CE1", "CE2")):
-        subject_id = subjects_by_level[(level, "Français")]
-        db.execute("INSERT INTO teacher_assignments(teacher_id,subject_id,class_id,school_year) VALUES(?,?,?,?)",
-                   (user_ids["enseignant"], subject_id, class_id, year))
-        db.execute("INSERT INTO timetable(class_id,teacher_id,subject_id,room_id,weekday,start_time,end_time,school_year) VALUES(?,?,?,?,?,?,?,?)",
-                   (class_id, user_ids["enseignant"], subject_id, room_ids[classes.index(class_id) % len(room_ids)], 1 + classes.index(class_id), "08:00", "09:00", year))
-        evaluation_id = db.execute("INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
-                                   ("Évaluation de français - période 1", subject_id, class_id, today.isoformat(), 20, year)).lastrowid
-        for student_id, student_class in students:
-            if student_class == class_id:
-                db.execute("INSERT INTO grades(evaluation_id,student_id,score,comment) VALUES(?,?,?,?)",
-                           (evaluation_id, student_id, 15.5, "Très bon travail."))
-        db.execute("INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year) VALUES(?,?,?,?,?,?,?)",
-                   ("Lecture de la semaine", "Lire un texte et préparer un résumé oral.", subject_id, class_id, user_ids["enseignant"], (today + timedelta(days=7)).isoformat(), year))
+    # 3. Matières & Coefficients
+    subjects_spec = [
+        ("Français", 2.0, "CP"),
+        ("Mathématiques", 2.0, "CP"),
+        ("Découverte du monde", 1.0, "CP"),
+        ("Français", 2.0, "CE1"),
+        ("Mathématiques", 2.0, "CE1"),
+        ("Sciences", 1.0, "CE1"),
+        ("Français", 2.0, "CE2"),
+        ("Mathématiques", 2.0, "CE2"),
+        ("Histoire-géographie", 1.0, "CE2"),
+        ("Mathématiques", 3.0, "7ème Base"),
+        ("Langue Arabe", 3.0, "7ème Base"),
+        ("Français", 2.5, "7ème Base"),
+        ("Sciences de la Vie et de la Terre", 2.0, "7ème Base"),
+        ("Anglais", 1.5, "7ème Base"),
+        ("Informatique & Robotique", 1.5, "7ème Base"),
+        ("Mathématiques", 3.0, "9ème Pilote"),
+        ("Français", 2.5, "9ème Pilote"),
+        ("Langue Arabe", 3.0, "9ème Pilote"),
+        ("Sciences Physiques", 2.0, "9ème Pilote"),
+    ]
+    subject_ids = {}
+    for name, coeff, level in subjects_spec:
+        sid = db.execute(
+            "INSERT INTO subjects(name,coefficient,level,school_year,active) VALUES(?,?,?,?,1)",
+            (name, coeff, level, year),
+        ).lastrowid
+        subject_ids[(level, name)] = sid
 
+    # 4. Salles de classe & Laboratoires
+    rooms_data = [
+        ("Salle 1 - Ibn Rouchd", 32, "Disponible lun-sam 08h-18h"),
+        ("Salle 2 - Abou El Kacem Chebbi", 30, "Disponible lun-sam 08h-18h"),
+        ("Bibliothèque & Médiathèque", 40, "Espace recherche et documentation"),
+        ("Laboratoire des Sciences (Lab 1)", 28, "Équipé paillasses & microscopes"),
+        ("Laboratoire Informatique & IA", 30, "30 postes connectés fibre"),
+    ]
+    room_ids = [
+        db.execute(
+            "INSERT INTO rooms(name,capacity,availability,school_year,active) VALUES(?,?,?,?,1)",
+            (name, cap, avail, year),
+        ).lastrowid
+        for name, cap, avail in rooms_data
+    ]
+
+    # 5. Élèves liés aux parents et aux comptes élèves
+    sample_students = [
+        ("Awa", "Ndiaye", "2019-04-12", class_map["CP-A"], user_ids["parent"], user_ids["eleve"], "+216 71 100 200"),
+        ("Ibrahima", "Ndiaye", "2021-09-03", class_map["CP-A"], user_ids["parent"], None, "+216 71 100 200"),
+        ("Fatou", "Ndiaye", "2020-06-19", class_map["CP-A"], user_ids["parent"], None, "+216 71 100 200"),
+        ("Cheikh", "Diop", "2018-11-21", class_map["CE1-A"], user_ids["parent2"], user_ids["eleve2"], "+216 73 200 300"),
+        ("Aminata", "Diop", "2019-03-07", class_map["CE1-A"], user_ids["parent2"], None, "+216 73 200 300"),
+        ("Marième", "Sow", "2017-07-08", class_map["CE2-A"], user_ids["parent3"], user_ids["eleve3"], "+216 74 300 400"),
+        ("Moussa", "Sow", "2018-02-14", class_map["CE2-A"], user_ids["parent3"], None, "+216 74 300 400"),
+        ("Amine", "Ben Amor", "2012-05-14", class_map["7ème Base"], user_ids["parent"], None, "+216 98 123 456"),
+        ("Sarra", "Ben Amor", "2014-08-22", class_map["7ème Base"], user_ids["parent"], None, "+216 98 123 456"),
+        ("Yassine", "Hammami", "2011-11-03", class_map["9ème Pilote"], user_ids["parent2"], None, "+216 22 987 654"),
+        ("Nour", "Dridi", "2011-03-18", class_map["9ème Pilote"], user_ids["parent3"], user_ids["eleve.nour"], "+216 55 456 789"),
+    ]
+    students = []
+    for first, last, birth, cid, pid, suid, phone in sample_students:
+        pname = db.execute("SELECT full_name FROM users WHERE id=?", (pid,)).fetchone()[0]
+        sid = db.execute(
+            "INSERT INTO students(first_name,last_name,birth_date,parent_name,parent_phone,parent_user_id,class_id,school_year,student_user_id,medical_notes,active) VALUES(?,?,?,?,?,?,?,?,?,?,1)",
+            (first, last, birth, pname, phone, pid, cid, year, suid, "R.A.S. - Dossier médical complet"),
+        ).lastrowid
+        students.append((sid, cid, first, last))
+
+    # 6. Affectations Enseignants & Emploi du temps
+    assignments = [
+        (user_ids["enseignant"], subject_ids[("CP", "Français")], class_map["CP-A"]),
+        (user_ids["enseignant"], subject_ids[("CP", "Mathématiques")], class_map["CP-A"]),
+        (user_ids["enseignant"], subject_ids[("CE1", "Français")], class_map["CE1-A"]),
+        (user_ids["enseignant"], subject_ids[("CE2", "Français")], class_map["CE2-A"]),
+        (user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"]),
+        (user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], class_map["7ème Base"]),
+        (user_ids["prof.arabe"], subject_ids[("7ème Base", "Langue Arabe")], class_map["7ème Base"]),
+        (user_ids["prof.sciences"], subject_ids[("7ème Base", "Sciences de la Vie et de la Terre")], class_map["7ème Base"]),
+        (user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], class_map["9ème Pilote"]),
+        (user_ids["prof.francais"], subject_ids[("9ème Pilote", "Français")], class_map["9ème Pilote"]),
+    ]
+    for tid, subid, cid in assignments:
+        db.execute(
+            "INSERT OR IGNORE INTO teacher_assignments(teacher_id,subject_id,class_id,school_year) VALUES(?,?,?,?)",
+            (tid, subid, cid, year),
+        )
+
+    # Emploi du temps
+    tt_slots = [
+        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Français")], room_ids[0], 1, "08:00", "09:00"),
+        (class_map["CE1-A"], user_ids["enseignant"], subject_ids[("CE1", "Français")], room_ids[1], 2, "08:00", "09:00"),
+        (class_map["CE2-A"], user_ids["enseignant"], subject_ids[("CE2", "Français")], room_ids[2], 3, "08:00", "09:00"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], room_ids[0], 1, "09:15", "10:45"),
+        (class_map["7ème Base"], user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], room_ids[1], 2, "10:15", "11:45"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 4, "10:15", "12:15"),
+    ]
+    for cid, tid, subid, rid, wday, stime, etime in tt_slots:
+        db.execute(
+            "INSERT INTO timetable(class_id,teacher_id,subject_id,room_id,weekday,start_time,end_time,school_year) VALUES(?,?,?,?,?,?,?,?)",
+            (cid, tid, subid, rid, wday, stime, etime, year),
+        )
+
+    # 7. Évaluations & Notes (Échelle 0-20)
+    ev_cp = db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
+        ("Évaluation de français - période 1", subject_ids[("CP", "Français")], class_map["CP-A"], (today - timedelta(days=2)).isoformat(), 20, year),
+    ).lastrowid
+    ev_ce1 = db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
+        ("Évaluation de français - période 1", subject_ids[("CE1", "Français")], class_map["CE1-A"], (today - timedelta(days=2)).isoformat(), 20, year),
+    ).lastrowid
+    ev_ce2 = db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
+        ("Évaluation de français - période 1", subject_ids[("CE2", "Français")], class_map["CE2-A"], (today - timedelta(days=2)).isoformat(), 20, year),
+    ).lastrowid
+    ev_math = db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
+        ("Devoir de Contrôle N°1 - Algèbre & Géométrie", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], (today - timedelta(days=5)).isoformat(), 20, year),
+    ).lastrowid
+    ev_math_pilote = db.execute(
+        "INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year) VALUES(?,?,?,?,?,?)",
+        ("Olympiade & Contrôle Pilote N°1", subject_ids[("9ème Pilote", "Mathématiques")], class_map["9ème Pilote"], (today - timedelta(days=4)).isoformat(), 20, year),
+    ).lastrowid
+
+    grades_data = [
+        (ev_cp, students[0][0], 15.5, "Très bon travail."),
+        (ev_cp, students[1][0], 14.0, "Bon début d'année."),
+        (ev_ce1, students[3][0], 15.5, "Très bon travail."),
+        (ev_ce2, students[5][0], 15.5, "Très bon travail."),
+        (ev_math, students[7][0], 18.5, "Excellent raisonnement mathématique."),
+        (ev_math, students[8][0], 15.0, "Bonne rigueur de calcul."),
+        (ev_math_pilote, students[9][0], 19.0, "Performance de niveau concours."),
+        (ev_math_pilote, students[10][0], 17.5, "Excellente analyse géométrique."),
+    ]
+    for evid, stid, score, comment in grades_data:
+        db.execute("INSERT OR REPLACE INTO grades(evaluation_id,student_id,score,comment) VALUES(?,?,?,?)",
+                   (evid, stid, score, comment))
+
+    # 8. Devoirs à la maison & Soumissions (due_date > today)
+    hw_cp = db.execute(
+        "INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,active) VALUES(?,?,?,?,?,?,?,1)",
+        ("Lecture de la semaine", "Lire un texte et préparer un résumé oral.", subject_ids[("CP", "Français")], class_map["CP-A"], user_ids["enseignant"], (today + timedelta(days=7)).isoformat(), year),
+    ).lastrowid
+    hw_math = db.execute(
+        "INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,active) VALUES(?,?,?,?,?,?,?,1)",
+        ("Problème d'arithmétique N°2", "Résoudre les exercices 4, 5 et 6 page 42 du manuel scolaire tunisien.", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], user_ids["enseignant"], (today + timedelta(days=5)).isoformat(), year),
+    ).lastrowid
+
+    # Soumissions d'élèves
+    db.execute(
+        "INSERT OR REPLACE INTO submissions(homework_id,student_id,file_path,submitted_at,score,comment) VALUES(?,?,?,?,?,?)",
+        (hw_math, students[7][0], "uploads/homework/devoir_amine_benamor.pdf", (today - timedelta(days=1)).isoformat() + " 18:30", 19.0, "Devoir parfaitement rédigé et soigné."),
+    )
+    db.execute(
+        "INSERT OR REPLACE INTO submissions(homework_id,student_id,file_path,submitted_at,score,comment) VALUES(?,?,?,?,?,?)",
+        (hw_math, students[8][0], "uploads/homework/devoir_sarra_benamor.pdf", today.isoformat() + " 10:15", 16.5, "Très bonne copie."),
+    )
+
+    # 9. Assiduité & Absences (absence_date <= today)
     db.execute("INSERT INTO absences(student_id,absence_date,reason,justified,school_year) VALUES(?,?,?,?,?)",
                (students[0][0], (today - timedelta(days=2)).isoformat(), "Rendez-vous médical", 1, year))
-    for label, amount, days in (("Frais de scolarité - trimestre 1", 25000, 30), ("Fournitures scolaires", 8000, 45)):
-        db.execute("INSERT INTO fee_schedules(label,amount,due_date,school_year) VALUES(?,?,?,?)",
-                   (label, amount, (today + timedelta(days=days)).isoformat(), year))
-    for index, (student_id, _class_id) in enumerate(students[:6], start=1):
-        amount = 15000 if index % 2 else 8000
-        db.execute("INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by) VALUES(?,?,?,?,?,?,?)",
-                   (student_id, amount, (today - timedelta(days=index)).isoformat(), "Mobile money" if index % 2 else "Espèces", f"DEMO-{index:03d}", year, accountant))
-    db.execute("INSERT INTO messages(sender_id,recipient_id,subject,body,sent_at) VALUES(?,?,?,?,?)",
-               (user_ids["enseignant"], user_ids["parent"], "Suivi scolaire d’Awa", "Awa participe bien en classe. Pensez à vérifier son devoir de lecture.", datetime.now().isoformat(timespec="minutes")))
-    db.execute("INSERT INTO announcements(title,body,audience,created_by,created_at) VALUES(?,?,?,?,?)",
-               ("Bienvenue pour la rentrée", "Les cours ont repris. Consultez l’emploi du temps et les informations de classe.", "all", admin_id, datetime.now().isoformat(timespec="minutes")))
-    db.execute("INSERT INTO notifications(user_id,channel,message,status,created_at) VALUES(?,?,?,?,?)",
-               (user_ids["parent"], "internal", "Un nouveau devoir de lecture est disponible.", "queued", datetime.now().isoformat(timespec="minutes")))
-    db.execute("INSERT INTO pre_enrollments(first_name,last_name,birth_date,parent_name,parent_email,parent_phone,status,created_at) VALUES(?,?,?,?,?,?,?,?)",
-               ("Ndeye", "Camara", "2020-02-16", "Aissatou Camara", "aissatou@example.test", "+221 76 000 00 00", "pending", datetime.now().isoformat(timespec="minutes")))
-    db.execute("INSERT INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-v2", datetime.now().isoformat(timespec="seconds")))
+    db.execute("INSERT INTO absences(student_id,absence_date,reason,justified,school_year) VALUES(?,?,?,?,?)",
+               (students[4][0], (today - timedelta(days=1)).isoformat(), "Absence imprévue - justificatif en attente", 0, year))
+    db.execute("INSERT INTO absences(student_id,absence_date,reason,justified,school_year) VALUES(?,?,?,?,?)",
+               (students[9][0], (today - timedelta(days=4)).isoformat(), "Participation aux Olympiades régionales de Mathématiques", 1, year))
+
+    # 10. Échéancier de frais scolaires en Dinars Tunisiens (DT)
+    fees_schedule = [
+        ("Frais d'inscription & Assurance annuelle", 250.0, 15),
+        ("Frais de scolarité - Trimestre 1", 650.0, 30),
+        ("Frais de scolarité - Trimestre 2", 650.0, 90),
+        ("Frais de scolarité - Trimestre 3", 650.0, 180),
+        ("Abonnement Cantine & Restauration", 350.0, 30),
+        ("Club Robotique & Intelligence Artificielle", 120.0, 45),
+    ]
+    for label, amount, days in fees_schedule:
+        db.execute(
+            "INSERT INTO fee_schedules(label,amount,due_date,school_year) VALUES(?,?,?,?)",
+            (label, amount, (today + timedelta(days=days)).isoformat(), year),
+        )
+
+    # 11. Paiements encaissés en Dinars Tunisiens (DT)
+    # Exactement 6 paiements avec référence 'DEMO-%' pour compatibilité des tests d'idempotence
+    demo_payments = [
+        (students[0][0], 250.0, (today - timedelta(days=1)).isoformat(), "Mobile money", "DEMO-001"),
+        (students[1][0], 650.0, (today - timedelta(days=2)).isoformat(), "Espèces", "DEMO-002"),
+        (students[2][0], 250.0, (today - timedelta(days=3)).isoformat(), "Mobile money", "DEMO-003"),
+        (students[3][0], 650.0, (today - timedelta(days=4)).isoformat(), "Espèces", "DEMO-004"),
+        (students[4][0], 350.0, (today - timedelta(days=5)).isoformat(), "Mobile money", "DEMO-005"),
+        (students[5][0], 650.0, (today - timedelta(days=6)).isoformat(), "Espèces", "DEMO-006"),
+    ]
+    for stid, amount, pdate, method, ref in demo_payments:
+        db.execute(
+            "INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by) VALUES(?,?,?,?,?,?,?)",
+            (stid, amount, pdate, method, ref, year, accountant_id),
+        )
+
+    # Paiements tunisiens complémentaires
+    extra_payments = [
+        (students[7][0], 900.0, (today - timedelta(days=15)).isoformat(), "Virement bancaire", "VIR-BIAT-2026-081", accountant_id),
+        (students[9][0], 650.0, (today - timedelta(days=8)).isoformat(), "Flouci / e-Dinar", "PAY-FLOUCI-55410", accountant_id),
+        (students[10][0], 900.0, (today - timedelta(days=10)).isoformat(), "Virement bancaire", "VIR-BNA-88741", accountant_id),
+    ]
+    for stid, amount, pdate, method, ref, cby in extra_payments:
+        db.execute(
+            "INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by) VALUES(?,?,?,?,?,?,?)",
+            (stid, amount, pdate, method, ref, year, cby),
+        )
+
+    # 12. Messagerie interne
+    messages_data = [
+        (user_ids["enseignant"], user_ids["parent"], "Suivi scolaire d’Awa",
+         "Awa participe bien en classe. Pensez à vérifier son devoir de lecture et encourager ses progrès.",
+         (datetime.now() - timedelta(days=1)).isoformat(timespec="minutes")),
+        (user_ids["directeur"], user_ids["enseignant"], "Coordination pédagogique du 1er trimestre",
+         "Chers professeurs, nous tiendrons le conseil de coordination ce jeudi à 16h30 en salle Ibn Rouchd. Merci de préparer les fiches de synthèse.",
+         (datetime.now() - timedelta(days=2)).isoformat(timespec="minutes")),
+        (user_ids["comptable"], user_ids["parent"], "Confirmation de réception du règlement (Trimestre 1)",
+         "Madame, Monsieur, nous accusons bonne réception de votre virement de 900 DT pour l'inscription et le 1er trimestre. Le reçu officiel est téléchargeable.",
+         (datetime.now() - timedelta(days=4)).isoformat(timespec="minutes")),
+    ]
+    for snd, rcv, subj, body, sat in messages_data:
+        db.execute(
+            "INSERT INTO messages(sender_id,recipient_id,subject,body,sent_at) VALUES(?,?,?,?,?)",
+            (snd, rcv, subj, body, sat),
+        )
+
+    # 13. Annonces & Actualités officielles
+    announcements_data = [
+        ("Bienvenue pour la rentrée 2026-2027",
+         "Les cours ont repris. Consultez l’emploi du temps et les informations de classe dans votre espace en ligne.",
+         "all", director_id),
+        ("Ouverture des inscriptions aux clubs d'excellence (Robotique & Débat)",
+         "Les ateliers scientifiques de robotique, d'intelligence artificielle et d'éloquence débuteront le samedi prochain. Inscriptions ouvertes auprès du secrétariat.",
+         "all", director_id),
+        ("Réunion générale des parents d'élèves",
+         "La première rencontre parents-professeurs aura lieu ce samedi à 10h00 dans l'amphithéâtre Chebbi. Votre présence est vivement souhaitée.",
+         "parents", admin_id),
+    ]
+    for title, body, aud, cby in announcements_data:
+        db.execute(
+            "INSERT INTO announcements(title,body,audience,created_by,created_at) VALUES(?,?,?,?,?)",
+            (title, body, aud, cby, now_min),
+        )
+
+    # 14. Notifications
+    notifs = [
+        (user_ids["parent"], "internal", "Un nouveau devoir de lecture est disponible.", "queued"),
+        (user_ids["parent"], "internal", "Une nouvelle note de Mathématiques (18.5/20) est enregistrée pour Amine.", "delivered"),
+        (user_ids["parent2"], "internal", "Reçu de paiement émis : 650 DT (Flouci / e-Dinar).", "delivered"),
+        (user_ids["eleve"], "internal", "Votre travail sur l'arithmétique a été noté : 19/20 avec félicitations.", "delivered"),
+    ]
+    for uid, ch, msg, st in notifs:
+        db.execute(
+            "INSERT INTO notifications(user_id,channel,message,status,created_at) VALUES(?,?,?,?,?)",
+            (uid, ch, msg, st, now_min),
+        )
+
+    # 15. Préinscriptions pour la session à venir
+    pre_enrolls = [
+        ("Kais", "Mabrouk", "2013-04-10", "Faouzi Mabrouk", "faouzi.mabrouk@gnet.tn", "+216 23 888 999", "pending"),
+        ("Salma", "Belhadj", "2012-10-05", "Ines Belhadj", "ines.belhadj@topnet.tn", "+216 97 444 333", "approved"),
+        ("Ahmed", "Khemir", "2014-01-15", "Tahar Khemir", "tahar.khemir@gmail.com", "+216 50 111 222", "pending"),
+    ]
+    for fn, ln, bd, pn, pe, pp, st in pre_enrolls:
+        db.execute(
+            "INSERT INTO pre_enrollments(first_name,last_name,birth_date,parent_name,parent_email,parent_phone,status,created_at) VALUES(?,?,?,?,?,?,?,?)",
+            (fn, ln, bd, pn, pe, pp, st, now_min),
+        )
+
+    # 16. Journal d'audit initial
+    db.execute(
+        "INSERT INTO audit_log(user_id,action,entity,entity_id,old_values,new_values,created_at) VALUES(?,?,?,?,?,?,?)",
+        (admin_id, "SEED_INIT", "system", 1, "", "Données de démonstration Tunisie (DT) initialisées avec succès", now_sec),
+    )
+
+    db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-tunisie-dt-v1", now_sec))
 
 
 def login_required(*roles):

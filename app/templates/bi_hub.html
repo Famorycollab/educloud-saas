@@ -179,21 +179,21 @@
         <div class="col-sm-6 col-lg-3">
           <div class="stat-card h-100">
             <div class="stat-top"><span>FRAIS ATTENDUS</span><span class="stat-icon">🏷️</span></div>
-            <strong>{{ d2.total_expected|round|int }} <small class="fs-6 fw-bold">{{ g.current_school.currency or 'FCFA' }}</small></strong>
+            <strong>{{ d2.total_expected|round|int }} <small class="fs-6 fw-bold">{{ g.current_school.currency or 'DT' }}</small></strong>
             <small class="stat-note">Base élèves actifs inscrits</small>
           </div>
         </div>
         <div class="col-sm-6 col-lg-3">
           <div class="stat-card h-100">
             <div class="stat-top"><span>MONTANT ENCAISSÉ</span><span class="stat-icon">💰</span></div>
-            <strong class="text-success">{{ d2.total_collected|round|int }} <small class="fs-6 fw-bold">{{ g.current_school.currency or 'FCFA' }}</small></strong>
+            <strong class="text-success">{{ d2.total_collected|round|int }} <small class="fs-6 fw-bold">{{ g.current_school.currency or 'DT' }}</small></strong>
             <small class="stat-note text-success fw-semibold">Paiements effectifs validés</small>
           </div>
         </div>
         <div class="col-sm-6 col-lg-3">
           <div class="stat-card h-100">
             <div class="stat-top"><span>RESTE À RECOUVRER</span><span class="stat-icon">⚠️</span></div>
-            <strong class="text-danger">{{ d2.remaining_balance|round|int }} <small class="fs-6 fw-bold">{{ g.current_school.currency or 'FCFA' }}</small></strong>
+            <strong class="text-danger">{{ d2.remaining_balance|round|int }} <small class="fs-6 fw-bold">{{ g.current_school.currency or 'DT' }}</small></strong>
             <small class="stat-note text-danger fw-semibold">Impayés & soldes restants</small>
           </div>
         </div>
@@ -714,7 +714,7 @@
     document.getElementById('simDisplay').innerText = val + ' élèves';
     var fee = {{ d10.avg_fee or 100000 }};
     var totalRev = Math.round(val * fee);
-    document.getElementById('simRevenue').innerText = totalRev.toLocaleString('fr-FR') + ' {{ g.current_school.currency or "FCFA" }}';
+    document.getElementById('simRevenue').innerText = totalRev.toLocaleString('fr-FR') + ' {{ g.current_school.currency or "DT" }}';
     var rooms = Math.ceil(val / 28);
     document.getElementById('simRooms').innerText = rooms + ' salles';
     var currentTeachers = {{ d10.teachers_count or 1 }};
@@ -760,7 +760,7 @@
           labels: [{% for m in d2.monthly_revenues %}'{{ m.month }}',{% endfor %}{% for p in d2.projected_revenues %}'{{ p.month }}',{% endfor %}],
           datasets: [
             {
-              label: 'Encaissements (FCFA)',
+              label: 'Encaissements ({{ g.current_school.currency or "DT" }})',
               data: [{% for m in d2.monthly_revenues %}{{ m.total }},{% endfor %}{% for p in d2.projected_revenues %}{{ p.amount }},{% endfor %}],
               borderColor: '#1a56db',
               backgroundColor: 'rgba(26, 86, 219, 0.12)',

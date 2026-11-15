@@ -133,7 +133,7 @@ def generate_document(cloud_url="https://saas-ecole-bi.trycloudflare.com"):
     rows2 = [
         ["Directeur Général", "directeur_horizon", "directeur123", "Tableaux de bord BI dédiés à l'établissement d'Abidjan."],
         ["Administrateur", "admin_horizon", "admin123", "Configuration et gestion locale de l'établissement."],
-        ["Comptable", "comptable_horizon", "compta123", "Facturation, gestion de trésorerie locale (FCFA)."],
+        ["Comptable", "comptable_horizon", "compta123", "Facturation, gestion de trésorerie locale (DT)."],
         ["Enseignant", "enseignant_horizon", "prof123", "Classes de 6ème et 3ème, évaluations et cours."],
         ["Parent d'élève", "parent_horizon", "parent123", "Suivi scolaire des enfants inscrits à Abidjan."],
         ["Élève", "eleve_horizon", "eleve123", "Accès personnel aux notes et devoirs."],

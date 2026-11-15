@@ -29,7 +29,7 @@
       <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
       <div>
         <strong id="kpi-total">—</strong>
-        <span>Total perçu (FCFA)</span>
+        <span>Total perçu ({{ g.current_school.currency or 'DT' }})</span>
       </div>
     </div>
   </div>
@@ -73,7 +73,7 @@
           </select>
         </div>
         <div class="col-md-2">
-          <label class="form-label fw-semibold small">Montant (FCFA) <span class="text-danger">*</span></label>
+          <label class="form-label fw-semibold small">Montant ({{ g.current_school.currency or 'DT' }}) <span class="text-danger">*</span></label>
           <input class="form-control" name="amount" type="number" min="0.01" step="0.01" placeholder="Ex. 50000" required>
         </div>
         <div class="col-md-2">
@@ -153,7 +153,7 @@
               <span class="fw-semibold">{{ x.first_name }} {{ x.last_name }}</span>
             </div>
           </td>
-          <td class="fw-bold" style="color:#059669">{{ '%.2f'|format(x.amount) }}</td>
+          <td class="fw-bold" style="color:#059669">{{ '%.2f'|format(x.amount) }} {{ g.current_school.currency or 'DT' }}</td>
           <td>
             {% if x.method == 'Mobile money' %}
               <span class="badge" style="background:#fef3c7;color:#92400e;border-radius:8px">
