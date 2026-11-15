@@ -1419,7 +1419,7 @@ def subject_edit(item_id):
 
 
 @app.route("/timetable", methods=["GET", "POST"])
-@login_required("admin", "teacher", "parent", "student")
+@login_required("admin", "teacher", "parent", "student", "director")
 def timetable():
     db = get_db()
     if request.method == "POST":
@@ -1596,9 +1596,46 @@ def exams():
             school_class = db.execute("SELECT level, school_year FROM classes WHERE id=?", (class_id,)).fetchone()
             subject = db.execute("SELECT level, school_year FROM subjects WHERE id=? AND active=1", (subject_id,)).fetchone()
             if not title or not math.isfinite(maximum) or maximum <= 0 or not school_class or not subject or school_class["level"] != subject["level"] or school_class["school_year"] != subject["school_year"]:
-                raise ValueError
+                raise ValueError("Informations de l'épreuve ou cohérence de niveau invalides.")
             if role == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=? AND school_year=?", (user_id, class_id, subject_id, school_class["school_year"])).fetchone():
                 abort(403)
+
+            if start_time and end_time:
+                try:
+                    t_start = datetime.strptime(start_time, "%H:%M")
+                    t_end = datetime.strptime(end_time, "%H:%M")
+                    if t_start >= t_end:
+                        raise ValueError("L'heure de fin doit être postérieure à l'heure de début.")
+                except ValueError as ve:
+                    if "L'heure de fin" in str(ve):
+                        raise
+                    raise ValueError("Format d'heure invalide (HH:MM attendu).")
+
+            if room_id:
+                room = db.execute("SELECT capacity, school_year FROM rooms WHERE id=? AND active=1", (room_id,)).fetchone()
+                class_students = db.execute("SELECT COUNT(*) FROM students WHERE class_id=? AND school_year=? AND active=1", (class_id, school_class["school_year"])).fetchone()[0]
+                if room and room["capacity"] < class_students:
+                    raise ValueError(f"La capacité de la salle ({room['capacity']} places) est inférieure au nombre d'élèves de la classe ({class_students} élèves).")
+
+            if room_id and start_time and end_time:
+                room_conflict = db.execute("""
+                    SELECT title FROM evaluations
+                    WHERE evaluation_date=? AND room_id=?
+                      AND start_time != '' AND end_time != ''
+                      AND start_time < ? AND end_time > ?
+                """, (evaluation_date, room_id, end_time, start_time)).fetchone()
+                if room_conflict:
+                    raise ValueError(f"La salle est déjà réservée pour « {room_conflict['title']} » sur ce créneau.")
+
+            if start_time and end_time:
+                class_conflict = db.execute("""
+                    SELECT title FROM evaluations
+                    WHERE evaluation_date=? AND class_id=?
+                      AND start_time != '' AND end_time != ''
+                      AND start_time < ? AND end_time > ?
+                """, (evaluation_date, class_id, end_time, start_time)).fetchone()
+                if class_conflict:
+                    raise ValueError(f"Cette classe a déjà l'épreuve « {class_conflict['title']} » programmée sur ce créneau.")
 
             db.execute("""
                 INSERT INTO evaluations(title, subject_id, class_id, evaluation_date, max_score, school_year, eval_type, start_time, end_time, room_id, instructions)
@@ -1606,8 +1643,8 @@ def exams():
             """, (title, subject_id, class_id, evaluation_date, maximum, school_class["school_year"], eval_type, start_time, end_time, room_id, instructions))
             db.commit()
             flash("Contrôle / Évaluation planifié(e) avec succès.", "success")
-        except (ValueError, KeyError):
-            flash("Vérifie les informations de l'évaluation.", "danger")
+        except (ValueError, KeyError) as e:
+            flash(str(e) if str(e) else "Vérifie les informations de l'évaluation.", "danger")
         return redirect(url_for("exams"))
 
     # Query evaluations based on user role
@@ -1672,9 +1709,20 @@ def calendar_view():
             description = request.form.get("description", "").strip()
 
             if not title:
-                raise ValueError
+                raise ValueError("L'intitulé de l'événement est obligatoire.")
             if end_date and end_date < start_date:
-                raise ValueError("La date de fin ne peut être antérieure à la date de début.")
+                raise ValueError("La date de fin ne peut pas être antérieure à la date de début.")
+
+            if start_time and end_time:
+                try:
+                    t_start = datetime.strptime(start_time, "%H:%M")
+                    t_end = datetime.strptime(end_time, "%H:%M")
+                    if (not end_date or end_date == start_date) and t_start >= t_end:
+                        raise ValueError("L'heure de fin de l'événement doit être postérieure à l'heure de début.")
+                except ValueError as ve:
+                    if "L'heure de fin" in str(ve):
+                        raise
+                    raise ValueError("Format d'heure invalide (HH:MM attendu).")
 
             db.execute("""
                 INSERT INTO school_events(title, event_type, start_date, end_date, start_time, end_time, description, audience, school_year, created_by, created_at)
@@ -1900,7 +1948,7 @@ def evaluations():
     return redirect(url_for("grades"))
 
 @app.route("/evaluations/<int:eval_id>/edit", methods=["GET", "POST"])
-@login_required("admin", "teacher")
+@login_required("admin", "teacher", "director")
 def evaluation_edit(eval_id):
     db = get_db()
     ev = db.execute("SELECT * FROM evaluations WHERE id=?", (eval_id,)).fetchone()
@@ -1933,14 +1981,15 @@ def evaluation_edit(eval_id):
             audit("update", "evaluation", eval_id, old_vals, {"title": title, "max_score": maximum})
             db.commit()
             flash("Évaluation mise à jour.", "success")
-            return redirect(url_for("grades"))
+            redirect_target = url_for("exams") if (request.referrer and "exams" in request.referrer) else url_for("grades")
+            return redirect(redirect_target)
         except (ValueError, KeyError):
             flash("Vérifie les informations de l'évaluation.", "danger")
     return render_template("evaluation_form.html", eval=ev, classes=classes, subjects=subjects)
 
 
 @app.route("/evaluations/<int:eval_id>/delete", methods=["POST"])
-@login_required("admin", "teacher")
+@login_required("admin", "teacher", "director")
 def evaluation_delete(eval_id):
     db = get_db()
     ev = db.execute("SELECT * FROM evaluations WHERE id=?", (eval_id,)).fetchone()
@@ -1953,7 +2002,8 @@ def evaluation_delete(eval_id):
     audit("delete", "evaluation", eval_id, {"title": ev["title"]})
     db.commit()
     flash("Évaluation et notes associées supprimées.", "success")
-    return redirect(url_for("grades"))
+    redirect_target = url_for("exams") if (request.referrer and "exams" in request.referrer) else url_for("grades")
+    return redirect(redirect_target)
 
 
 @app.route("/grades/<int:grade_id>/delete", methods=["POST"])
@@ -2034,16 +2084,17 @@ def payment_receipt(payment_id):
 
 
 @app.route("/payments", methods=["GET", "POST"])
-@login_required("admin", "accountant", "parent")
+@login_required("admin", "accountant", "parent", "director")
 def payments():
     db=get_db()
     if request.method == "POST":
         if session.get("role") == "parent": abort(403)
         try:
             student_id=int(request.form["student_id"]); amount=float(request.form["amount"])
-            method=request.form["method"]
+            method=request.form["method"].strip()
             student=db.execute("SELECT parent_name,parent_phone,parent_user_id,first_name,last_name,school_year FROM students WHERE id=? AND active=1",(student_id,)).fetchone()
-            if not math.isfinite(amount) or amount <= 0 or method not in ("Espèces","Virement","Mobile money") or not student: raise ValueError
+            allowed_methods = ("Espèces", "Virement", "Virement bancaire", "Mobile money", "Flouci / e-Dinar", "Chèque", "Carte bancaire")
+            if not math.isfinite(amount) or amount <= 0 or method not in allowed_methods or not student: raise ValueError
             paid_at = datetime.now().isoformat(timespec="minutes")
             db.execute("INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by) VALUES(?,?,?,?,?,?,?)", (student_id,amount,paid_at,method,request.form.get("reference", "").strip(),student["school_year"],session["user_id"]))
             new_pid = db.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -2285,7 +2336,7 @@ def homework_file(homework_id, kind):
     return send_file(path,as_attachment=True,download_name=path.name)
 
 @app.route("/homework/<int:homework_id>/edit", methods=["GET", "POST"])
-@login_required("admin", "teacher")
+@login_required("admin", "teacher", "director")
 def homework_edit(homework_id):
     db = get_db()
     work = db.execute("SELECT * FROM homework WHERE id=? AND active=1", (homework_id,)).fetchone()
@@ -2300,9 +2351,17 @@ def homework_edit(homework_id):
             subject_id = int(request.form["subject_id"])
             class_id = int(request.form["class_id"])
             title = request.form.get("title", "").strip()
-            due_date = parse_iso_date(request.form["due_date"])
             if not title:
                 raise ValueError("Le titre est obligatoire.")
+            school_class = db.execute("SELECT level, school_year FROM classes WHERE id=?", (class_id,)).fetchone()
+            subject = db.execute("SELECT level, school_year FROM subjects WHERE id=? AND active=1", (subject_id,)).fetchone()
+            if not school_class or not subject or subject["level"] != school_class["level"] or subject["school_year"] != school_class["school_year"]:
+                raise ValueError("La matière et la classe doivent appartenir au même niveau et à la même année scolaire.")
+            if session.get("role") == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=? AND school_year=?", (session["user_id"], class_id, subject_id, school_class["school_year"])).fetchone():
+                abort(403)
+            due_date = parse_iso_date(request.form["due_date"])
+            if due_date < date.today():
+                raise ValueError("La date limite du devoir ne peut pas être dans le passé.")
             attachment = save_upload(request.files.get("attachment")) or work["attachment_path"]
             old_vals = {"title": work["title"], "due_date": work["due_date"]}
             db.execute("UPDATE homework SET title=?, description=?, subject_id=?, class_id=?, due_date=?, attachment_path=? WHERE id=?",
@@ -2311,13 +2370,13 @@ def homework_edit(homework_id):
             db.commit()
             flash("Devoir mis à jour.", "success")
             return redirect(url_for("homework"))
-        except (ValueError, KeyError):
-            flash("Vérifie les informations du devoir.", "danger")
+        except (ValueError, KeyError) as e:
+            flash(str(e) if str(e) else "Vérifie les informations du devoir.", "danger")
     return render_template("homework_form.html", homework=work, classes=classes, subjects=subjects)
 
 
 @app.route("/homework/<int:homework_id>/delete", methods=["POST"])
-@login_required("admin", "teacher")
+@login_required("admin", "teacher", "director")
 def homework_delete(homework_id):
     db = get_db()
     work = db.execute("SELECT * FROM homework WHERE id=? AND active=1", (homework_id,)).fetchone()
@@ -2482,7 +2541,7 @@ def pre_enrollments():
 
 
 @app.route("/fee-schedules", methods=["GET", "POST"])
-@login_required("admin", "accountant")
+@login_required("admin", "accountant", "director")
 def fee_schedules():
     db=get_db()
     if request.method == "POST":
@@ -2499,7 +2558,7 @@ def fee_schedules():
     return render_template("fee_schedules.html", fees=db.execute("SELECT * FROM fee_schedules ORDER BY school_year DESC,due_date").fetchall())
 
 @app.route("/fee-schedules/<int:fee_id>/edit", methods=["GET", "POST"])
-@login_required("admin", "accountant")
+@login_required("admin", "accountant", "director")
 def fee_edit(fee_id):
     db = get_db()
     fee = db.execute("SELECT * FROM fee_schedules WHERE id=?", (fee_id,)).fetchone()
@@ -2528,7 +2587,7 @@ def fee_edit(fee_id):
 
 
 @app.route("/fee-schedules/<int:fee_id>/delete", methods=["POST"])
-@login_required("admin", "accountant")
+@login_required("admin", "accountant", "director")
 def fee_delete(fee_id):
     db = get_db()
     fee = db.execute("SELECT * FROM fee_schedules WHERE id=?", (fee_id,)).fetchone()
@@ -2656,7 +2715,7 @@ def profile_password():
 
 
 @app.route("/absences", methods=["GET", "POST"])
-@login_required("admin", "teacher", "parent", "student", "secretary")
+@login_required("admin", "teacher", "parent", "student", "secretary", "director")
 def absences():
     db=get_db()
     if request.method == "POST":
@@ -2664,14 +2723,18 @@ def absences():
         try:
             student_id=int(request.form["student_id"])
             student=db.execute("SELECT class_id,school_year FROM students WHERE id=? AND active=1",(student_id,)).fetchone()
-            if not student: raise ValueError
+            if not student: raise ValueError("Élève introuvable ou inactif.")
             if session.get("role")=="teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND school_year=?",(session["user_id"],student["class_id"],student["school_year"])).fetchone(): abort(403)
             absence_date = parse_iso_date(request.form["absence_date"])
             if absence_date > date.today():
                 raise ValueError("Une absence ne peut pas être dans le futur.")
+            existing = db.execute("SELECT 1 FROM absences WHERE student_id=? AND absence_date=? AND school_year=?", (student_id, absence_date.isoformat(), student["school_year"])).fetchone()
+            if existing:
+                raise ValueError("Une absence a déjà été enregistrée pour cet élève à cette date.")
             db.execute("INSERT INTO absences(student_id,absence_date,reason,school_year) VALUES(?,?,?,?)",(student_id,absence_date.isoformat(),request.form.get("reason","").strip(),student["school_year"]))
             db.commit(); flash("Absence enregistrée.","success")
-        except (ValueError,KeyError): flash("Vérifie les informations de l'absence.","danger")
+        except (ValueError,KeyError) as e:
+            flash(str(e) if str(e) else "Vérifie les informations de l'absence.","danger")
         return redirect(url_for("absences"))
     if session.get("role") == "parent":
         rows=db.execute("SELECT a.*,s.first_name,s.last_name FROM absences a JOIN students s ON s.id=a.student_id WHERE s.parent_user_id=? ORDER BY absence_date DESC",(session["user_id"],)).fetchall()
@@ -2842,6 +2905,15 @@ def room_edit(room_id):
             avail = request.form.get("availability", "").strip()
             if not name or capacity < 1 or not year:
                 raise ValueError
+            assigned_max = db.execute("""
+                SELECT MAX(c.capacity)
+                FROM timetable t
+                JOIN classes c ON c.id=t.class_id
+                WHERE t.room_id=? AND t.school_year=?
+            """, (room_id, year)).fetchone()[0]
+            if assigned_max and capacity < assigned_max:
+                flash(f"La capacité de la salle ({capacity}) ne peut pas être inférieure à la capacité de la classe qui y est programmée ({assigned_max} places).", "danger")
+                return render_template("room_form.html", room=room)
             old_vals = {"name": room["name"], "capacity": room["capacity"], "availability": room["availability"]}
             db.execute("UPDATE rooms SET name=?, capacity=?, availability=?, school_year=? WHERE id=?",
                        (name, capacity, avail, year, room_id))
@@ -2861,10 +2933,10 @@ def room_delete(room_id):
     room = db.execute("SELECT * FROM rooms WHERE id=?", (room_id,)).fetchone()
     if not room:
         abort(404)
-    referenced = db.execute("SELECT COUNT(*) FROM timetable WHERE room_id=?", (room_id,)).fetchone()[0]
+    referenced = db.execute("SELECT (SELECT COUNT(*) FROM timetable WHERE room_id=?)+(SELECT COUNT(*) FROM evaluations WHERE room_id=?)", (room_id, room_id)).fetchone()[0]
     if referenced:
         db.execute("UPDATE rooms SET active=0 WHERE id=?", (room_id,))
-        flash("Salle archivée pour préserver l'historique de l'emploi du temps.", "warning")
+        flash("Salle archivée pour préserver l'historique de l'emploi du temps et des épreuves.", "warning")
     else:
         db.execute("DELETE FROM rooms WHERE id=?", (room_id,))
         flash("Salle supprimée.", "success")

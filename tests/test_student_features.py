@@ -127,6 +127,65 @@ class StudentFeaturesTests(unittest.TestCase):
         }, follow_redirects=True)
         self.assertEqual(resp_ev.status_code, 200)
 
+    def test_date_and_logical_constraints(self):
+        self.login("admin", "admin", self.admin_id)
+        db = sqlite3.connect(school_app.DATABASE)
+        cid = db.execute("SELECT id FROM classes LIMIT 1").fetchone()[0]
+        sid = db.execute("SELECT id FROM subjects WHERE level=(SELECT level FROM classes WHERE id=?)", (cid,)).fetchone()[0]
+        rid = db.execute("SELECT id FROM rooms LIMIT 1").fetchone()[0]
+        db.close()
+
+        # 1. Exam with end_time <= start_time must be rejected
+        resp = self.client.post("/exams", data={
+            "csrf_token": "valid-token",
+            "title": "Contrôle Invalide",
+            "eval_type": "Devoir Surveillé",
+            "subject_id": sid,
+            "class_id": cid,
+            "max_score": "20",
+            "evaluation_date": "2026-12-11",
+            "start_time": "11:00",
+            "end_time": "09:00",
+        }, follow_redirects=True)
+        self.assertIn("postérieure à l&#39;heure de début", resp.get_data(as_text=True))
+
+        # 2. Calendar event with end_date < start_date must be rejected
+        resp_cal = self.client.post("/calendar", data={
+            "csrf_token": "valid-token",
+            "title": "Événement Date Invalide",
+            "event_type": "event",
+            "audience": "all",
+            "start_date": "2026-12-20",
+            "end_date": "2026-12-10",
+        }, follow_redirects=True)
+        self.assertIn("La date de fin ne peut pas être antérieure", resp_cal.get_data(as_text=True))
+
+        # 3. Absence in the future must be rejected
+        resp_abs = self.client.post("/absences", data={
+            "csrf_token": "valid-token",
+            "student_id": self.student_id,
+            "absence_date": "2029-01-01",
+            "reason": "Absence future impossible",
+        }, follow_redirects=True)
+        self.assertIn("dans le futur", resp_abs.get_data(as_text=True))
+
+        # 4. Duplicate absence for same student on same date must be rejected
+        resp_abs_ok = self.client.post("/absences", data={
+            "csrf_token": "valid-token",
+            "student_id": self.student_id,
+            "absence_date": "2026-10-15",
+            "reason": "Maladie",
+        }, follow_redirects=True)
+        self.assertIn("Absence enregistrée", resp_abs_ok.get_data(as_text=True))
+
+        resp_abs_dup = self.client.post("/absences", data={
+            "csrf_token": "valid-token",
+            "student_id": self.student_id,
+            "absence_date": "2026-10-15",
+            "reason": "Doublon",
+        }, follow_redirects=True)
+        self.assertIn("déjà été enregistrée", resp_abs_dup.get_data(as_text=True))
+
 
 if __name__ == "__main__":
     unittest.main()
