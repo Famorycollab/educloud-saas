@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 import math
+import re
 import secrets
 import uuid
 from datetime import date, datetime, timedelta
@@ -21,7 +22,11 @@ app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE") == "1"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=14)
 ALLOWED_UPLOADS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "odt"}
+PUBLIC_REGISTER_ROLES = ("parent", "student", "teacher")
+USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9._-]{3,40}$")
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def parse_iso_date(value):
@@ -267,7 +272,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS demo_seed (seed_key TEXT PRIMARY KEY, created_at TEXT NOT NULL);
     """)
         migrations = {
-            "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1"},
+            "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1", "school_id": "INTEGER REFERENCES schools(id) DEFAULT 1"},
             "students": {"medical_notes": "TEXT DEFAULT ''", "photo_path": "TEXT DEFAULT ''", "parent_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "student_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL"},
             "messages": {"is_draft": "INTEGER NOT NULL DEFAULT 0", "attachment_path": "TEXT DEFAULT ''", "hidden_by_sender": "INTEGER NOT NULL DEFAULT 0", "hidden_by_recipient": "INTEGER NOT NULL DEFAULT 0"},
         }
@@ -453,17 +458,144 @@ def can_message(sender_id, sender_role, recipient_id):
     return False
 
 
+def public_schools():
+    return get_db().execute(
+        "SELECT id, name, city, country FROM schools WHERE active=1 ORDER BY id"
+    ).fetchall()
+
+
+def find_active_user(identifier):
+    ident = (identifier or "").strip()
+    if not ident:
+        return None
+    return get_db().execute(
+        "SELECT * FROM users WHERE active=1 AND (username=? OR (email != '' AND lower(email)=lower(?)))",
+        (ident, ident),
+    ).fetchone()
+
+
+def start_user_session(user, remember=False):
+    session.clear()
+    session.permanent = bool(remember)
+    school_id = 1
+    if "school_id" in user.keys() and user["school_id"]:
+        school_id = user["school_id"]
+    session.update(
+        user_id=user["id"],
+        username=user["username"],
+        role=user["role"],
+        school_id=school_id,
+    )
+
+
+def notify_admins(message):
+    db = get_db()
+    now = datetime.now().isoformat(timespec="minutes")
+    admins = db.execute(
+        "SELECT id FROM users WHERE active=1 AND role IN ('admin','director','superadmin')"
+    ).fetchall()
+    for admin in admins:
+        db.execute(
+            "INSERT INTO notifications(user_id,channel,message,status,created_at) VALUES(?,?,?,?,?)",
+            (admin["id"], "internal", message, "queued", now),
+        )
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
     if request.method == "POST":
-        user = get_db().execute("SELECT * FROM users WHERE username=? AND active=1", (request.form.get("username", "").strip(),)).fetchone()
-        if user and check_password_hash(user["password_hash"], request.form.get("password", "")):
-            session.clear()
-            sch_id = user["school_id"] if ("school_id" in user.keys() and user["school_id"]) else 1
-            session.update(user_id=user["id"], username=user["username"], role=user["role"], school_id=sch_id)
+        identifier = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        user = find_active_user(identifier)
+        if user and check_password_hash(user["password_hash"], password):
+            start_user_session(user, remember=bool(request.form.get("remember_me")))
+            next_url = request.args.get("next") or request.form.get("next") or ""
+            if next_url.startswith("/") and not next_url.startswith("//"):
+                return redirect(next_url)
             return redirect(url_for("dashboard"))
-        flash("Identifiants incorrects.", "danger")
-    return render_template("login.html")
+        flash("Identifiant ou mot de passe incorrect. Vérifiez vos informations ou créez un compte.", "danger")
+    return render_template("login.html", schools=public_schools())
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+    schools = public_schools()
+    form = {
+        "full_name": "",
+        "username": "",
+        "email": "",
+        "role": "parent",
+        "school_id": str(schools[0]["id"]) if schools else "1",
+    }
+    if request.method == "POST":
+        form["full_name"] = request.form.get("full_name", "").strip()
+        form["username"] = request.form.get("username", "").strip()
+        form["email"] = request.form.get("email", "").strip()
+        form["role"] = request.form.get("role", "parent").strip()
+        form["school_id"] = request.form.get("school_id", form["school_id"]).strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        db = get_db()
+        school = db.execute("SELECT id FROM schools WHERE id=? AND active=1", (form["school_id"],)).fetchone()
+        if not form["full_name"] or len(form["full_name"]) < 3:
+            flash("Indiquez votre nom complet (3 caractères minimum).", "danger")
+        elif not USERNAME_PATTERN.match(form["username"]):
+            flash("L’identifiant doit contenir 3 à 40 caractères (lettres, chiffres, point, tiret ou underscore).", "danger")
+        elif form["email"] and not EMAIL_PATTERN.match(form["email"]):
+            flash("L’adresse e-mail n’est pas valide.", "danger")
+        elif form["role"] not in PUBLIC_REGISTER_ROLES:
+            flash("Le profil choisi n’est pas autorisé pour une inscription en ligne.", "danger")
+        elif not school:
+            flash("Sélectionnez un établissement valide.", "danger")
+        elif len(password) < 8:
+            flash("Le mot de passe doit contenir au moins 8 caractères.", "danger")
+        elif password != confirm:
+            flash("La confirmation du mot de passe ne correspond pas.", "danger")
+        elif db.execute(
+            "SELECT 1 FROM users WHERE lower(username)=lower(?) OR (? != '' AND email != '' AND lower(email)=lower(?))",
+            (form["username"], form["email"], form["email"]),
+        ).fetchone():
+            flash("Cet identifiant ou cet e-mail est déjà utilisé. Connectez-vous ou choisissez une autre valeur.", "danger")
+        else:
+            cursor = db.execute(
+                "INSERT INTO users(username,password_hash,role,full_name,email,active,school_id) VALUES(?,?,?,?,?,1,?)",
+                (
+                    form["username"],
+                    generate_password_hash(password),
+                    form["role"],
+                    form["full_name"],
+                    form["email"],
+                    school["id"],
+                ),
+            )
+            new_id = cursor.lastrowid
+            if form["role"] == "student":
+                parts = form["full_name"].split(None, 1)
+                first_name = parts[0]
+                last_name = parts[1] if len(parts) > 1 else parts[0]
+                db.execute(
+                    "INSERT INTO students(first_name,last_name,parent_name,student_user_id,school_year) VALUES(?,?,?,?,?)",
+                    (first_name, last_name, "", new_id, "2026-2027"),
+                )
+            audit(
+                "create",
+                "user",
+                new_id,
+                new_values={"username": form["username"], "role": form["role"], "school_id": school["id"]},
+            )
+            notify_admins(
+                f"Nouveau compte {form['role']} créé : {form['full_name']} ({form['username']})."
+            )
+            db.commit()
+            user = db.execute("SELECT * FROM users WHERE id=?", (new_id,)).fetchone()
+            start_user_session(user)
+            flash("Compte créé avec succès. Bienvenue sur EduCloud.", "success")
+            return redirect(url_for("dashboard"))
+    return render_template("register.html", schools=schools, form=form, roles=PUBLIC_REGISTER_ROLES)
 
 
 @app.route("/logout", methods=["POST"])

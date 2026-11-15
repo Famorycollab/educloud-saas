@@ -780,6 +780,8 @@ body {
         <p class="edu-card-subtitle">Connectez-vous pour accéder à votre espace</p>
 
         <form method="post" id="loginForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          {% if request.args.get('next') %}<input type="hidden" name="next" value="{{ request.args.get('next') }}">{% endif %}
 
           <!-- 1. Sélection de l'établissement -->
           <div class="edu-school-selector-box">
@@ -788,9 +790,11 @@ body {
               Sélectionnez votre établissement
             </label>
             <select class="edu-school-select" id="schoolSelect" name="school_id">
-              <option value="1" selected>🏛️ Groupe Scolaire International d'Excellence (Dakar)</option>
-              <option value="2">🏛️ Institut Polyvalent Horizon Avenir (Abidjan)</option>
-              <option value="3">🏛️ École Primaire Les Petits Génies</option>
+              {% for school in schools %}
+              <option value="{{ school.id }}">🏛️ {{ school.name }}{% if school.city %} ({{ school.city }}){% endif %}</option>
+              {% else %}
+              <option value="1">🏛️ Établissement principal</option>
+              {% endfor %}
             </select>
           </div>
 
@@ -839,6 +843,11 @@ body {
           </button>
         </form>
 
+        <p class="text-center mt-3 mb-0" style="font-size:0.9rem;color:#475569;">
+          Nouveau sur EduCloud ?
+          <a href="{{ url_for('register') }}" style="color:#1d70f5;font-weight:700;text-decoration:none;">Créer un compte</a>
+        </p>
+
         <!-- Divider OU -->
         <div class="edu-divider">
           <span></span>
@@ -860,7 +869,7 @@ body {
             <i class="fa-solid fa-chalkboard-user"></i>
             <span>Enseignant</span>
           </button>
-          <button type="button" class="edu-role-pill" onclick="quickFillRole('directeur', 'directeur123', 1)" title="Accès Démo Directeur">
+          <button type="button" class="edu-role-pill" onclick="quickFillRole('admin', 'admin123', 1)" title="Accès Démo Directeur">
             <i class="fa-solid fa-user-tie"></i>
             <span>Directeur</span>
           </button>
@@ -883,6 +892,8 @@ body {
       © 2026 EduCloud. Tous droits réservés.
     </div>
     <div class="edu-footer-links">
+      <a href="{{ url_for('register') }}">Créer un compte</a>
+      <span>|</span>
       <a href="{{ url_for('pre_enrollment') }}">Admissions</a>
       <span>|</span>
       <a href="javascript:void(0)" onclick="alert('Support technique EduCloud : support@educloud.saas')">Support</a>
