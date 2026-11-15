@@ -1029,7 +1029,7 @@ def dashboard():
 
 
 @app.route("/bi")
-@login_required("admin", "director", "superadmin")
+@login_required("admin", "director", "superadmin", "accountant", "secretary", "teacher")
 def bi_hub():
     import bi_analytics as bi
     db = get_db()
@@ -1048,7 +1048,7 @@ def bi_hub():
 
 
 @app.route("/bi/dashboard/<int:dash_id>")
-@login_required("admin", "director", "superadmin")
+@login_required("admin", "director", "superadmin", "accountant", "secretary", "teacher")
 def bi_dashboard(dash_id):
     return redirect(url_for("bi_hub") + f"#tab{dash_id}")
 

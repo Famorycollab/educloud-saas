@@ -277,7 +277,7 @@
       </a>
 
       {# ==================== DÉCISIONNEL & BI ==================== #}
-      {% if session.get('role') in ('admin', 'director', 'superadmin') %}
+      {% if session.get('role') in ('admin', 'director', 'superadmin', 'accountant', 'secretary', 'teacher') %}
       <div class="sidebar-caption">DÉCISIONNEL &amp; BI</div>
       <a class="side-link" href="{{ url_for('bi_hub') }}">
         <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
@@ -537,9 +537,11 @@ var observer = new IntersectionObserver(function(entries) {
 }, { threshold: 0.3 });
 document.querySelectorAll('.stat-card').forEach(function(card) { observer.observe(card); });
 
-// Tooltip init (Bootstrap)
-var tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-tooltipEls.forEach(function(el) { new bootstrap.Tooltip(el); });
+// Tooltip init (Bootstrap - safe guard)
+if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+  var tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipEls.forEach(function(el) { try { new bootstrap.Tooltip(el); } catch(e){} });
+}
 
 // Add ripple effect on buttons
 document.querySelectorAll('.btn, .side-link').forEach(function(btn) {

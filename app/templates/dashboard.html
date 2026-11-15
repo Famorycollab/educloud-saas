@@ -401,7 +401,7 @@
   </div>
 
   <div class="hero-actions-wrap">
-    {% if session.get('role') in ('admin', 'director', 'superadmin') %}
+    {% if session.get('role') in ('admin', 'director', 'superadmin', 'accountant', 'secretary', 'teacher') %}
     <a class="btn btn-light text-primary fw-bold shadow-sm d-flex align-items-center gap-2" href="{{ url_for('bi_hub') }}">
       <i class="fa-solid fa-chart-pie text-primary"></i>
       <span>Centre Décisionnel BI (10 Dashboards)</span>

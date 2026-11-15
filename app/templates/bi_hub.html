@@ -47,19 +47,98 @@
     <div style="position: absolute; right: -40px; bottom: -50px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.12), transparent); pointer-events: none;"></div>
   </div>
 
+<style>
+  .bi-tab-btn {
+    border-radius: 999px !important;
+    padding: 0.55rem 1.15rem !important;
+    font-size: 0.88rem;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0 !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .bi-tab-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a !important;
+    transform: translateY(-1px);
+  }
+  .bi-tab-btn.active {
+    background: linear-gradient(135deg, #1d4ed8, #0284c7) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+  }
+  .bi-tab-btn#tab9-btn.active {
+    background: linear-gradient(135deg, #dc2626, #ea580c) !important;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35) !important;
+  }
+  .bi-tab-btn#tab10-btn.active {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35) !important;
+  }
+  #biTabsContent > .tab-pane {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+  }
+  #biTabsContent > .tab-pane.active {
+    display: block !important;
+    opacity: 1 !important;
+  }
+  .bi-tab-nav-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 0.9rem 1.4rem;
+    margin-top: 1.75rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+</style>
+
   <!-- 10 Dashboards Navigation Pills with Smooth Animation -->
-  <div class="card border-0 shadow-sm p-2 mb-4 bg-white" style="border-radius: 16px;">
+  <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 16px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between px-2 pt-1 pb-2 border-bottom mb-3 gap-2">
+      <div class="small fw-bold text-muted text-uppercase tracking-wider">
+        <i class="fa-solid fa-layer-group text-primary me-1"></i> Navigation entre les 10 tableaux de bord décisionnels
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2" id="activeDashboardBadge">Tableau actif : 📊 1. Vue Globale</span>
+        <select class="form-select form-select-sm d-md-none fw-semibold" id="biDashboardSelect" style="width:auto;">
+          <option value="tab1">1. Vue Globale</option>
+          <option value="tab2">2. Finances</option>
+          <option value="tab3">3. Pédagogie</option>
+          <option value="tab4">4. Absences</option>
+          <option value="tab5">5. RH Enseignants</option>
+          <option value="tab6">6. Inscriptions</option>
+          <option value="tab7">7. Communication</option>
+          <option value="tab8">8. Salles & Horaires</option>
+          <option value="tab9">9. Early Warning</option>
+          <option value="tab10">10. Stratégie & IA</option>
+        </select>
+      </div>
+    </div>
     <ul class="nav nav-pills gap-2 flex-nowrap overflow-x-auto pb-1" id="biTabs" role="tablist">
-      <li class="nav-item"><button class="nav-link active fw-bold text-nowrap" id="tab1-btn" data-bs-toggle="pill" data-bs-target="#tab1" type="button">📊 1. Vue Globale</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab2-btn" data-bs-toggle="pill" data-bs-target="#tab2" type="button">💰 2. Finances</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab3-btn" data-bs-toggle="pill" data-bs-target="#tab3" type="button">🎓 3. Pédagogie</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab4-btn" data-bs-toggle="pill" data-bs-target="#tab4" type="button">📅 4. Absences</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab5-btn" data-bs-toggle="pill" data-bs-target="#tab5" type="button">👨‍🏫 5. RH Enseignants</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab6-btn" data-bs-toggle="pill" data-bs-target="#tab6" type="button">🎯 6. Inscriptions</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab7-btn" data-bs-toggle="pill" data-bs-target="#tab7" type="button">✉️ 7. Communication</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap" id="tab8-btn" data-bs-toggle="pill" data-bs-target="#tab8" type="button">🏢 8. Salles & Horaires</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap text-danger" id="tab9-btn" data-bs-toggle="pill" data-bs-target="#tab9" type="button">🚨 9. Early Warning</button></li>
-      <li class="nav-item"><button class="nav-link fw-bold text-nowrap text-primary" id="tab10-btn" data-bs-toggle="pill" data-bs-target="#tab10" type="button">🔮 10. Stratégie & IA</button></li>
+      <li class="nav-item"><button class="bi-tab-btn active text-nowrap" id="tab1-btn" data-bi-target="tab1" type="button">📊 1. Vue Globale</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab2-btn" data-bi-target="tab2" type="button">💰 2. Finances</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab3-btn" data-bi-target="tab3" type="button">🎓 3. Pédagogie</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab4-btn" data-bi-target="tab4" type="button">📅 4. Absences</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab5-btn" data-bi-target="tab5" type="button">👨‍🏫 5. RH Enseignants</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab6-btn" data-bi-target="tab6" type="button">🎯 6. Inscriptions</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab7-btn" data-bi-target="tab7" type="button">✉️ 7. Communication</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab8-btn" data-bi-target="tab8" type="button">🏢 8. Salles & Horaires</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap text-danger" id="tab9-btn" data-bi-target="tab9" type="button">🚨 9. Early Warning</button></li>
+      <li class="nav-item"><button class="bi-tab-btn text-nowrap text-primary" id="tab10-btn" data-bi-target="tab10" type="button">🔮 10. Stratégie & IA</button></li>
     </ul>
   </div>
 
@@ -164,12 +243,35 @@
         <div class="col-lg-5">
           <div class="card border-0 shadow-sm p-4 h-100">
             <h5 class="fw-bold mb-3">Évolution Pluriannuelle des Inscriptions (Big Data)</h5>
-            <canvas id="multiyearChart" height="230"></canvas>
+<div id="multiyearFallback" style="display:none;" class="mb-3">
+              {% for t in d1.multiyear_trends %}
+              <div class="mb-2">
+                <div class="d-flex justify-content-between small fw-bold mb-1">
+                  <span>{{ t.year }}</span>
+                  <span>{{ t.count }} élèves</span>
+                </div>
+                <div class="progress" style="height: 10px; border-radius: 999px;">
+                  <div class="progress-bar bg-primary" style="width: {{ [((t.count / (d1.total_students or 1)) * 100)|round|int, 100]|min }}%;"></div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <div style="position:relative; min-height:220px;">
+              <canvas id="multiyearChart" height="230"></canvas>
+            </div>
             <div class="mt-3 p-3 bg-light rounded text-muted small">
               📈 <strong>Tendance observée :</strong> Croissance pluriannuelle soutenue (+26% en 3 ans). Prévision rentrée 2027-2028 : saturation des classes actuelles, ouverture d'une section recommandée.
             </div>
           </div>
         </div>
+      </div>
+      <!-- Bottom Navigation Tab 1 -->
+      <div class="bi-tab-nav-bar">
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-chart-simple text-primary me-1"></i> Tableau 1 sur 10 · Vue Globale &amp; Capacité</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab2')">
+          <span>Tableau 2 : Finances &amp; Recouvrement</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
@@ -215,7 +317,29 @@
               <h5 class="fw-bold mb-0">Cashflow Mensuel & Modèle Prédictif de Trésorerie</h5>
               <span class="badge bg-primary-subtle text-primary">Algorithme Prédictif</span>
             </div>
-            <canvas id="financeChart" height="200"></canvas>
+<div id="financeFallback" style="display:none;" class="mb-3">
+              <div class="row g-2 mt-2">
+                {% for m in d2.monthly_revenues %}
+                <div class="col-6 col-md-4">
+                  <div class="p-2 border rounded bg-light text-center">
+                    <small class="text-muted d-block">{{ m.month }}</small>
+                    <strong class="text-primary">{{ m.total|round|int }} {{ g.current_school.currency or 'DT' }}</strong>
+                  </div>
+                </div>
+                {% endfor %}
+                {% for p in d2.projected_revenues %}
+                <div class="col-6 col-md-4">
+                  <div class="p-2 border rounded bg-info-subtle text-center">
+                    <small class="text-info-emphasis d-block">{{ p.month }} (Proj.)</small>
+                    <strong class="text-info-emphasis">{{ p.amount|round|int }} {{ g.current_school.currency or 'DT' }}</strong>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div style="position:relative; min-height:200px;">
+              <canvas id="financeChart" height="200"></canvas>
+            </div>
             <div class="mt-3 d-flex gap-3 text-muted small">
               <div><span class="badge bg-primary">■</span> Encaissements Réels</div>
               <div><span class="badge bg-info">■</span> Projections (P)</div>
@@ -240,7 +364,7 @@
                   <tr>
                     <td class="fw-bold">{{ l.name }}<br><small class="text-muted">{{ l.class_name }}</small></td>
                     <td>{{ l.parent_name }}<br><small class="text-muted">{{ l.parent_phone }}</small></td>
-                    <td class="text-danger fw-bold">{{ l.due|round|int }} F</td>
+                    <td class="text-danger fw-bold">{{ l.due|round|int }} {{ g.current_school.currency or 'DT' }}</td>
                     <td>
                       <form method="post" action="{{ url_for('payments_send_reminders') }}" class="d-inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -256,6 +380,18 @@
             </div>
           </div>
         </div>
+      </div>
+      <!-- Bottom Navigation Tab 2 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab1')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 1 : Vue Globale</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-coins text-warning me-1"></i> Tableau 2 sur 10 · Finances &amp; Recouvrement</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab3')">
+          <span>Tableau 3 : Pédagogie &amp; Performance</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
@@ -339,6 +475,18 @@
           </div>
         </div>
       </div>
+      <!-- Bottom Navigation Tab 3 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab2')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 2 : Finances</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-graduation-cap text-primary me-1"></i> Tableau 3 sur 10 · Pédagogie &amp; Performance</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab4')">
+          <span>Tableau 4 : Assiduité &amp; Absences</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
 
     <!-- TAB 4: ABSENCES & CORRÉLATIONS -->
@@ -398,6 +546,18 @@
           </table>
         </div>
       </div>
+      <!-- Bottom Navigation Tab 4 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab3')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 3 : Pédagogie</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-calendar-xmark text-danger me-1"></i> Tableau 4 sur 10 · Assiduité &amp; Absences</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab5')">
+          <span>Tableau 5 : RH Enseignants</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
 
     <!-- TAB 5: RH & ENSEIGNANTS -->
@@ -431,6 +591,18 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <!-- Bottom Navigation Tab 5 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab4')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 4 : Absences</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-chalkboard-user text-info me-1"></i> Tableau 5 sur 10 · RH &amp; Enseignants</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab6')">
+          <span>Tableau 6 : Inscriptions</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
@@ -478,6 +650,18 @@
           {% endfor %}
         </div>
       </div>
+      <!-- Bottom Navigation Tab 6 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab5')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 5 : RH Enseignants</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-bullseye text-success me-1"></i> Tableau 6 sur 10 · Inscriptions &amp; Admissions</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab7')">
+          <span>Tableau 7 : Communication</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
 
     <!-- TAB 7: COMMUNICATION PARENTS -->
@@ -519,6 +703,18 @@
           </div>
           {% endfor %}
         </div>
+      </div>
+      <!-- Bottom Navigation Tab 7 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab6')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 6 : Inscriptions</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-envelope text-primary me-1"></i> Tableau 7 sur 10 · Communication Parents</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab8')">
+          <span>Tableau 8 : Salles &amp; Horaires</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
@@ -580,6 +776,18 @@
           </table>
         </div>
       </div>
+      <!-- Bottom Navigation Tab 8 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab7')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 7 : Communication</span>
+        </button>
+        <span class="text-muted fw-bold small"><i class="fa-solid fa-building text-secondary me-1"></i> Tableau 8 sur 10 · Salles &amp; Logistique</span>
+        <button type="button" class="btn btn-danger fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab9')">
+          <span>Tableau 9 : Early Warning (Risques)</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
 
     <!-- TAB 9: EARLY WARNING SYSTEM (EWS) -->
@@ -623,7 +831,7 @@
                 <td>{{ ar.class_name }}</td>
                 <td><span class="badge {% if ar.avg_score < 10 %}bg-danger{% else %}bg-warning text-dark{% endif %} fs-6">{{ ar.avg_score }} / 20</span></td>
                 <td><span class="text-danger fw-bold">{{ ar.unjust_abs }} non-justifiées</span></td>
-                <td><span class="text-muted">{{ ar.unpaid_due|round|int }} F</span></td>
+                <td><span class="text-muted">{{ ar.unpaid_due|round|int }} {{ g.current_school.currency or 'DT' }}</span></td>
                 <td>
                   <span class="badge bg-{{ ar.badge_class }} px-2 py-1 fs-6">{{ ar.risk_score }}% · {{ ar.risk_level }}</span>
                 </td>
@@ -637,6 +845,18 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <!-- Bottom Navigation Tab 9 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab8')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 8 : Salles &amp; Horaires</span>
+        </button>
+        <span class="text-danger fw-bold small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Tableau 9 sur 10 · Early Warning System</span>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab10')">
+          <span>Tableau 10 : Stratégie &amp; IA</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
@@ -669,7 +889,7 @@
               <div class="col-sm-4">
                 <div class="p-3 bg-white rounded-3 shadow-sm text-center border">
                   <span class="text-muted small fw-bold">RECETTES N+1</span>
-                  <div id="simRevenue" class="fw-bold text-success fs-5 mt-1">45,000,000 F</div>
+                  <div id="simRevenue" class="fw-bold text-success fs-5 mt-1">45,000,000 {{ g.current_school.currency or 'DT' }}</div>
                 </div>
               </div>
               <div class="col-sm-4">
@@ -704,6 +924,18 @@
           {% endfor %}
         </div>
       </div>
+      <!-- Bottom Navigation Tab 10 -->
+      <div class="bi-tab-nav-bar">
+        <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab9')">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Tableau 9 : Early Warning</span>
+        </button>
+        <span class="text-primary fw-bold small"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Tableau 10 sur 10 · Stratégie &amp; Simulateur IA</span>
+        <button type="button" class="btn btn-outline-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" onclick="switchBiTab('tab1')">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Revenir au début : 1. Vue Globale</span>
+        </button>
+      </div>
     </div>
 
   </div>
@@ -712,33 +944,25 @@
 <!-- Chart.js and Interactive Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  function calculateSimulation(val) {
-    document.getElementById('simDisplay').innerText = val + ' élèves';
-    var fee = {{ d10.avg_fee or 100000 }};
-    var totalRev = Math.round(val * fee);
-    document.getElementById('simRevenue').innerText = totalRev.toLocaleString('fr-FR') + ' {{ g.current_school.currency or "DT" }}';
-    var rooms = Math.ceil(val / 28);
-    document.getElementById('simRooms').innerText = rooms + ' salles';
-    var currentTeachers = {{ d10.teachers_count or 1 }};
-    var neededTeachers = Math.ceil(val / 17);
-    var deltaTeachers = Math.max(0, neededTeachers - currentTeachers);
-    document.getElementById('simTeachers').innerText = '+' + deltaTeachers + ' prof(s)';
-  }
+  // Chart instances
+  var multiyearChartInstance = null;
+  var financeChartInstance = null;
 
-  function filterEWS() {
-    var input = document.getElementById('ewsFilterInput').value.toLowerCase();
-    var rows = document.querySelectorAll('#ewsTable tbody tr');
-    rows.forEach(function(row) {
-      var text = row.innerText.toLowerCase();
-      row.style.display = text.indexOf(input) > -1 ? '' : 'none';
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // Multiyear chart
+  function initOrResizeMultiyearChart() {
     var ctx1 = document.getElementById('multiyearChart');
-    if (ctx1) {
-      new Chart(ctx1, {
+    if (!ctx1) return;
+    if (typeof Chart === 'undefined') {
+      var fb = document.getElementById('multiyearFallback');
+      if (fb) fb.style.display = 'block';
+      ctx1.style.display = 'none';
+      return;
+    }
+    if (multiyearChartInstance) {
+      try { multiyearChartInstance.resize(); } catch(e){}
+      return;
+    }
+    try {
+      multiyearChartInstance = new Chart(ctx1, {
         type: 'bar',
         data: {
           labels: [{% for t in d1.multiyear_trends %}'{{ t.year }}',{% endfor %}],
@@ -749,14 +973,30 @@
             borderRadius: 8
           }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
       });
+    } catch(err) {
+      console.warn("multiyearChart init failed:", err);
+      var fb = document.getElementById('multiyearFallback');
+      if (fb) fb.style.display = 'block';
     }
+  }
 
-    // Finance monthly chart
+  function initOrResizeFinanceChart() {
     var ctx2 = document.getElementById('financeChart');
-    if (ctx2) {
-      new Chart(ctx2, {
+    if (!ctx2) return;
+    if (typeof Chart === 'undefined') {
+      var fb = document.getElementById('financeFallback');
+      if (fb) fb.style.display = 'block';
+      ctx2.style.display = 'none';
+      return;
+    }
+    if (financeChartInstance) {
+      try { financeChartInstance.resize(); } catch(e){}
+      return;
+    }
+    try {
+      financeChartInstance = new Chart(ctx2, {
         type: 'line',
         data: {
           labels: [{% for m in d2.monthly_revenues %}'{{ m.month }}',{% endfor %}{% for p in d2.projected_revenues %}'{{ p.month }}',{% endfor %}],
@@ -773,9 +1013,136 @@
             }
           ]
         },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+    } catch(err) {
+      console.warn("financeChart init failed:", err);
+      var fb = document.getElementById('financeFallback');
+      if (fb) fb.style.display = 'block';
+    }
+  }
+
+  function switchBiTab(targetId) {
+    if (!targetId) return;
+    var cleanId = ('' + targetId).replace(/^#/, '');
+    if (!cleanId.startsWith('tab') && /^[0-9]+$/.test(cleanId)) {
+      cleanId = 'tab' + cleanId;
+    }
+    var targetPane = document.getElementById(cleanId);
+    if (!targetPane) return;
+
+    // 1. Update buttons
+    var allButtons = document.querySelectorAll('#biTabs button, [data-bi-target]');
+    allButtons.forEach(function(btn) {
+      var btnTarget = (btn.getAttribute('data-bi-target') || btn.getAttribute('data-bs-target') || '').replace(/^#/, '');
+      if (btnTarget === cleanId || btn.id === cleanId + '-btn') {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        try { btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e){}
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      }
+    });
+
+    // 2. Update select dropdown
+    var selectEl = document.getElementById('biDashboardSelect');
+    if (selectEl && selectEl.value !== cleanId) {
+      selectEl.value = cleanId;
+    }
+
+    // 3. Update active badge
+    var badgeEl = document.getElementById('activeDashboardBadge');
+    var activeBtn = document.getElementById(cleanId + '-btn');
+    if (badgeEl && activeBtn) {
+      badgeEl.textContent = 'Tableau actif : ' + activeBtn.textContent.trim();
+    }
+
+    // 4. Update tab panes
+    var allPanes = document.querySelectorAll('#biTabsContent .tab-pane');
+    allPanes.forEach(function(pane) {
+      if (pane.id === cleanId) {
+        pane.classList.add('show', 'active');
+        pane.style.display = 'block';
+      } else {
+        pane.classList.remove('show', 'active');
+        pane.style.display = 'none';
+      }
+    });
+
+    // 5. Update URL hash
+    if (window.location.hash !== '#' + cleanId) {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, null, '#' + cleanId);
+      } else {
+        window.location.hash = '#' + cleanId;
+      }
+    }
+
+    // 6. Init charts when visible
+    if (cleanId === 'tab1') {
+      setTimeout(initOrResizeMultiyearChart, 50);
+    } else if (cleanId === 'tab2') {
+      setTimeout(initOrResizeFinanceChart, 50);
+    }
+  }
+
+  function calculateSimulation(val) {
+    var display = document.getElementById('simDisplay');
+    if (display) display.innerText = val + ' élèves';
+    var fee = {{ d10.avg_fee or 100000 }};
+    var totalRev = Math.round(val * fee);
+    var revEl = document.getElementById('simRevenue');
+    if (revEl) revEl.innerText = totalRev.toLocaleString('fr-FR') + ' {{ g.current_school.currency or "DT" }}';
+    var rooms = Math.ceil(val / 28);
+    var roomsEl = document.getElementById('simRooms');
+    if (roomsEl) roomsEl.innerText = rooms + ' salles';
+    var currentTeachers = {{ d10.teachers_count or 1 }};
+    var neededTeachers = Math.ceil(val / 17);
+    var deltaTeachers = Math.max(0, neededTeachers - currentTeachers);
+    var teachEl = document.getElementById('simTeachers');
+    if (teachEl) teachEl.innerText = '+' + deltaTeachers + ' prof(s)';
+  }
+
+  function filterEWS() {
+    var inputEl = document.getElementById('ewsFilterInput');
+    if (!inputEl) return;
+    var input = inputEl.value.toLowerCase();
+    var rows = document.querySelectorAll('#ewsTable tbody tr');
+    rows.forEach(function(row) {
+      var text = row.innerText.toLowerCase();
+      row.style.display = text.indexOf(input) > -1 ? '' : 'none';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Bind click events on all tab buttons
+    document.querySelectorAll('#biTabs button, [data-bi-target]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        var target = this.getAttribute('data-bi-target') || this.getAttribute('data-bs-target') || this.id.replace('-btn', '');
+        switchBiTab(target);
+      });
+    });
+
+    // Mobile select dropdown listener
+    var selectEl = document.getElementById('biDashboardSelect');
+    if (selectEl) {
+      selectEl.addEventListener('change', function() {
+        switchBiTab(this.value);
       });
     }
+
+    // Hash change listener
+    window.addEventListener('hashchange', function() {
+      if (window.location.hash) {
+        switchBiTab(window.location.hash);
+      }
+    });
+
+    // Initial activation from hash or default to tab1
+    var initial = window.location.hash ? window.location.hash : 'tab1';
+    switchBiTab(initial);
   });
 </script>
 {% endblock %}
