@@ -423,9 +423,9 @@ def init_db():
                        ("comptable", generate_password_hash("compta123"), "accountant", "Sihem Mansouri", "compta@educloud.tn", 1))
 
         # Initialisation complète avec le jeu de données tunisien (DT)
-        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-multi-tenant-isolation-v2'").fetchone():
+        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-multi-tenant-isolation-v3'").fetchone():
             seed_demo_data(db)
-            db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-multi-tenant-isolation-v2", datetime.now().isoformat(timespec="seconds")))
+            db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-multi-tenant-isolation-v3", datetime.now().isoformat(timespec="seconds")))
 
         db.commit()
     except sqlite3.OperationalError as e:
@@ -608,16 +608,62 @@ def seed_demo_data(db):
 
     # Emploi du temps
     tt_slots = [
-        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Français")], room_ids[0], 1, "08:00", "09:00"),
-        (class_map["CE1-A"], user_ids["enseignant"], subject_ids[("CE1", "Français")], room_ids[1], 2, "08:00", "09:00"),
-        (class_map["CE2-A"], user_ids["enseignant"], subject_ids[("CE2", "Français")], room_ids[2], 3, "08:00", "09:00"),
-        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], room_ids[0], 1, "09:15", "10:45"),
-        (class_map["7ème Base"], user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], room_ids[1], 2, "10:15", "11:45"),
-        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 4, "10:15", "12:15"),
+        # Lundi (1)
+        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Mathématiques")], room_ids[0], 1, "08:00", "09:30"),
+        (class_map["CP-A"], user_ids["prof.francais"], subject_ids[("CP", "Français")], room_ids[0], 1, "09:45", "11:15"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], room_ids[1], 1, "08:00", "10:00"),
+        (class_map["7ème Base"], user_ids["prof.arabe"], subject_ids[("7ème Base", "Langue Arabe")], room_ids[1], 1, "10:15", "11:45"),
+        (class_map["7ème Base"], user_ids["prof.sciences"], subject_ids[("7ème Base", "Sciences de la Vie et de la Terre")], room_ids[3], 1, "13:30", "15:00"),
+        (class_map["7ème Base"], user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], room_ids[1], 1, "15:15", "17:00"),
+        (class_map["9ème Pilote"], user_ids["prof.sciences"], subject_ids[("9ème Pilote", "Sciences Physiques")], room_ids[3], 1, "08:30", "10:30"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 1, "14:00", "16:00"),
+
+        # Mardi (2)
+        (class_map["CP-A"], user_ids["prof.francais"], subject_ids[("CP", "Français")], room_ids[0], 2, "08:00", "09:30"),
+        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Découverte du monde")], room_ids[0], 2, "09:45", "11:15"),
+        (class_map["7ème Base"], user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], room_ids[1], 2, "08:30", "10:30"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Informatique & Robotique")], room_ids[4], 2, "10:45", "12:15"),
+        (class_map["7ème Base"], user_ids["prof.arabe"], subject_ids[("7ème Base", "Langue Arabe")], room_ids[1], 2, "14:00", "15:30"),
+        (class_map["9ème Pilote"], user_ids["prof.arabe"], subject_ids[("9ème Pilote", "Langue Arabe")], room_ids[0], 2, "08:00", "10:00"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 2, "10:15", "12:15"),
+        (class_map["9ème Pilote"], user_ids["prof.francais"], subject_ids[("9ème Pilote", "Français")], room_ids[0], 2, "14:00", "16:00"),
+
+        # Mercredi (3)
+        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Mathématiques")], room_ids[0], 3, "08:00", "09:30"),
+        (class_map["CP-A"], user_ids["prof.francais"], subject_ids[("CP", "Français")], room_ids[2], 3, "09:45", "11:15"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], room_ids[1], 3, "08:00", "10:00"),
+        (class_map["7ème Base"], user_ids["prof.sciences"], subject_ids[("7ème Base", "Sciences de la Vie et de la Terre")], room_ids[3], 3, "10:15", "12:00"),
+        (class_map["9ème Pilote"], user_ids["prof.sciences"], subject_ids[("9ème Pilote", "Sciences Physiques")], room_ids[3], 3, "08:30", "10:30"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 3, "10:45", "12:15"),
+
+        # Jeudi (4)
+        (class_map["CP-A"], user_ids["prof.francais"], subject_ids[("CP", "Français")], room_ids[0], 4, "08:00", "09:30"),
+        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Mathématiques")], room_ids[0], 4, "09:45", "11:15"),
+        (class_map["7ème Base"], user_ids["prof.arabe"], subject_ids[("7ème Base", "Langue Arabe")], room_ids[1], 4, "08:30", "10:30"),
+        (class_map["7ème Base"], user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], room_ids[1], 4, "10:45", "12:15"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], room_ids[1], 4, "14:00", "16:00"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 4, "08:00", "10:00"),
+        (class_map["9ème Pilote"], user_ids["prof.francais"], subject_ids[("9ème Pilote", "Français")], room_ids[0], 4, "10:15", "12:15"),
+        (class_map["9ème Pilote"], user_ids["prof.arabe"], subject_ids[("9ème Pilote", "Langue Arabe")], room_ids[0], 4, "14:00", "16:00"),
+
+        # Vendredi (5)
+        (class_map["CP-A"], user_ids["enseignant"], subject_ids[("CP", "Découverte du monde")], room_ids[0], 5, "08:00", "09:30"),
+        (class_map["CP-A"], user_ids["prof.francais"], subject_ids[("CP", "Français")], room_ids[0], 5, "09:45", "11:15"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Informatique & Robotique")], room_ids[4], 5, "08:30", "10:30"),
+        (class_map["7ème Base"], user_ids["prof.sciences"], subject_ids[("7ème Base", "Sciences de la Vie et de la Terre")], room_ids[3], 5, "10:45", "12:15"),
+        (class_map["7ème Base"], user_ids["prof.arabe"], subject_ids[("7ème Base", "Langue Arabe")], room_ids[1], 5, "14:30", "16:30"),
+        (class_map["9ème Pilote"], user_ids["prof.sciences"], subject_ids[("9ème Pilote", "Sciences Physiques")], room_ids[3], 5, "08:00", "10:00"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 5, "10:15", "12:15"),
+
+        # Samedi (6)
+        (class_map["CP-A"], user_ids["prof.francais"], subject_ids[("CP", "Français")], room_ids[2], 6, "08:30", "10:30"),
+        (class_map["7ème Base"], user_ids["enseignant"], subject_ids[("7ème Base", "Mathématiques")], room_ids[1], 6, "08:00", "10:00"),
+        (class_map["7ème Base"], user_ids["prof.francais"], subject_ids[("7ème Base", "Français")], room_ids[1], 6, "10:15", "12:00"),
+        (class_map["9ème Pilote"], user_ids["enseignant"], subject_ids[("9ème Pilote", "Mathématiques")], room_ids[0], 6, "08:30", "11:30"),
     ]
     for cid, tid, subid, rid, wday, stime, etime in tt_slots:
         db.execute(
-            "INSERT INTO timetable(class_id,teacher_id,subject_id,room_id,weekday,start_time,end_time,school_year) VALUES(?,?,?,?,?,?,?,?)",
+            "INSERT INTO timetable(class_id,teacher_id,subject_id,room_id,weekday,start_time,end_time,school_year,school_id) VALUES(?,?,?,?,?,?,?,?,1)",
             (cid, tid, subid, rid, wday, stime, etime, year),
         )
 
@@ -676,15 +722,23 @@ def seed_demo_data(db):
                    (evid, stid, score, comment))
 
     # 8. Devoirs à la maison & Soumissions (due_date > today)
-    hw_cp = db.execute(
-        "INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,active) VALUES(?,?,?,?,?,?,?,1)",
-        ("Lecture de la semaine", "Lire un texte et préparer un résumé oral.", subject_ids[("CP", "Français")], class_map["CP-A"], user_ids["enseignant"], (today + timedelta(days=7)).isoformat(), year),
-    ).lastrowid
-    hw_math = db.execute(
-        "INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,active) VALUES(?,?,?,?,?,?,?,1)",
-        ("Problème d'arithmétique N°2", "Résoudre les exercices 4, 5 et 6 page 42 du manuel scolaire tunisien.", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], user_ids["enseignant"], (today + timedelta(days=5)).isoformat(), year),
-    ).lastrowid
-
+    hw_items = [
+        ("Lecture & Compréhension : Les Fables", "Lire le texte p.18 et répondre aux 3 questions de compréhension sur le cahier.", subject_ids[("CP", "Français")], class_map["CP-A"], user_ids["prof.francais"], (today + timedelta(days=2)).isoformat()),
+        ("Exercices d'Arithmétique & Numération", "Résoudre les problèmes 1, 2 et 3 page 45 sur les fractions et décimaux.", subject_ids[("7ème Base", "Mathématiques")], class_map["7ème Base"], user_ids["enseignant"], (today + timedelta(days=3)).isoformat()),
+        ("Dissertation : L'environnement et l'eau", "Rédiger un paragraphe argumentatif de 15 lignes sur l'économie de l'eau en Tunisie.", subject_ids[("7ème Base", "Français")], class_map["7ème Base"], user_ids["prof.francais"], (today + timedelta(days=5)).isoformat()),
+        ("Mini-Projet Algorithmique en Python", "Créer un script calculant la moyenne pondérée des notes trimestrielles.", subject_ids[("7ème Base", "Informatique & Robotique")], class_map["7ème Base"], user_ids["enseignant"], (today + timedelta(days=6)).isoformat()),
+        ("Rapport de TP : Circuit RLC & Oscillations", "Finaliser le compte-rendu du laboratoire avec les courbes de résonance.", subject_ids[("9ème Pilote", "Sciences Physiques")], class_map["9ème Pilote"], user_ids["prof.sciences"], (today + timedelta(days=4)).isoformat()),
+        ("Devoir Surveillé Maison - Trigonométrie", "Feuille d'exercices N°4 distribuée en classe. Démontrer les théorèmes 1 et 2.", subject_ids[("9ème Pilote", "Mathématiques")], class_map["9ème Pilote"], user_ids["enseignant"], (today + timedelta(days=7)).isoformat()),
+        ("Analyse de texte poétique arabe", "Étude analytique du poème d'Abou El Kacem Chebbi 'La Volonté de vivre'.", subject_ids[("9ème Pilote", "Langue Arabe")], class_map["9ème Pilote"], user_ids["prof.arabe"], (today + timedelta(days=8)).isoformat()),
+    ]
+    hw_math = None
+    for h_title, h_desc, h_sub, h_cls, h_tchr, h_due in hw_items:
+        cur_h = db.execute(
+            "INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,school_id,active) VALUES(?,?,?,?,?,?,?,1,1)",
+            (h_title, h_desc, h_sub, h_cls, h_tchr, h_due, year),
+        )
+        if "Arithmétique" in h_title:
+            hw_math = cur_h.lastrowid
     # Soumissions d'élèves
     db.execute(
         "INSERT OR REPLACE INTO submissions(homework_id,student_id,file_path,submitted_at,score,comment) VALUES(?,?,?,?,?,?)",
@@ -748,19 +802,28 @@ def seed_demo_data(db):
 
     # 12. Messagerie interne
     messages_data = [
-        (user_ids["enseignant"], user_ids["parent"], "Suivi scolaire d’Awa",
-         "Awa participe bien en classe. Pensez à vérifier son devoir de lecture et encourager ses progrès.",
-         (datetime.now() - timedelta(days=1)).isoformat(timespec="minutes")),
         (user_ids["directeur"], user_ids["enseignant"], "Coordination pédagogique du 1er trimestre",
-         "Chers professeurs, nous tiendrons le conseil de coordination ce jeudi à 16h30 en salle Ibn Rouchd. Merci de préparer les fiches de synthèse.",
+         "Cher collègue, nous vous invitons à finaliser la saisie des devoirs surveillés avant vendredi midi afin d'éditer les fiches de synthèse pour le conseil.",
+         (datetime.now() - timedelta(hours=3)).isoformat(timespec="minutes")),
+        (user_ids["enseignant"], user_ids["parent"], "Félicitations pour l'implication d'Awa",
+         "Bonjour Monsieur Ben Amor, Awa a obtenu une excellente note en arithmétique (19/20). Sa participation orale est un modèle pour la classe.",
+         (datetime.now() - timedelta(hours=5)).isoformat(timespec="minutes")),
+        (user_ids["parent"], user_ids["enseignant"], "Re: Félicitations pour l'implication d'Awa",
+         "Merci beaucoup Maître pour votre bienveillance et vos encouragements. Nous continuerons à bien l'accompagner à la maison.",
+         (datetime.now() - timedelta(hours=2)).isoformat(timespec="minutes")),
+        (user_ids["comptable"], user_ids["parent"], "Attestation de paiement & Reçu fiscal disponible",
+         "Madame, Monsieur, nous vous confirmons l'enregistrement de votre règlement de 900 DT. Vous pouvez télécharger le reçu officiel depuis votre espace financier.",
+         (datetime.now() - timedelta(days=1)).isoformat(timespec="minutes")),
+        (user_ids["secretaire"], user_ids["parent2"], "Justificatif d'absence bien reçu",
+         "Bonjour Madame Hammami, le certificat médical pour l'absence de Yassine a été validé et archivé dans son dossier scolaire.",
          (datetime.now() - timedelta(days=2)).isoformat(timespec="minutes")),
-        (user_ids["comptable"], user_ids["parent"], "Confirmation de réception du règlement (Trimestre 1)",
-         "Madame, Monsieur, nous accusons bonne réception de votre virement de 900 DT pour l'inscription et le 1er trimestre. Le reçu officiel est téléchargeable.",
-         (datetime.now() - timedelta(days=4)).isoformat(timespec="minutes")),
+        (user_ids["enseignant"], user_ids["eleve"], "Conseils pour le devoir maison de Mathématiques",
+         "Bonjour Awa, pour le problème N°3, rappelle-toi de bien décomposer les étapes du raisonnement avant de calculer le résultat.",
+         (datetime.now() - timedelta(days=1, hours=4)).isoformat(timespec="minutes")),
     ]
     for snd, rcv, subj, body, sat in messages_data:
         db.execute(
-            "INSERT INTO messages(sender_id,recipient_id,subject,body,sent_at) VALUES(?,?,?,?,?)",
+            "INSERT INTO messages(sender_id,recipient_id,subject,body,sent_at,school_id,is_draft,hidden_by_sender,hidden_by_recipient) VALUES(?,?,?,?,?,1,0,0,0)",
             (snd, rcv, subj, body, sat),
         )
 
@@ -784,14 +847,16 @@ def seed_demo_data(db):
 
     # 14. Notifications
     notifs = [
-        (user_ids["parent"], "internal", "Un nouveau devoir de lecture est disponible.", "queued"),
-        (user_ids["parent"], "internal", "Une nouvelle note de Mathématiques (18.5/20) est enregistrée pour Amine.", "delivered"),
-        (user_ids["parent2"], "internal", "Reçu de paiement émis : 650 DT (Flouci / e-Dinar).", "delivered"),
-        (user_ids["eleve"], "internal", "Votre travail sur l'arithmétique a été noté : 19/20 avec félicitations.", "delivered"),
+        (user_ids["parent"], "internal", "Nouveau devoir de Français : 'Lecture & Compréhension' pour le " + (today + timedelta(days=2)).strftime("%d/%m"), "delivered"),
+        (user_ids["parent"], "internal", "Une nouvelle note de Mathématiques (19.0/20) a été enregistrée.", "delivered"),
+        (user_ids["parent"], "internal", "Reçu de paiement de 900.000 DT généré et disponible en téléchargement.", "delivered"),
+        (user_ids["enseignant"], "internal", "Rappel : Conseil Pédagogique demain à 15h30 en Salle 1.", "queued"),
+        (user_ids["parent2"], "internal", "L'absence de Yassine du " + (today - timedelta(days=2)).strftime("%d/%m") + " a été validée par la vie scolaire.", "delivered"),
+        (admin_id, "internal", "Sauvegarde automatique quotidienne de la base de données effectuée avec succès.", "delivered"),
     ]
     for uid, ch, msg, st in notifs:
         db.execute(
-            "INSERT INTO notifications(user_id,channel,message,status,created_at) VALUES(?,?,?,?,?)",
+            "INSERT INTO notifications(user_id,channel,message,status,created_at,school_id) VALUES(?,?,?,?,?,1)",
             (uid, ch, msg, st, now_min),
         )
 
@@ -809,14 +874,16 @@ def seed_demo_data(db):
 
     # 15b. Événements scolaires du calendrier
     school_events_data = [
-        ("Conseil Pédagogique du 1er Trimestre", "meeting", (today + timedelta(days=3)).isoformat(), (today + timedelta(days=3)).isoformat(), "15:30", "17:30", "Harmonisation des barèmes et suivi des progressions pédagogiques.", "teachers"),
-        ("Rencontre Parents - Professeurs", "meeting", (today + timedelta(days=6)).isoformat(), (today + timedelta(days=6)).isoformat(), "09:00", "13:00", "Échanges individuels sur les résultats et l'adaptation des élèves.", "all"),
-        ("Journée Portes Ouvertes & Exposition Robotique", "event", (today + timedelta(days=14)).isoformat(), (today + timedelta(days=14)).isoformat(), "10:00", "16:00", "Démonstration des robots et projets scientifiques conçus par les collégiens.", "all"),
-        ("Session des Devoirs de Synthèse Trimestriels", "exam", (today + timedelta(days=20)).isoformat(), (today + timedelta(days=25)).isoformat(), "08:00", "12:30", "Semaine bloquée pour les devoirs de synthèse de toutes les matières.", "all"),
+        ("Conseil Pédagogique du 1er Trimestre", "meeting", (today + timedelta(days=1)).isoformat(), (today + timedelta(days=1)).isoformat(), "15:30", "17:30", "Harmonisation des barèmes et suivi des progressions pédagogiques.", "teachers"),
+        ("Club Robotique & Drones - Séance Samedi", "event", (today + timedelta(days=5)).isoformat(), (today + timedelta(days=5)).isoformat(), "09:00", "12:00", "Atelier pratique de programmation de micro-contrôleurs en salle informatique.", "all"),
+        ("Rencontre Parents - Professeurs Trimestre 1", "meeting", (today + timedelta(days=6)).isoformat(), (today + timedelta(days=6)).isoformat(), "09:00", "13:30", "Bilan personnalisé des apprentissages et remise des bulletins de mi-période.", "all"),
+        ("Devoirs Surveillés Communs de Mathématiques", "exam", (today + timedelta(days=8)).isoformat(), (today + timedelta(days=8)).isoformat(), "08:00", "10:00", "Épreuve commune pour les classes de 7ème et 9ème année.", "all"),
+        ("Journée Sciences & Développement Durable", "holiday", (today + timedelta(days=13)).isoformat(), (today + timedelta(days=13)).isoformat(), "10:00", "16:00", "Ateliers écologiques et plantations dans la cour de l'établissement.", "all"),
+        ("Semaine Bloquée des Examens de Synthèse T1", "exam", (today + timedelta(days=20)).isoformat(), (today + timedelta(days=25)).isoformat(), "08:00", "13:00", "Examens finaux du premier trimestre pour tous les niveaux.", "all"),
     ]
     for se_title, se_type, se_start, se_end, se_stime, se_etime, se_desc, se_aud in school_events_data:
         db.execute(
-            "INSERT INTO school_events(title,event_type,start_date,end_date,start_time,end_time,description,audience,school_year,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO school_events(title,event_type,start_date,end_date,start_time,end_time,description,audience,school_year,created_by,created_at,school_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)",
             (se_title, se_type, se_start, se_end, se_stime, se_etime, se_desc, se_aud, year, admin_id, now_sec),
         )
 
@@ -921,6 +988,50 @@ def seed_demo_data(db):
         VALUES('Journée Portes Ouvertes - Groupe Hannibal', 'event', ?, ?, '09:00', '15:00', 'Découverte des filières et des projets', 'all', ?, ?, ?, 2)
     """, ((today + timedelta(days=12)).isoformat(), (today + timedelta(days=12)).isoformat(), year, u2_ids["directeur_horizon"], now_sec))
 
+    # Emploi du temps École 2 (Lundi au Samedi)
+    slots_school_2 = [
+        (c2_1, u2_ids["enseignant_horizon"], sub2_math, r2_1, 1, "08:00", "10:00"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_fr, r2_1, 1, "10:15", "12:15"),
+        (c2_2, u2_ids["prof_sciences_horizon"], sub2_sci, r2_2, 1, "08:30", "11:30"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_fr, r2_1, 2, "08:30", "10:30"),
+        (c2_2, u2_ids["prof_sciences_horizon"], sub2_sci, r2_2, 2, "14:00", "16:00"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_math, r2_1, 3, "08:00", "10:00"),
+        (c2_2, u2_ids["prof_sciences_horizon"], sub2_sci, r2_2, 3, "10:15", "12:15"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_math, r2_1, 4, "08:30", "10:30"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_fr, r2_1, 4, "10:45", "12:15"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_math, r2_1, 5, "14:00", "16:00"),
+        (c2_2, u2_ids["prof_sciences_horizon"], sub2_sci, r2_2, 5, "08:30", "11:00"),
+        (c2_1, u2_ids["enseignant_horizon"], sub2_fr, r2_1, 6, "08:30", "11:00"),
+        (c2_2, u2_ids["prof_sciences_horizon"], sub2_sci, r2_2, 6, "09:00", "12:00"),
+    ]
+    for cid, tid, subid, rid, wday, stime, etime in slots_school_2:
+        db.execute(
+            "INSERT INTO timetable(class_id,teacher_id,subject_id,room_id,weekday,start_time,end_time,school_year,school_id) VALUES(?,?,?,?,?,?,?,?,2)",
+            (cid, tid, subid, rid, wday, stime, etime, year),
+        )
+
+    # Devoirs supplémentaires École 2
+    db.execute("""
+        INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,school_id,active)
+        VALUES('Commentaire composé : Baudelaire', 'Rédiger l introduction du poème L Albatros', ?, ?, ?, ?, ?, 2, 1)
+    """, (sub2_fr, c2_1, u2_ids["enseignant_horizon"], (today + timedelta(days=5)).isoformat(), year))
+    db.execute("""
+        INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,school_id,active)
+        VALUES('Cinématique : Vecteur Vitesse et Accélération', 'Exercices 5 à 8 p.72', ?, ?, ?, ?, ?, 2, 1)
+    """, (sub2_sci, c2_2, u2_ids["prof_sciences_horizon"], (today + timedelta(days=4)).isoformat(), year))
+
+    # Messages École 2
+    db.execute("""
+        INSERT INTO messages(sender_id,recipient_id,subject,body,sent_at,school_id,is_draft,hidden_by_sender,hidden_by_recipient)
+        VALUES(?,?,'Organisation des examens Horizon','Merci de transmettre le sujet de mathématiques avant mardi',?,2,0,0,0)
+    """, (u2_ids["directeur_horizon"], u2_ids["enseignant_horizon"], (datetime.now() - timedelta(hours=6)).isoformat(timespec="minutes")))
+
+    # Notifications École 2
+    db.execute("""
+        INSERT INTO notifications(user_id,channel,message,status,created_at,school_id)
+        VALUES(?,'internal','Nouveau devoir maison d Algèbre assigné','delivered',?,2)
+    """, (u2_ids["parent_horizon"], now_min))
+
     # Devoir École 2
     db.execute("""
         INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,school_id,active)
@@ -933,7 +1044,7 @@ def seed_demo_data(db):
         (admin_id, "SEED_INIT", "system", 1, "", "Données de démonstration Tunisie (DT) initialisées avec succès", now_sec),
     )
 
-    db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-multi-tenant-isolation-v2", now_sec))
+    db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-multi-tenant-isolation-v3", now_sec))
 
 
 def login_required(*roles):
