@@ -27,10 +27,29 @@
 
     <!-- Brand -->
     <a class="brand" href="{{ url_for('dashboard') }}">
-      <span class="brand-mark">🎓</span>
+      <div class="brand-logo-wrap">
+        <svg class="brand-svg-logo" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2563eb" />
+              <stop offset="50%" stop-color="#3b82f6" />
+              <stop offset="100%" stop-color="#06b6d4" />
+            </linearGradient>
+            <filter id="brandGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#2563eb" flood-opacity="0.35"/>
+            </filter>
+          </defs>
+          <rect width="44" height="44" rx="14" fill="url(#brandGrad)" filter="url(#brandGlow)"/>
+          <!-- Graduation Cap Icon & Cloud Shape -->
+          <path d="M22 12L33 18L22 24L11 18L22 12Z" fill="white" />
+          <path d="M15 20.2V26.5C15 29.5 18.1 32 22 32C25.9 32 29 29.5 29 26.5V20.2L22 24L15 20.2Z" fill="white" fill-opacity="0.85"/>
+          <path d="M33 18.5V26" stroke="#fef08a" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="33" cy="27" r="1.5" fill="#fef08a"/>
+        </svg>
+      </div>
       <span>
-        <strong>EduCloud SaaS Pro</strong>
-        <small>PORTAIL SCOLAIRE · BI</small>
+        <strong class="brand-title">EduCloud <span class="brand-saas-badge">SaaS</span></strong>
+        <small class="brand-sub">PORTAIL SCOLAIRE &amp; BI</small>
       </span>
     </a>
 

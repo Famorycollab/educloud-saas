@@ -149,40 +149,40 @@
     <div class="tab-pane fade show active" id="tab1" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
-          <div class="stat-card h-100">
+          <div class="stat-card stat-students h-100">
             <div class="stat-top">
               <span>TOTAL ÉLÈVES</span>
-              <span class="stat-icon">🎓</span>
+              <span class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></span>
             </div>
-            <strong class="text-primary">{{ d1.total_students }}</strong>
-            <small class="stat-note text-success fw-semibold">↑ +7.8% vs année N-1</small>
+            <strong>{{ d1.total_students }}</strong>
+            <small class="stat-note text-success fw-semibold"><i class="fa-solid fa-arrow-up me-1"></i>+7.8% vs année N-1</small>
           </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-          <div class="stat-card h-100">
+          <div class="stat-card stat-teachers h-100">
             <div class="stat-top">
               <span>ENSEIGNANTS & RH</span>
-              <span class="stat-icon">👨‍🏫</span>
+              <span class="stat-icon"><i class="fa-solid fa-chalkboard-user"></i></span>
             </div>
             <strong>{{ d1.total_teachers }}</strong>
-            <small class="stat-note text-info fw-semibold">Ratio 1:{{ (d1.total_students / (d1.total_teachers or 1))|round(1) }} élèves/prof</small>
+            <small class="stat-note text-info fw-semibold"><i class="fa-solid fa-users me-1"></i>Ratio 1:{{ (d1.total_students / (d1.total_teachers or 1))|round(1) }} élèves/prof</small>
           </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-          <div class="stat-card h-100">
+          <div class="stat-card stat-classes h-100">
             <div class="stat-top">
               <span>CLASSES ACTIVES</span>
-              <span class="stat-icon">▦</span>
+              <span class="stat-icon"><i class="fa-solid fa-layer-group"></i></span>
             </div>
             <strong>{{ d1.total_classes }}</strong>
-            <small class="stat-note">Capacité totale {{ d1.total_capacity }} places</small>
+            <small class="stat-note"><i class="fa-solid fa-chair me-1"></i>Capacité {{ d1.total_capacity }} places</small>
           </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-          <div class="stat-card h-100">
+          <div class="stat-card stat-payments h-100">
             <div class="stat-top">
               <span>TAUX D'OCCUPATION</span>
-              <span class="stat-icon">📈</span>
+              <span class="stat-icon"><i class="fa-solid fa-chart-line"></i></span>
             </div>
             <strong class="{% if d1.occupancy_rate > 95 %}text-danger{% elif d1.occupancy_rate > 80 %}text-success{% else %}text-warning{% endif %}">{{ d1.occupancy_rate }}%</strong>
             <div class="progress mt-2" style="height: 8px; border-radius: 6px;">
