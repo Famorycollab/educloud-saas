@@ -306,6 +306,15 @@
       </a>
       {% endif %}
 
+      {# ==================== GESTION MULTI-ÉTABLISSEMENTS (SUPERADMIN) ==================== #}
+      {% if session.get('role') == 'superadmin' %}
+      <div class="sidebar-caption">MULTI-TENANT SAAS</div>
+      <a class="side-link" href="{{ url_for('schools_list') }}">
+        <span class="nav-icon"><i class="fa-solid fa-school-flag"></i></span>
+        Gestion des Écoles
+      </a>
+      {% endif %}
+
       {# ==================== COMPTE ==================== #}
       <div class="sidebar-caption">COMPTE</div>
       <a class="side-link" href="{{ url_for('profile') }}">

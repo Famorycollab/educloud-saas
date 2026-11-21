@@ -234,7 +234,7 @@ class AccessControlTests(unittest.TestCase):
         response = admin_client.post(f"/users/{self.admin_id}/toggle", data={"csrf_token": csrf})
         self.assertEqual(response.status_code, 302)
         db = sqlite3.connect(school_app.DATABASE)
-        active_admins = db.execute("SELECT COUNT(*) FROM users WHERE role='admin' AND active=1").fetchone()[0]
+        active_admins = db.execute("SELECT COUNT(*) FROM users WHERE role='admin' AND active=1 AND school_id=1").fetchone()[0]
         db.close()
         self.assertEqual(active_admins, 1)
 

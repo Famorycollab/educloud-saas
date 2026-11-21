@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if school else 'Nouvel' }} Établissement | EduCloud SaaS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <a href="{{ url_for('schools_list') }}" class="btn btn-outline-secondary btn-sm mb-2 rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Retour aux établissements
+                </a>
+                <h3 class="fw-bold mb-0 text-slate-900">{{ 'Modifier l’établissement' if school else 'Créer un nouvel établissement' }}</h3>
+                <p class="text-muted small mb-0">Paramétrez les informations de base et l'environnement multi-tenant.</p>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                <i class="bi bi-buildings-fill me-1"></i> Multi-Tenant Node
+            </span>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Identité de l'école</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Nom de l'établissement <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" value="{{ school.name if school else '' }}" placeholder="Ex: Groupe Scolaire Hannibal" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Code unique <span class="text-danger">*</span></label>
+                            <input type="text" name="code" class="form-control text-uppercase font-monospace" value="{{ school.code if school else '' }}" placeholder="Ex: HANNIBAL" required>
+                            <div class="form-text">Code alphanumérique court.</div>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Localisation & Contact</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ville</label>
+                            <input type="text" name="city" class="form-control" value="{{ school.city if school else 'Tunis' }}" placeholder="Ex: Sousse">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Pays</label>
+                            <input type="text" name="country" class="form-control" value="{{ school.country if school else 'Tunisie' }}" placeholder="Ex: Tunisie">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Téléphone</label>
+                            <input type="text" name="phone" class="form-control" value="{{ school.phone if school else '' }}" placeholder="+216 71 000 000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">E-mail officiel</label>
+                            <input type="email" name="email" class="form-control" value="{{ school.email if school else '' }}" placeholder="direction@ecole.tn">
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Paramètres SaaS & Académiques</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Année scolaire</label>
+                            <input type="text" name="academic_year" class="form-control" value="{{ school.academic_year if school else '2026-2027' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Devise monétaire</label>
+                            <input type="text" name="currency" class="form-control" value="{{ school.currency if school else 'DT' }}" readonly>
+                            <div class="form-text">Dinar Tunisien (DT) par défaut.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Formule / Plan</label>
+                            <select name="plan" class="form-select">
+                                <option value="Enterprise SaaS Pro" {% if school and school.plan == 'Enterprise SaaS Pro' %}selected{% endif %}>Enterprise SaaS Pro</option>
+                                <option value="Standard SaaS" {% if school and school.plan == 'Standard SaaS' %}selected{% endif %}>Standard SaaS</option>
+                                <option value="Starter SaaS" {% if school and school.plan == 'Starter SaaS' %}selected{% endif %}>Starter SaaS</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if not school %}
+                    <div class="alert alert-info d-flex align-items-center rounded-3 p-3 mb-4">
+                        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                        <div>
+                            Un compte directeur sera automatiquement provisionné (ex: <code>directeur_&lt;code&gt;</code>) avec le mot de passe initial <code>directeur123</code>.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a href="{{ url_for('schools_list') }}" class="btn btn-outline-secondary px-4">Annuler</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                            <i class="bi bi-save me-1"></i> {{ 'Enregistrer les modifications' if school else 'Créer l’établissement' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

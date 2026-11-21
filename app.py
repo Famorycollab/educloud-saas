@@ -100,11 +100,16 @@ def protect_post_requests():
     # Multi-tenant scoping
     if session.get("user_id"):
         db = get_db()
-        school_id = session.get("school_id")
-        if not school_id:
-            u = db.execute("SELECT school_id FROM users WHERE id=?", (session["user_id"],)).fetchone()
-            school_id = u["school_id"] if (u and "school_id" in u.keys() and u["school_id"]) else 1
-            session["school_id"] = school_id
+        u = db.execute("SELECT school_id, role FROM users WHERE id=? AND active=1", (session["user_id"],)).fetchone()
+        user_role = u["role"] if u else session.get("role")
+        user_school_id = u["school_id"] if (u and "school_id" in u.keys() and u["school_id"]) else 1
+        
+        # Confinement strict : seul le superadmin du SaaS peut basculer d'école
+        if user_role == "superadmin":
+            school_id = session.get("school_id") or user_school_id
+        else:
+            school_id = user_school_id
+            session["school_id"] = user_school_id
         
         school = db.execute("SELECT * FROM schools WHERE id=?", (school_id,)).fetchone()
         if not school:
@@ -115,7 +120,7 @@ def protect_post_requests():
         
         g.school_id = school_id
         g.current_school = school
-        if session.get("role") in ("superadmin", "director", "admin"):
+        if user_role == "superadmin":
             g.accessible_schools = db.execute("SELECT * FROM schools WHERE active=1 ORDER BY id").fetchall()
         else:
             g.accessible_schools = [school] if school else []
@@ -137,6 +142,28 @@ def handle_bad_request(e):
     msg = getattr(e, "description", "La requête formulée est invalide ou le jeton de sécurité a expiré.")
     return render_template("error.html", code=400, title="Requête Invalide (400)", message=msg), 400
 
+
+
+def get_school_id():
+    """Return the active school_id for the current session or request context."""
+    return g.get("school_id") or session.get("school_id") or 1
+
+
+def ensure_school_entity(record, entity_name="Ressource"):
+    """
+    Verify that an entity belongs to the current user's school.
+    If the entity belongs to another school and the user is not superadmin,
+    abort with 404 (Introuvable) to prevent enumeration and leaks.
+    """
+    if not record:
+        abort(404, description=f"{entity_name} introuvable.")
+    record_dict = dict(record) if hasattr(record, "keys") else record
+    entity_school = record_dict.get("school_id")
+    current_sid = get_school_id()
+    if entity_school is not None and entity_school != current_sid:
+        if session.get("role") != "superadmin":
+            abort(404, description=f"{entity_name} introuvable ou accès non autorisé.")
+    return record
 
 @app.errorhandler(403)
 def handle_forbidden(e):
@@ -195,7 +222,7 @@ def init_db():
             full_name TEXT DEFAULT '',
             email TEXT DEFAULT '',
             active INTEGER NOT NULL DEFAULT 1,
-            school_id INTEGER REFERENCES schools(id) DEFAULT 1
+            school_id INTEGER DEFAULT 1
         );
         CREATE TABLE IF NOT EXISTS classes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -318,16 +345,33 @@ def init_db():
         CREATE TABLE IF NOT EXISTS demo_seed (seed_key TEXT PRIMARY KEY, created_at TEXT NOT NULL);
     """)
         migrations = {
-            "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1", "school_id": "INTEGER REFERENCES schools(id) DEFAULT 1"},
-            "students": {"medical_notes": "TEXT DEFAULT ''", "photo_path": "TEXT DEFAULT ''", "parent_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "student_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL"},
-            "messages": {"is_draft": "INTEGER NOT NULL DEFAULT 0", "attachment_path": "TEXT DEFAULT ''", "hidden_by_sender": "INTEGER NOT NULL DEFAULT 0", "hidden_by_recipient": "INTEGER NOT NULL DEFAULT 0"},
+            "users": {"full_name": "TEXT DEFAULT ''", "email": "TEXT DEFAULT ''", "active": "INTEGER NOT NULL DEFAULT 1", "school_id": "INTEGER DEFAULT 1"},
+            "students": {"medical_notes": "TEXT DEFAULT ''", "photo_path": "TEXT DEFAULT ''", "parent_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "student_user_id": "INTEGER REFERENCES users(id) ON DELETE SET NULL", "school_id": "INTEGER DEFAULT 1"},
+            "classes": {"school_id": "INTEGER DEFAULT 1"},
+            "subjects": {"school_id": "INTEGER DEFAULT 1"},
+            "rooms": {"school_id": "INTEGER DEFAULT 1"},
+            "teacher_assignments": {"school_id": "INTEGER DEFAULT 1"},
+            "timetable": {"school_id": "INTEGER DEFAULT 1"},
             "evaluations": {
                 "eval_type": "TEXT DEFAULT 'Devoir Surveillé'",
                 "start_time": "TEXT DEFAULT ''",
                 "end_time": "TEXT DEFAULT ''",
                 "room_id": "INTEGER REFERENCES rooms(id) DEFAULT NULL",
                 "instructions": "TEXT DEFAULT ''",
+                "school_id": "INTEGER DEFAULT 1",
             },
+            "grades": {"school_id": "INTEGER DEFAULT 1"},
+            "absences": {"school_id": "INTEGER DEFAULT 1"},
+            "fee_schedules": {"school_id": "INTEGER DEFAULT 1"},
+            "payments": {"school_id": "INTEGER DEFAULT 1"},
+            "homework": {"school_id": "INTEGER DEFAULT 1"},
+            "submissions": {"school_id": "INTEGER DEFAULT 1"},
+            "messages": {"is_draft": "INTEGER NOT NULL DEFAULT 0", "attachment_path": "TEXT DEFAULT ''", "hidden_by_sender": "INTEGER NOT NULL DEFAULT 0", "hidden_by_recipient": "INTEGER NOT NULL DEFAULT 0", "school_id": "INTEGER DEFAULT 1"},
+            "announcements": {"school_id": "INTEGER DEFAULT 1"},
+            "audit_log": {"school_id": "INTEGER DEFAULT 1"},
+            "notifications": {"school_id": "INTEGER DEFAULT 1"},
+            "pre_enrollments": {"school_id": "INTEGER DEFAULT 1"},
+            "school_events": {"school_id": "INTEGER DEFAULT 1"},
         }
         for table, columns in migrations.items():
             existing = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
@@ -336,6 +380,22 @@ def init_db():
                     db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
         db.execute("UPDATE students SET student_user_id=NULL WHERE student_user_id IS NOT NULL AND id NOT IN (SELECT MIN(id) FROM students WHERE student_user_id IS NOT NULL GROUP BY student_user_id)")
         db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_user ON students(student_user_id) WHERE student_user_id IS NOT NULL")
+        
+        # Synchronisation et rattachement des tables au school_id parent
+        db.execute("UPDATE grades SET school_id = COALESCE((SELECT e.school_id FROM evaluations e WHERE e.id = grades.evaluation_id), 1) WHERE school_id IS NULL OR school_id = 0")
+        db.execute("UPDATE submissions SET school_id = COALESCE((SELECT h.school_id FROM homework h WHERE h.id = submissions.homework_id), 1) WHERE school_id IS NULL OR school_id = 0")
+        db.execute("UPDATE school_events SET school_id = 1 WHERE school_id IS NULL OR school_id = 0")
+        db.execute("UPDATE messages SET school_id = COALESCE((SELECT u.school_id FROM users u WHERE u.id = messages.sender_id), 1) WHERE school_id IS NULL OR school_id = 0")
+        db.execute("UPDATE notifications SET school_id = COALESCE((SELECT u.school_id FROM users u WHERE u.id = notifications.user_id), 1) WHERE school_id IS NULL OR school_id = 0")
+        
+        # Indexation systématique de toutes les tables sur school_id (Étape 2 du guide du prof)
+        for tbl in ["users", "classes", "students", "subjects", "rooms", "timetable", "evaluations",
+                    "grades", "absences", "fee_schedules", "payments", "homework", "submissions",
+                    "messages", "announcements", "audit_log", "notifications", "pre_enrollments", "school_events"]:
+            try:
+                db.execute(f"CREATE INDEX IF NOT EXISTS idx_{tbl}_school ON {tbl}(school_id)")
+            except Exception:
+                pass
         
         # Mettre à jour la devise en Dinar Tunisien (DT) pour toutes les écoles
         db.execute("UPDATE schools SET currency='DT'")
@@ -363,9 +423,9 @@ def init_db():
                        ("comptable", generate_password_hash("compta123"), "accountant", "Sihem Mansouri", "compta@educloud.tn", 1))
 
         # Initialisation complète avec le jeu de données tunisien (DT)
-        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-demo-tunisie-dt-v1'").fetchone():
+        if not db.execute("SELECT 1 FROM demo_seed WHERE seed_key='school-multi-tenant-isolation-v2'").fetchone():
             seed_demo_data(db)
-            db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-tunisie-dt-v1", datetime.now().isoformat(timespec="seconds")))
+            db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-multi-tenant-isolation-v2", datetime.now().isoformat(timespec="seconds")))
 
         db.commit()
     except sqlite3.OperationalError as e:
@@ -506,17 +566,17 @@ def seed_demo_data(db):
 
     # 5. Élèves liés aux parents et aux comptes élèves
     sample_students = [
-        ("Awa", "Ndiaye", "2019-04-12", class_map["CP-A"], user_ids["parent"], user_ids["eleve"], "+216 71 100 200"),
+        ("Awa", "A-Élève5 Ndiaye", "2019-04-12", class_map["CP-A"], user_ids["parent"], user_ids["eleve"], "+216 71 100 200"),
         ("Ibrahima", "Ndiaye", "2021-09-03", class_map["CP-A"], user_ids["parent"], None, "+216 71 100 200"),
         ("Fatou", "Ndiaye", "2020-06-19", class_map["CP-A"], user_ids["parent"], None, "+216 71 100 200"),
         ("Cheikh", "Diop", "2018-11-21", class_map["CE1-A"], user_ids["parent2"], user_ids["eleve2"], "+216 73 200 300"),
         ("Aminata", "Diop", "2019-03-07", class_map["CE1-A"], user_ids["parent2"], None, "+216 73 200 300"),
         ("Marième", "Sow", "2017-07-08", class_map["CE2-A"], user_ids["parent3"], user_ids["eleve3"], "+216 74 300 400"),
         ("Moussa", "Sow", "2018-02-14", class_map["CE2-A"], user_ids["parent3"], None, "+216 74 300 400"),
-        ("Amine", "Ben Amor", "2012-05-14", class_map["7ème Base"], user_ids["parent"], None, "+216 98 123 456"),
-        ("Sarra", "Ben Amor", "2014-08-22", class_map["7ème Base"], user_ids["parent"], None, "+216 98 123 456"),
-        ("Yassine", "Hammami", "2011-11-03", class_map["9ème Pilote"], user_ids["parent2"], None, "+216 22 987 654"),
-        ("Nour", "Dridi", "2011-03-18", class_map["9ème Pilote"], user_ids["parent3"], user_ids["eleve.nour"], "+216 55 456 789"),
+        ("Amine", "A-Élève3 Ben Amor", "2012-05-14", class_map["7ème Base"], user_ids["parent"], None, "+216 98 123 456"),
+        ("Sarra", "A-Élève4 Ben Amor", "2014-08-22", class_map["7ème Base"], user_ids["parent"], None, "+216 98 123 456"),
+        ("Yassine", "A-Élève1 Hammami", "2011-11-03", class_map["9ème Pilote"], user_ids["parent2"], None, "+216 22 987 654"),
+        ("Nour", "A-Élève2 Dridi", "2011-03-18", class_map["9ème Pilote"], user_ids["parent3"], user_ids["eleve.nour"], "+216 55 456 789"),
     ]
     students = []
     for first, last, birth, cid, pid, suid, phone in sample_students:
@@ -760,13 +820,120 @@ def seed_demo_data(db):
             (se_title, se_type, se_start, se_end, se_stime, se_etime, se_desc, se_aud, year, admin_id, now_sec),
         )
 
+    # ==================== SEED ÉCOLE 2 : GROUPE SCOLAIRE HANNIBAL (HORIZON) ====================
+    # Utilisateurs École 2 & Superadmin SaaS
+    users_school_b = [
+        ("superadmin", "superadmin", "Super Administrateur SaaS", "superadmin@educloud.tn", "superadmin123", 1),
+        ("admin_horizon", "admin", "Admin Groupe Hannibal", "admin.horizon@educloud.tn", "admin123", 2),
+        ("directeur_horizon", "director", "Dr. Raouf Hannibal", "direction.horizon@educloud.tn", "directeur123", 2),
+        ("comptable_horizon", "accountant", "Khadija Sassi", "compta.horizon@educloud.tn", "compta123", 2),
+        ("secretaire_horizon", "secretary", "Salwa Chahed", "secretariat.horizon@educloud.tn", "secret123", 2),
+        ("enseignant_horizon", "teacher", "Samir Jaziri", "prof.math.horizon@educloud.tn", "prof123", 2),
+        ("prof_sciences_horizon", "teacher", "Walid Mejri", "prof.sciences.horizon@educloud.tn", "prof123", 2),
+        ("parent_horizon", "parent", "Nader Boukhris", "parent.horizon@example.test", "parent123", 2),
+        ("eleve_horizon", "student", "Karim Boukhris", "eleve.horizon@example.test", "eleve123", 2),
+    ]
+    u2_ids = {}
+    for un, rl, fn, em, pw, sid in users_school_b:
+        ex = db.execute("SELECT id FROM users WHERE username=?", (un,)).fetchone()
+        if ex:
+            db.execute("UPDATE users SET password_hash=?, role=?, full_name=?, email=?, school_id=?, active=1 WHERE id=?",
+                       (generate_password_hash(pw), rl, fn, em, sid, ex[0]))
+            u2_ids[un] = ex[0]
+        else:
+            cur = db.execute("INSERT INTO users(username,password_hash,role,full_name,email,school_id,active) VALUES(?,?,?,?,?,?,1)",
+                             (un, generate_password_hash(pw), rl, fn, em, sid))
+            u2_ids[un] = cur.lastrowid
+
+    # Classes École 2
+    c2_1 = db.execute("INSERT INTO classes(name,level,section,capacity,school_year,school_id) VALUES(?,?,?,?,?,2)",
+                      ("2nde Horizon A", "2nde", "A", 30, year)).lastrowid
+    c2_2 = db.execute("INSERT INTO classes(name,level,section,capacity,school_year,school_id) VALUES(?,?,?,?,?,2)",
+                      ("1ère Horizon Sciences", "1ère", "Sciences", 28, year)).lastrowid
+
+    # Matières École 2
+    sub2_math = db.execute("INSERT INTO subjects(name,coefficient,level,school_year,school_id,active) VALUES(?,?,?,?,2,1)",
+                           ("Mathématiques", 3.0, "2nde", year)).lastrowid
+    sub2_fr = db.execute("INSERT INTO subjects(name,coefficient,level,school_year,school_id,active) VALUES(?,?,?,?,2,1)",
+                         ("Français", 2.5, "2nde", year)).lastrowid
+    sub2_sci = db.execute("INSERT INTO subjects(name,coefficient,level,school_year,school_id,active) VALUES(?,?,?,?,2,1)",
+                          ("Sciences Physiques", 2.5, "1ère", year)).lastrowid
+
+    # Salles École 2
+    r2_1 = db.execute("INSERT INTO rooms(name,capacity,availability,school_year,school_id,active) VALUES(?,?,?,?,2,1)",
+                      ("Salle H1 - Carthage", 30, "Disponible lun-sam", year)).lastrowid
+    r2_2 = db.execute("INSERT INTO rooms(name,capacity,availability,school_year,school_id,active) VALUES(?,?,?,?,2,1)",
+                      ("Salle H2 - Utique", 32, "Disponible lun-sam", year)).lastrowid
+
+    # Affectations École 2
+    db.execute("INSERT OR IGNORE INTO teacher_assignments(teacher_id,subject_id,class_id,school_year,school_id) VALUES(?,?,?,?,2)",
+               (u2_ids["enseignant_horizon"], sub2_math, c2_1, year))
+    db.execute("INSERT OR IGNORE INTO teacher_assignments(teacher_id,subject_id,class_id,school_year,school_id) VALUES(?,?,?,?,2)",
+               (u2_ids["enseignant_horizon"], sub2_fr, c2_1, year))
+    db.execute("INSERT OR IGNORE INTO teacher_assignments(teacher_id,subject_id,class_id,school_year,school_id) VALUES(?,?,?,?,2)",
+               (u2_ids["prof_sciences_horizon"], sub2_sci, c2_2, year))
+
+    # 5 Élèves reconnaissables pour École 2 (Guide Professeur Étape 6)
+    students_school_b = [
+        ("B-Élève1", "Karim Boukhris", "2010-02-15", c2_1, u2_ids["parent_horizon"], u2_ids["eleve_horizon"], "+216 73 111 222"),
+        ("B-Élève2", "Mariem Khemir", "2010-06-20", c2_1, u2_ids["parent_horizon"], None, "+216 73 111 222"),
+        ("B-Élève3", "Aziz Chaabane", "2010-09-12", c2_1, u2_ids["parent_horizon"], None, "+216 73 111 222"),
+        ("B-Élève4", "Farah Miled", "2009-04-05", c2_2, u2_ids["parent_horizon"], None, "+216 73 333 444"),
+        ("B-Élève5", "Bilel Ghedira", "2009-11-28", c2_2, u2_ids["parent_horizon"], None, "+216 73 333 444"),
+    ]
+    st2_ids = []
+    for fn, ln, bd, cid, pid, suid, ph in students_school_b:
+        sid_new = db.execute("""
+            INSERT INTO students(first_name,last_name,birth_date,parent_name,parent_phone,parent_user_id,student_user_id,class_id,school_year,medical_notes,school_id,active)
+            VALUES(?,?,?, 'Nader Boukhris', ?,?,?,?,?,'Dossier complet', 2, 1)
+        """, (fn, ln, bd, ph, pid, suid, cid, year)).lastrowid
+        st2_ids.append(sid_new)
+
+    # Grille tarifaire École 2
+    f2_id = db.execute("INSERT INTO fee_schedules(label,amount,due_date,school_year,school_id) VALUES(?,?,?,?,2)",
+                       ("Frais de Scolarité Annuelle Horizon", 1400.0, (today + timedelta(days=45)).isoformat(), year)).lastrowid
+
+    # Paiements École 2 (en DT)
+    for sid_st in st2_ids[:4]:
+        db.execute("""
+            INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by,school_id)
+            VALUES(?,?,?,'Virement bancaire',?, ?,?, 2)
+        """, (sid_st, 700.0, (today - timedelta(days=10)).isoformat(), f"VIR-HZN-{sid_st}", year, u2_ids["comptable_horizon"]))
+
+    # Évaluations & Notes École 2
+    ev2_id = db.execute("""
+        INSERT INTO evaluations(title,subject_id,class_id,evaluation_date,max_score,school_year,eval_type,school_id)
+        VALUES('Contrôle Continu Mathématiques T1', ?, ?, ?, 20, ?, 'Devoir Surveillé', 2)
+    """, (sub2_math, c2_1, (today - timedelta(days=5)).isoformat(), year)).lastrowid
+
+    notes_b = [15.5, 13.0, 16.5]
+    for idx_n, note_val in enumerate(notes_b):
+        db.execute("INSERT OR REPLACE INTO grades(evaluation_id,student_id,score,comment,school_id) VALUES(?,?,?, 'Bon travail', 2)",
+                   (ev2_id, st2_ids[idx_n], note_val))
+
+    # Absences École 2
+    db.execute("INSERT INTO absences(student_id,absence_date,reason,justified,school_year,school_id) VALUES(?,?,?,1,?,2)",
+               (st2_ids[3], (today - timedelta(days=2)).isoformat(), "Raison médicale justifiée", year))
+
+    # Événements École 2
+    db.execute("""
+        INSERT INTO school_events(title,event_type,start_date,end_date,start_time,end_time,description,audience,school_year,created_by,created_at,school_id)
+        VALUES('Journée Portes Ouvertes - Groupe Hannibal', 'event', ?, ?, '09:00', '15:00', 'Découverte des filières et des projets', 'all', ?, ?, ?, 2)
+    """, ((today + timedelta(days=12)).isoformat(), (today + timedelta(days=12)).isoformat(), year, u2_ids["directeur_horizon"], now_sec))
+
+    # Devoir École 2
+    db.execute("""
+        INSERT INTO homework(title,description,subject_id,class_id,teacher_id,due_date,school_year,school_id,active)
+        VALUES('Devoir Maison Algèbre & Géométrie', 'Exercices 1 à 4 page 42', ?, ?, ?, ?, ?, 2, 1)
+    """, (sub2_math, c2_1, u2_ids["enseignant_horizon"], (today + timedelta(days=4)).isoformat(), year))
+
     # 16. Journal d'audit initial
     db.execute(
         "INSERT INTO audit_log(user_id,action,entity,entity_id,old_values,new_values,created_at) VALUES(?,?,?,?,?,?,?)",
         (admin_id, "SEED_INIT", "system", 1, "", "Données de démonstration Tunisie (DT) initialisées avec succès", now_sec),
     )
 
-    db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-demo-tunisie-dt-v1", now_sec))
+    db.execute("INSERT OR REPLACE INTO demo_seed(seed_key,created_at) VALUES(?,?)", ("school-multi-tenant-isolation-v2", now_sec))
 
 
 def login_required(*roles):
@@ -794,10 +961,30 @@ def login_required(*roles):
 
 
 def can_message(sender_id, sender_role, recipient_id):
-    db=get_db()
-    recipient=db.execute("SELECT role FROM users WHERE id=? AND active=1",(recipient_id,)).fetchone()
-    if not recipient or sender_id==recipient_id:
+    db = get_db()
+    recipient = db.execute("SELECT role, school_id FROM users WHERE id=? AND active=1", (recipient_id,)).fetchone()
+    if not recipient or sender_id == recipient_id:
         return False
+    
+    sender = db.execute("SELECT role, school_id FROM users WHERE id=? AND active=1", (sender_id,)).fetchone()
+    if sender and sender["role"] != "superadmin" and recipient["role"] != "superadmin":
+        if sender["school_id"] != recipient["school_id"]:
+            return False
+            
+    recipient_role = recipient["role"]
+    if sender_role in ("admin", "director", "superadmin"):
+        return True
+    if sender_role == "teacher":
+        return recipient_role in ("admin", "secretary", "director") or (recipient_role == "parent" and bool(db.execute("SELECT 1 FROM students st JOIN teacher_assignments a ON a.class_id=st.class_id WHERE st.parent_user_id=? AND a.teacher_id=?", (recipient_id, sender_id)).fetchone()))
+    if sender_role == "parent":
+        return recipient_role in ("admin", "secretary", "director") or (recipient_role == "teacher" and bool(db.execute("SELECT 1 FROM students st JOIN teacher_assignments a ON a.class_id=st.class_id WHERE st.parent_user_id=? AND a.teacher_id=?", (sender_id, recipient_id)).fetchone()))
+    if sender_role == "student":
+        return recipient_role in ("admin", "secretary", "teacher", "director") and (recipient_role in ("admin", "secretary", "director") or bool(db.execute("SELECT 1 FROM students st JOIN teacher_assignments a ON a.class_id=st.class_id WHERE st.student_user_id=? AND a.teacher_id=?", (sender_id, recipient_id)).fetchone()))
+    if sender_role == "accountant":
+        return recipient_role in ("admin", "secretary", "director") or (recipient_role == "parent" and bool(db.execute("SELECT 1 FROM students WHERE parent_user_id=?", (recipient_id,)).fetchone()))
+    if sender_role == "secretary":
+        return recipient_role in ("admin", "parent", "director")
+    return False
     recipient_role=recipient["role"]
     if sender_role=="admin":
         return True
@@ -1053,8 +1240,101 @@ def bi_dashboard(dash_id):
     return redirect(url_for("bi_hub") + f"#tab{dash_id}")
 
 
+
+@app.route("/schools")
+@login_required("superadmin")
+def schools_list():
+    db = get_db()
+    schools = db.execute("""
+        SELECT s.*,
+               (SELECT COUNT(*) FROM students st WHERE st.school_id=s.id AND st.active=1) AS student_count,
+               (SELECT COUNT(*) FROM users u WHERE u.school_id=s.id AND u.active=1) AS user_count,
+               (SELECT COUNT(*) FROM classes c WHERE c.school_id=s.id) AS class_count
+        FROM schools s
+        ORDER BY s.id
+    """).fetchall()
+    return render_template("schools.html", schools=schools)
+
+
+@app.route("/schools/new", methods=["GET", "POST"])
+@login_required("superadmin")
+def school_new():
+    db = get_db()
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        code = request.form.get("code", "").strip().upper()
+        city = request.form.get("city", "").strip()
+        country = request.form.get("country", "Tunisie").strip()
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+        academic_year = request.form.get("academic_year", "2026-2027").strip()
+        plan = request.form.get("plan", "Enterprise SaaS Pro").strip()
+        currency = request.form.get("currency", "DT").strip()
+        
+        if not name or not code:
+            flash("Le nom et le code de l'établissement sont obligatoires.", "danger")
+        else:
+            existing = db.execute("SELECT id FROM schools WHERE code=?", (code,)).fetchone()
+            if existing:
+                flash(f"Une école avec le code '{code}' existe déjà.", "danger")
+            else:
+                now_str = datetime.now().isoformat(timespec="seconds")
+                db.execute("""
+                    INSERT INTO schools(name, code, city, country, phone, email, academic_year, plan, currency, active, created_at)
+                    VALUES(?,?,?,?,?,?,?,?,?,1,?)
+                """, (name, code, city, country, phone, email, academic_year, plan, currency, now_str))
+                new_sid = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+                
+                # Créer le directeur par défaut pour cette école
+                dir_username = f"directeur_{code.lower()}"
+                db.execute("""
+                    INSERT OR IGNORE INTO users(username, password_hash, role, full_name, email, school_id, active)
+                    VALUES(?,?,?,?,?,?,1)
+                """, (dir_username, generate_password_hash("directeur123"), "director", f"Direction {name}", email or f"{dir_username}@educloud.tn", new_sid))
+                
+                db.commit()
+                flash(f"Établissement '{name}' créé avec succès. Compte directeur créé : {dir_username} / directeur123", "success")
+                return redirect(url_for("schools_list"))
+    return render_template("school_form.html", school=None)
+
+
+@app.route("/schools/<int:school_id>/edit", methods=["GET", "POST"])
+@login_required("superadmin")
+def school_edit(school_id):
+    db = get_db()
+    school = db.execute("SELECT * FROM schools WHERE id=?", (school_id,)).fetchone()
+    if not school:
+        abort(404, description="Établissement introuvable.")
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        code = request.form.get("code", "").strip().upper()
+        city = request.form.get("city", "").strip()
+        country = request.form.get("country", "").strip()
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+        academic_year = request.form.get("academic_year", "2026-2027").strip()
+        plan = request.form.get("plan", "Enterprise SaaS Pro").strip()
+        currency = request.form.get("currency", "DT").strip()
+        
+        if not name or not code:
+            flash("Le nom et le code sont obligatoires.", "danger")
+        else:
+            existing = db.execute("SELECT id FROM schools WHERE code=? AND id!=?", (code, school_id)).fetchone()
+            if existing:
+                flash(f"Le code '{code}' est déjà utilisé par une autre école.", "danger")
+            else:
+                db.execute("""
+                    UPDATE schools
+                    SET name=?, code=?, city=?, country=?, phone=?, email=?, academic_year=?, plan=?, currency=?
+                    WHERE id=?
+                """, (name, code, city, country, phone, email, academic_year, plan, currency, school_id))
+                db.commit()
+                flash(f"Établissement '{name}' mis à jour avec succès.", "success")
+                return redirect(url_for("schools_list"))
+    return render_template("school_form.html", school=school)
+
 @app.route("/schools/switch/<int:school_id>")
-@login_required("admin", "director", "superadmin")
+@login_required("superadmin")
 def switch_school(school_id):
     db = get_db()
     school = db.execute("SELECT id, name FROM schools WHERE id=? AND active=1", (school_id,)).fetchone()
@@ -1063,21 +1343,34 @@ def switch_school(school_id):
     else:
         session["school_id"] = school["id"]
         flash(f"Établissement actif : {school['name']}", "info")
-    return redirect(request.referrer or url_for("bi_hub"))
+    return redirect(request.referrer or url_for("dashboard"))
 
 
 @app.route("/students")
 @login_required("admin", "teacher", "accountant", "secretary", "parent", "student")
 def students():
-    db=get_db()
+    db = get_db()
+    sid = get_school_id()
     if session.get("role") == "parent":
-        rows=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.parent_user_id=? ORDER BY s.last_name,s.first_name",(session["user_id"],)).fetchall()
+        rows = db.execute(
+            "SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.parent_user_id=? AND (s.school_id=? OR ? IS NULL) ORDER BY s.last_name,s.first_name",
+            (session["user_id"], sid, sid)
+        ).fetchall()
     elif session.get("role") == "student":
-        rows=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.student_user_id=?",(session["user_id"],)).fetchall()
+        rows = db.execute(
+            "SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.student_user_id=? AND (s.school_id=? OR ? IS NULL)",
+            (session["user_id"], sid, sid)
+        ).fetchall()
     elif session.get("role") == "teacher":
-        rows=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY s.last_name,s.first_name",(session["user_id"],)).fetchall()
+        rows = db.execute(
+            "SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND (s.school_id=? OR ? IS NULL) AND s.class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY s.last_name,s.first_name",
+            (sid, sid, session["user_id"])
+        ).fetchall()
     else:
-        rows=db.execute("SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 ORDER BY s.last_name,s.first_name").fetchall()
+        rows = db.execute(
+            "SELECT s.*,c.name AS class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND (s.school_id=? OR ? IS NULL) ORDER BY s.last_name,s.first_name",
+            (sid, sid)
+        ).fetchall()
     return render_template("students.html", students=rows)
 
 
@@ -1132,12 +1425,11 @@ def student_new():
 @login_required("admin", "secretary")
 def student_edit(student_id):
     db = get_db()
-    student = db.execute("SELECT * FROM students WHERE id=? AND active=1", (student_id,)).fetchone()
-    if not student:
-        abort(404)
-    classes = db.execute("SELECT * FROM classes ORDER BY name").fetchall()
-    parents = db.execute("SELECT id,full_name,username FROM users WHERE role='parent' AND active=1 ORDER BY username").fetchall()
-    student_users = db.execute("SELECT id,full_name,username FROM users WHERE role='student' AND active=1 ORDER BY username").fetchall()
+    student = ensure_school_entity(db.execute("SELECT * FROM students WHERE id=? AND active=1", (student_id,)).fetchone(), "Élève")
+    school_id = student["school_id"] or get_school_id()
+    classes = db.execute("SELECT * FROM classes WHERE (school_id=? OR school_id IS NULL) ORDER BY name", (school_id,)).fetchall()
+    parents = db.execute("SELECT id,full_name,username FROM users WHERE role='parent' AND active=1 AND (school_id=? OR school_id IS NULL) ORDER BY username", (school_id,)).fetchall()
+    student_users = db.execute("SELECT id,full_name,username FROM users WHERE role='student' AND active=1 AND (school_id=? OR school_id IS NULL) ORDER BY username", (school_id,)).fetchall()
     if request.method == "POST":
         first, last = request.form.get("first_name", "").strip(), request.form.get("last_name", "").strip()
         birth_date = request.form.get("birth_date", "").strip()
@@ -1206,6 +1498,7 @@ def students_import():
 @login_required("admin")
 def student_delete(student_id):
     db = get_db()
+    student = ensure_school_entity(db.execute("SELECT * FROM students WHERE id=? AND active=1", (student_id,)).fetchone(), "Élève")
     db.execute("UPDATE students SET active=0 WHERE id=?", (student_id,))
     db.commit()
     flash("Élève archivé (suppression logique).", "success")
@@ -1215,7 +1508,7 @@ def student_delete(student_id):
 @login_required("admin", "teacher", "parent", "student", "secretary", "accountant")
 def student_photo(student_id):
     db = get_db()
-    student = db.execute("SELECT photo_path, parent_user_id, student_user_id, class_id FROM students WHERE id=? AND active=1", (student_id,)).fetchone()
+    student = ensure_school_entity(db.execute("SELECT photo_path, parent_user_id, student_user_id, class_id, school_id FROM students WHERE id=? AND active=1", (student_id,)).fetchone(), "Photo élève")
     if not student or not student["photo_path"]:
         abort(404)
     role = session.get("role")
@@ -1235,16 +1528,14 @@ def student_photo(student_id):
 @login_required("admin", "teacher", "parent", "student", "secretary", "accountant")
 def student_detail(student_id):
     db = get_db()
-    student = db.execute(
+    student = ensure_school_entity(db.execute(
         "SELECT s.*, c.name AS class_name, u.email AS parent_email "
         "FROM students s "
         "LEFT JOIN classes c ON c.id=s.class_id "
         "LEFT JOIN users u ON u.id=s.parent_user_id "
         "WHERE s.id=? AND s.active=1",
         (student_id,)
-    ).fetchone()
-    if not student:
-        abort(404)
+    ).fetchone(), "Élève")
     role = session.get("role")
     if role == "parent" and student["parent_user_id"] != session["user_id"]:
         abort(403)
@@ -1299,14 +1590,16 @@ def classes():
             capacity = int(request.form.get("capacity", "30"))
             if not name or not level or capacity < 1:
                 raise ValueError
-            db.execute("INSERT INTO classes(name,level,section,capacity,school_year) VALUES(?,?,?,?,?)",
-                       (name,level,request.form.get("section", "").strip(),capacity,request.form.get("school_year", "2026-2027").strip()))
+            school_id = get_school_id()
+            db.execute("INSERT INTO classes(name,level,section,capacity,school_year,school_id) VALUES(?,?,?,?,?,?)",
+                       (name,level,request.form.get("section", "").strip(),capacity,request.form.get("school_year", "2026-2027").strip(), school_id))
             db.commit()
             flash("Classe créée.", "success")
             return redirect(url_for("classes"))
         except ValueError:
             flash("Vérifie le nom, le niveau et la capacité de la classe.", "danger")
-    rows = db.execute("SELECT c.*, COUNT(s.id) AS student_count FROM classes c LEFT JOIN students s ON s.class_id=c.id AND s.active=1 WHERE (? IN ('admin', 'director', 'superadmin', 'secretary') OR c.id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)) GROUP BY c.id ORDER BY c.level,c.name",(role, session["user_id"])).fetchall()
+    school_id = get_school_id()
+    rows = db.execute("SELECT c.*, COUNT(s.id) AS student_count FROM classes c LEFT JOIN students s ON s.class_id=c.id AND s.active=1 WHERE (c.school_id=? OR c.school_id IS NULL) AND (? IN ('admin', 'director', 'superadmin', 'secretary') OR c.id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?)) GROUP BY c.id ORDER BY c.level,c.name",(school_id, role, session["user_id"])).fetchall()
     return render_template("classes.html", classes=rows)
 
 
@@ -1314,6 +1607,7 @@ def classes():
 @login_required("admin")
 def class_delete(class_id):
     db = get_db()
+    cls = ensure_school_entity(db.execute("SELECT * FROM classes WHERE id=?", (class_id,)).fetchone(), "Classe")
     count = db.execute("SELECT (SELECT COUNT(*) FROM students WHERE class_id=?)+(SELECT COUNT(*) FROM timetable WHERE class_id=?)+(SELECT COUNT(*) FROM evaluations WHERE class_id=?)+(SELECT COUNT(*) FROM teacher_assignments WHERE class_id=?)+(SELECT COUNT(*) FROM homework WHERE class_id=?)", (class_id,class_id,class_id,class_id,class_id)).fetchone()[0]
     if count:
         flash("Impossible de supprimer une classe référencée. Réaffectez les élèves et retirez d'abord ses créneaux, notes et affectations.", "danger")
@@ -1327,9 +1621,7 @@ def class_delete(class_id):
 @login_required("admin")
 def class_edit(class_id):
     db = get_db()
-    cls = db.execute("SELECT * FROM classes WHERE id=?", (class_id,)).fetchone()
-    if not cls:
-        abort(404)
+    cls = ensure_school_entity(db.execute("SELECT * FROM classes WHERE id=?", (class_id,)).fetchone(), "Classe")
     if request.method == "POST":
         name, level = request.form.get("name", "").strip(), request.form.get("level", "").strip()
         try:
@@ -1951,9 +2243,7 @@ def evaluations():
 @login_required("admin", "teacher", "director")
 def evaluation_edit(eval_id):
     db = get_db()
-    ev = db.execute("SELECT * FROM evaluations WHERE id=?", (eval_id,)).fetchone()
-    if not ev:
-        abort(404)
+    ev = ensure_school_entity(db.execute("SELECT * FROM evaluations WHERE id=?", (eval_id,)).fetchone(), "Évaluation")
     if session.get("role") == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=? AND school_year=?", (session["user_id"], ev["class_id"], ev["subject_id"], ev["school_year"])).fetchone():
         abort(403)
     classes = db.execute("SELECT * FROM classes ORDER BY name").fetchall()
@@ -1992,9 +2282,7 @@ def evaluation_edit(eval_id):
 @login_required("admin", "teacher", "director")
 def evaluation_delete(eval_id):
     db = get_db()
-    ev = db.execute("SELECT * FROM evaluations WHERE id=?", (eval_id,)).fetchone()
-    if not ev:
-        abort(404)
+    ev = ensure_school_entity(db.execute("SELECT * FROM evaluations WHERE id=?", (eval_id,)).fetchone(), "Évaluation")
     if session.get("role") == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=? AND school_year=?", (session["user_id"], ev["class_id"], ev["subject_id"], ev["school_year"])).fetchone():
         abort(403)
     db.execute("DELETE FROM grades WHERE evaluation_id=?", (eval_id,))
@@ -2026,8 +2314,7 @@ def grade_delete(grade_id):
 @login_required("admin", "teacher", "parent", "student")
 def bulletin_pdf(student_id):
     db=get_db()
-    student=db.execute("SELECT s.*,c.name class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.id=? AND s.active=1",(student_id,)).fetchone()
-    if not student: abort(404)
+    student=ensure_school_entity(db.execute("SELECT s.*,c.name class_name FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.id=? AND s.active=1",(student_id,)).fetchone(), "Élève")
     role=session.get("role")
     if role=="parent" and student["parent_user_id"] != session["user_id"]: abort(403)
     if role=="student" and student["student_user_id"] != session["user_id"]: abort(403)
@@ -2062,8 +2349,7 @@ def bulletin_pdf(student_id):
 @login_required("admin", "accountant", "parent")
 def payment_receipt(payment_id):
     db=get_db()
-    payment=db.execute("SELECT p.*,s.first_name,s.last_name,s.parent_user_id FROM payments p JOIN students s ON s.id=p.student_id WHERE p.id=?",(payment_id,)).fetchone()
-    if not payment: abort(404)
+    payment=ensure_school_entity(db.execute("SELECT p.*,s.first_name,s.last_name,s.parent_user_id,COALESCE(p.school_id, s.school_id) AS school_id FROM payments p JOIN students s ON s.id=p.student_id WHERE p.id=?",(payment_id,)).fetchone(), "Paiement")
     if session.get("role")=="parent" and payment["parent_user_id"] != session["user_id"]: abort(403)
     import io
     from reportlab.lib.pagesizes import A4
@@ -2172,10 +2458,9 @@ def payments_send_reminders():
 @login_required("admin", "accountant")
 def payment_edit(payment_id):
     db = get_db()
-    payment = db.execute("SELECT * FROM payments WHERE id=?", (payment_id,)).fetchone()
-    if not payment:
-        abort(404)
-    students = db.execute("SELECT * FROM students WHERE active=1 ORDER BY last_name").fetchall()
+    payment = ensure_school_entity(db.execute("SELECT p.*, COALESCE(p.school_id, (SELECT s.school_id FROM students s WHERE s.id=p.student_id)) AS school_id FROM payments p WHERE p.id=?", (payment_id,)).fetchone(), "Paiement")
+    school_id = payment["school_id"] or get_school_id()
+    students = db.execute("SELECT * FROM students WHERE active=1 AND (school_id=? OR school_id IS NULL) ORDER BY last_name", (school_id,)).fetchall()
     if request.method == "POST":
         try:
             student_id = int(request.form["student_id"])
@@ -2200,9 +2485,7 @@ def payment_edit(payment_id):
 @login_required("admin", "accountant")
 def payment_delete(payment_id):
     db = get_db()
-    payment = db.execute("SELECT * FROM payments WHERE id=?", (payment_id,)).fetchone()
-    if not payment:
-        abort(404)
+    payment = ensure_school_entity(db.execute("SELECT p.*, COALESCE(p.school_id, (SELECT s.school_id FROM students s WHERE s.id=p.student_id)) AS school_id FROM payments p WHERE p.id=?", (payment_id,)).fetchone(), "Paiement")
     db.execute("DELETE FROM payments WHERE id=?", (payment_id,))
     audit("delete", "payment", payment_id, {"student_id": payment["student_id"], "amount": payment["amount"]})
     db.commit()
@@ -2339,9 +2622,7 @@ def homework_file(homework_id, kind):
 @login_required("admin", "teacher", "director")
 def homework_edit(homework_id):
     db = get_db()
-    work = db.execute("SELECT * FROM homework WHERE id=? AND active=1", (homework_id,)).fetchone()
-    if not work:
-        abort(404)
+    work = ensure_school_entity(db.execute("SELECT * FROM homework WHERE id=? AND active=1", (homework_id,)).fetchone(), "Devoir")
     if session.get("role") == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=?", (session["user_id"], work["class_id"], work["subject_id"])).fetchone():
         abort(403)
     classes = db.execute("SELECT * FROM classes WHERE (?<>'teacher' OR id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?))", (session.get("role"), session["user_id"])).fetchall()
@@ -2379,9 +2660,7 @@ def homework_edit(homework_id):
 @login_required("admin", "teacher", "director")
 def homework_delete(homework_id):
     db = get_db()
-    work = db.execute("SELECT * FROM homework WHERE id=? AND active=1", (homework_id,)).fetchone()
-    if not work:
-        abort(404)
+    work = ensure_school_entity(db.execute("SELECT * FROM homework WHERE id=? AND active=1", (homework_id,)).fetchone(), "Devoir")
     if session.get("role") == "teacher" and not db.execute("SELECT 1 FROM teacher_assignments WHERE teacher_id=? AND class_id=? AND subject_id=?", (session["user_id"], work["class_id"], work["subject_id"])).fetchone():
         abort(403)
     db.execute("UPDATE homework SET active=0 WHERE id=?", (homework_id,))
@@ -2627,10 +2906,11 @@ def user_toggle(user_id):
     db=get_db()
     target=db.execute("SELECT id,role,active FROM users WHERE id=?",(user_id,)).fetchone()
     if not target: abort(404)
+    sid = get_school_id()
     if target["active"] and target["id"]==session["user_id"]:
         flash("Vous ne pouvez pas désactiver votre propre compte.","danger")
-    elif target["active"] and target["role"]=="admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin' AND active=1").fetchone()[0]<=1:
-        flash("Impossible de désactiver le dernier administrateur actif.","danger")
+    elif target["active"] and target["role"]=="admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin' AND active=1 AND (school_id=? OR ? IS NULL)", (sid, sid)).fetchone()[0]<=1:
+        flash("Impossible de désactiver le dernier administrateur actif de cet établissement.","danger")
     else:
         new_active=0 if target["active"] else 1
         db.execute("UPDATE users SET active=? WHERE id=?",(new_active,user_id))
@@ -2809,10 +3089,11 @@ def students_export():
     output=io.StringIO()
     writer=csv.writer(output)
     writer.writerow(["prenom","nom","date_naissance","parent","telephone","classe","annee_scolaire"])
+    school_id = get_school_id()
     if session.get("role")=="teacher":
-        rows=get_db().execute("SELECT s.first_name,s.last_name,s.birth_date,s.parent_name,s.parent_phone,c.name,s.school_year FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND s.class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY s.last_name,s.first_name",(session["user_id"],)).fetchall()
+        rows=get_db().execute("SELECT s.first_name,s.last_name,s.birth_date,s.parent_name,s.parent_phone,c.name,s.school_year FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND (s.school_id=? OR s.school_id IS NULL) AND s.class_id IN (SELECT class_id FROM teacher_assignments WHERE teacher_id=?) ORDER BY s.last_name,s.first_name",(school_id, session["user_id"])).fetchall()
     else:
-        rows=get_db().execute("SELECT s.first_name,s.last_name,s.birth_date,s.parent_name,s.parent_phone,c.name,s.school_year FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 ORDER BY s.last_name,s.first_name").fetchall()
+        rows=get_db().execute("SELECT s.first_name,s.last_name,s.birth_date,s.parent_name,s.parent_phone,c.name,s.school_year FROM students s LEFT JOIN classes c ON c.id=s.class_id WHERE s.active=1 AND (s.school_id=? OR s.school_id IS NULL) ORDER BY s.last_name,s.first_name", (school_id,)).fetchall()
     writer.writerows([tuple(row) for row in rows])
     response=make_response("\\ufeff"+output.getvalue())
     response.headers["Content-Type"]="text/csv; charset=utf-8"
