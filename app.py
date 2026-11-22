@@ -17,6 +17,17 @@ from werkzeug.utils import secure_filename
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "school.db"
 app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_file(BASE_DIR / "app" / "static" / "favicon.ico", mimetype="image/x-icon", max_age=86400)
+
+
+@app.route("/apple-touch-icon.png")
+def apple_touch_icon():
+    return send_file(BASE_DIR / "app" / "static" / "apple-touch-icon.png", mimetype="image/png", max_age=86400)
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config["UPLOAD_FOLDER"] = str(BASE_DIR / "private_uploads")
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024

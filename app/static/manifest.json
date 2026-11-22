@@ -1,11 +1,31 @@
 {
-  "name": "Gestion de l'école primaire",
-  "short_name": "Espace École",
-  "description": "Portail scolaire pour les familles et l'équipe éducative.",
+  "name": "EduCloud - Gestion de l'école primaire",
+  "short_name": "EduCloud",
+  "description": "Portail scolaire pour les familles, les élèves et l'équipe éducative.",
   "lang": "fr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#165dce"
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
