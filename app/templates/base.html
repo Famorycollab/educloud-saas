@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- App CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}">
 </head>
 <body>
 {% if session.get('user_id') %}
@@ -391,35 +392,33 @@
   <!-- ==================== MAIN ==================== -->
   <div class="app-main">
 
-    <!-- Topbar -->
+    <!-- Topbar Premium -->
     <header class="topbar">
       <div class="d-flex align-items-center gap-3">
         <button class="menu-toggle" type="button" aria-label="Ouvrir le menu" aria-controls="appSidebar" aria-expanded="false">
           <i class="fa-solid fa-bars"></i>
         </button>
         <div class="topbar-label">
-          <i class="fa-solid fa-house fa-xs opacity-50"></i>
+          <i class="fa-solid fa-house fa-xs"></i>
           <span>/</span>
-          {% block breadcrumb %}Établissement{% endblock %}
+          <span class="topbar-title">{% block breadcrumb %}Établissement{% endblock %}</span>
         </div>
       </div>
 
-      <div class="d-flex align-items-center gap-2">
+      <div class="topbar-right">
         {% if g.accessible_schools and g.accessible_schools|length > 1 %}
         <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" style="border-radius:11px; font-size:0.8rem;">
             <i class="fa-solid fa-school fa-sm me-1"></i>
             {{ g.current_school.name if g.current_school else 'Établissement' }}
           </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius:14px; min-width:200px;">
+          <ul class="dropdown-menu dropdown-menu-end">
             {% for s in g.accessible_schools %}
             <li>
-              <a class="dropdown-item py-2 {% if s.id == g.school_id %}active{% endif %}"
-                 href="{{ url_for('switch_school', school_id=s.id) }}"
-                 style="border-radius:10px; margin:2px 6px; width:calc(100% - 12px);">
-                <i class="fa-solid fa-school fa-sm me-2 opacity-60"></i>
-                {{ s.name }}
-                <small class="d-block text-muted ms-4" style="margin-top:-2px;">{{ s.city }}</small>
+              <a class="dropdown-item {% if s.id == g.school_id %}active{% endif %}"
+                 href="{{ url_for('switch_school', school_id=s.id) }}">
+                <i class="fa-solid fa-school"></i>
+                <span>{{ s.name }}<small class="d-block text-muted" style="margin-top:-2px; font-size:0.72rem;">{{ s.city }}</small></span>
               </a>
             </li>
             {% endfor %}
@@ -427,9 +426,33 @@
         </div>
         {% endif %}
 
-        <div class="topbar-role">
-          <i class="fa-solid {{ role_icon }} fa-xs me-1"></i>
+        <!-- Badge rôle -->
+        <div class="topbar-role" data-role="{{ session.get('role', '') }}">
+          <i class="fa-solid {{ role_icon }} fa-xs"></i>
           {{ role_label }}
+        </div>
+
+        <!-- Bouton notifications -->
+        <a href="{{ url_for('notifications') }}" class="topbar-icon-btn" title="Notifications">
+          <i class="fa-solid fa-bell fa-sm"></i>
+        </a>
+
+        <!-- Avatar / profil utilisateur -->
+        <div class="dropdown">
+          <div class="topbar-avatar" data-bs-toggle="dropdown" title="{{ session.get('username', '?') }}">
+            {{ session.get('username', '?')[0]|upper }}
+          </div>
+          <ul class="dropdown-menu dropdown-menu-end" style="min-width:200px;">
+            <li>
+              <div style="padding:0.75rem 1rem 0.65rem; border-bottom:1px solid #f1f5f9;">
+                <div style="font-weight:700; font-size:0.88rem; color:#0d1b2e;">{{ session.get('username', '') }}</div>
+                <div style="font-size:0.72rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em;">{{ role_label }}</div>
+              </div>
+            </li>
+            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fa-solid fa-user-circle"></i> Mon profil</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a></li>
+          </ul>
         </div>
       </div>
     </header>
