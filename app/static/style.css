@@ -990,16 +990,166 @@ img { max-width: 100%; }
    CONTENT CARDS — Glass panels
    ============================================================ */
 .card {
-  background: rgba(255,255,255,0.92) !important;
+  background: rgba(255,255,255,0.92);
   backdrop-filter: blur(16px);
   border-radius: 20px;
   padding: 1.5rem 1.6rem;
-  border: 1px solid rgba(226,232,240,0.7) !important;
-  box-shadow: 0 4px 20px rgba(13,27,46,0.06), 0 1px 4px rgba(13,27,46,0.03) !important;
+  border: 1px solid rgba(226,232,240,0.7);
+  box-shadow: 0 4px 20px rgba(13,27,46,0.06), 0 1px 4px rgba(13,27,46,0.03);
   transition: all 0.3s var(--ease);
   position: relative;
   overflow: hidden;
-  color: var(--ink) !important;
+  color: var(--ink);
+}
+.card.text-white {
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   BI HUB HERO — fond sombre garanti, texte toujours lisible
+   (ne pas utiliser .card ici : son fond blanc !important
+    écrasait le dégradé et rendait le titre invisible)
+   ============================================================ */
+.bi-hero-card {
+  position: relative;
+  overflow: hidden;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f0c29 0%, #1a1060 32%, #1d4ed8 68%, #0e7490 100%);
+  background-size: 220% 220%;
+  animation: heroGradientFlow 12s ease-in-out infinite;
+  border-radius: 24px;
+  padding: 2rem 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 24px 56px rgba(15, 12, 41, 0.38),
+    0 8px 24px rgba(29, 78, 216, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.bi-hero-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.bi-hero-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 48% 70% at 92% 8%, rgba(6, 182, 212, 0.38) 0%, transparent 58%),
+    radial-gradient(ellipse 42% 60% at 8% 96%, rgba(124, 58, 237, 0.32) 0%, transparent 58%);
+  pointer-events: none;
+}
+.bi-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+}
+.bi-hero-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+.bi-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.bi-hero-badge-gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  border-color: transparent;
+}
+.bi-hero-badge-glass {
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+}
+.bi-hero-badge-live {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  border-color: transparent;
+}
+.bi-hero-card h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  margin: 0 0 0.45rem;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+.bi-hero-lead {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 42rem;
+}
+.bi-hero-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+.bi-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  padding: 0.38rem 0.85rem;
+  border-radius: 10px;
+  color: #ffffff;
+}
+.bi-hero-chip strong { color: #ffffff; font-weight: 800; }
+.bi-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.bi-hero-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  color: #1d4ed8;
+  border: none;
+  font-weight: 800;
+  font-size: 0.88rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.bi-hero-print:hover {
+  transform: translateY(-2px);
+  color: #1e3a8a;
+  background: #f8fafc;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+@media (max-width: 768px) {
+  .bi-hero-card { padding: 1.4rem 1.25rem; }
+  .bi-hero-card h1 { font-size: 1.28rem; }
 }
 .card-header {
   display: flex;
@@ -1680,6 +1830,13 @@ img { max-width: 100%; }
   .app-main { margin: 0; }
   .page-content { padding: 0; }
   .card { box-shadow: none; border: 1px solid #ddd; }
+  .bi-hero-card {
+    animation: none;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    box-shadow: none;
+  }
+  .bi-hero-print { display: none !important; }
 }
 
 /* ============================================================

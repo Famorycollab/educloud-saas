@@ -899,7 +899,7 @@ def seed_demo_data(db):
         )
 
     # ==================== SEED ÉCOLE 2 : GROUPE SCOLAIRE HANNIBAL (HORIZON) ====================
-    # Utilisateurs École 2 & Superadmin SaaS
+    # Utilisateurs École 2 & Superadmin SaaS base  de donnée
     users_school_b = [
         ("superadmin", "superadmin", "Super Administrateur SaaS", "superadmin@educloud.tn", "superadmin123", 1),
         ("admin_horizon", "admin", "Admin Groupe Hannibal", "admin.horizon@educloud.tn", "admin123", 2),

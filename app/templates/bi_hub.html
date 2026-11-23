@@ -6,45 +6,65 @@
 <div class="bi-dashboard-container">
 
   <!-- Top Hero / BI Title Card -->
-  <div class="card border-0 shadow-sm mb-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #091c33 0%, #10376d 50%, #0e6488 100%); border-radius: 1.25rem;">
-    <div class="card-body p-4 position-relative" style="z-index: 2;">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div>
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <span class="badge bg-warning text-dark fw-bold px-3 py-1 text-uppercase shadow-sm">Module Décisionnel · SID</span>
-            <span class="badge bg-white text-primary fw-bold px-2 py-1 shadow-sm">Cloud & Big Data</span>
-            <span class="badge bg-success text-white fw-bold px-2 py-1 shadow-sm"><span class="live-indicator d-inline-flex bg-transparent p-0 text-white me-1"><i></i></span>Temps Réel</span>
-          </div>
-          <h1 class="h3 fw-bold mb-1 text-white">Plateforme Business Intelligence & Aide à la Décision</h1>
-          <p class="mb-0 text-white-50">
-            Établissement actif : <strong class="text-white">{{ g.current_school.name if g.current_school else 'Groupe Scolaire d\'Excellence' }}</strong> 
-            · Ville : <strong class="text-white">{{ g.current_school.city if g.current_school else 'Dakar' }}</strong>
-            · Année : <strong class="text-white">2026-2027</strong>
-          </p>
+  <div class="bi-hero-card mb-4">
+    <div class="bi-hero-inner">
+      <div>
+        <div class="bi-hero-badges">
+          <span class="bi-hero-badge bi-hero-badge-gold">
+            <i class="fa-solid fa-chart-pie"></i> MODULE DÉCISIONNEL · SID
+          </span>
+          <span class="bi-hero-badge bi-hero-badge-glass">
+            <i class="fa-solid fa-cloud"></i> Cloud &amp; Big Data
+          </span>
+          <span class="bi-hero-badge bi-hero-badge-live">
+            <span class="live-indicator d-inline-flex bg-transparent p-0 text-white me-1"><i></i></span>
+            <i class="fa-solid fa-bolt"></i> Temps Réel
+          </span>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-          {% if g.accessible_schools|length > 1 %}
-          <div class="dropdown">
-            <button class="btn btn-light text-primary fw-bold dropdown-toggle shadow-sm d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
-              <span>🏫</span>
-              <span>Changer d'école ({{ g.current_school.code if g.current_school else 'EXCELLENCE' }})</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 14px;">
-              {% for s in g.accessible_schools %}
-              <li><a class="dropdown-item py-2 {% if s.id == g.school_id %}active fw-bold{% endif %}" href="{{ url_for('switch_school', school_id=s.id) }}">{{ s.name }} ({{ s.city }})</a></li>
-              {% endfor %}
-            </ul>
+        <h1>Plateforme Business Intelligence &amp; Aide à la Décision</h1>
+        <p class="bi-hero-lead">Pilotage en temps réel : capacité des classes, finances, pédagogie, risques élèves et projections N+1.</p>
+
+        <div class="bi-hero-meta">
+          <div class="bi-hero-chip">
+            <i class="fa-solid fa-school text-warning"></i>
+            Établissement : <strong>{{ g.current_school.name if g.current_school else "Groupe Scolaire d'Excellence" }}</strong>
           </div>
-          {% endif %}
-          <button class="btn btn-outline-light d-flex align-items-center gap-1 shadow-sm" onclick="window.print()">
-            <span>🖨️</span>
-            <span>Imprimer Rapport BI</span>
-          </button>
+          <div class="bi-hero-chip">
+            <i class="fa-solid fa-location-dot text-info"></i>
+            Ville : <strong>{{ g.current_school.city if g.current_school else 'Dakar' }}</strong>
+          </div>
+          <div class="bi-hero-chip">
+            <i class="fa-solid fa-calendar text-success"></i>
+            Année : <strong>2026-2027</strong>
+          </div>
+          <div class="bi-hero-chip">
+            <i class="fa-solid fa-chart-line text-warning"></i>
+            <strong>10 Dashboards Synchronisés</strong>
+          </div>
         </div>
       </div>
+
+      <div class="bi-hero-actions">
+        {% if g.accessible_schools|length > 1 %}
+        <div class="dropdown">
+          <button class="btn btn-light text-primary fw-bold dropdown-toggle shadow-sm d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" style="border-radius: 13px; padding: 0.65rem 1.2rem; font-size: 0.88rem; border: none;">
+            <i class="fa-solid fa-school"></i>
+            <span>Changer d'école ({{ g.current_school.code if g.current_school else 'EXCELLENCE' }})</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 14px; min-width: 220px;">
+            {% for s in g.accessible_schools %}
+            <li><a class="dropdown-item py-2 {% if s.id == g.school_id %}active fw-bold{% endif %}" href="{{ url_for('switch_school', school_id=s.id) }}">{{ s.name }} ({{ s.city }})</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        <button class="bi-hero-print" type="button" onclick="window.print()">
+          <i class="fa-solid fa-print"></i>
+          <span>Imprimer Rapport BI</span>
+        </button>
+      </div>
     </div>
-    <div style="position: absolute; right: -40px; bottom: -50px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.12), transparent); pointer-events: none;"></div>
   </div>
 
 <style>
