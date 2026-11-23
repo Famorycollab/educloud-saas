@@ -2517,6 +2517,16 @@ def payment_receipt(payment_id):
     return send_file(buffer,mimetype="application/pdf",as_attachment=True,download_name=f"recu-{payment_id}.pdf")
 
 
+def generate_payment_reference(db, student_id=None):
+    """Génère un numéro de référence unique et automatique pour les paiements (ex: REC-2026-0042)."""
+    now = datetime.now()
+    year = now.year
+    # Compter les paiements de l'année en cours pour numéro séquentiel
+    row = db.execute("SELECT COUNT(*) FROM payments WHERE paid_at LIKE ?", (f"{year}%",)).fetchone()
+    seq = (row[0] if row else 0) + 1
+    return f"REC-{year}-{seq:04d}"
+
+
 @app.route("/payments", methods=["GET", "POST"])
 @login_required("admin", "accountant", "parent", "director")
 def payments():
@@ -2530,7 +2540,10 @@ def payments():
             allowed_methods = ("Espèces", "Virement", "Virement bancaire", "Mobile money", "Flouci / e-Dinar", "Chèque", "Carte bancaire")
             if not math.isfinite(amount) or amount <= 0 or method not in allowed_methods or not student: raise ValueError
             paid_at = datetime.now().isoformat(timespec="minutes")
-            db.execute("INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by) VALUES(?,?,?,?,?,?,?)", (student_id,amount,paid_at,method,request.form.get("reference", "").strip(),student["school_year"],session["user_id"]))
+            ref = request.form.get("reference", "").strip()
+            if not ref:
+                ref = generate_payment_reference(db, student_id)
+            db.execute("INSERT INTO payments(student_id,amount,paid_at,method,reference,school_year,created_by) VALUES(?,?,?,?,?,?,?)", (student_id,amount,paid_at,method,ref,student["school_year"],session["user_id"]))
             new_pid = db.execute("SELECT last_insert_rowid()").fetchone()[0]
             db.commit()
             due = db.execute("SELECT COALESCE(SUM(amount),0) FROM fee_schedules WHERE school_year=?", (student["school_year"],)).fetchone()[0]
@@ -2549,7 +2562,8 @@ def payments():
     else:
         rows=db.execute("SELECT p.*,s.first_name,s.last_name FROM payments p JOIN students s ON s.id=p.student_id ORDER BY paid_at DESC").fetchall()
         students=db.execute("SELECT * FROM students WHERE active=1 ORDER BY last_name").fetchall()
-    return render_template("payments.html", payments=rows, students=students)
+    auto_ref = generate_payment_reference(db) if session.get("role") != "parent" else ""
+    return render_template("payments.html", payments=rows, students=students, auto_ref=auto_ref)
 
 @app.route("/payments/export.csv")
 @login_required("admin", "accountant")
