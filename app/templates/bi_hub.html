@@ -135,30 +135,30 @@
       <div class="d-flex align-items-center gap-2">
         <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2" id="activeDashboardBadge">Tableau actif : 📊 1. Vue Globale</span>
         <select class="form-select form-select-sm d-md-none fw-semibold" id="biDashboardSelect" style="width:auto;">
-          <option value="tab1">1. Vue Globale</option>
-          <option value="tab2">2. Finances</option>
-          <option value="tab3">3. Pédagogie</option>
-          <option value="tab4">4. Absences</option>
-          <option value="tab5">5. RH Enseignants</option>
-          <option value="tab6">6. Inscriptions</option>
-          <option value="tab7">7. Communication</option>
-          <option value="tab8">8. Salles & Horaires</option>
-          <option value="tab9">9. Early Warning</option>
-          <option value="tab10">10. Stratégie & IA</option>
+          {% if not allowed_dashes or 1 in allowed_dashes %}<option value="tab1">1. Vue Globale</option>{% endif %}
+          {% if not allowed_dashes or 2 in allowed_dashes %}<option value="tab2">2. Finances</option>{% endif %}
+          {% if not allowed_dashes or 3 in allowed_dashes %}<option value="tab3">3. Pédagogie</option>{% endif %}
+          {% if not allowed_dashes or 4 in allowed_dashes %}<option value="tab4">4. Absences</option>{% endif %}
+          {% if not allowed_dashes or 5 in allowed_dashes %}<option value="tab5">5. RH Enseignants</option>{% endif %}
+          {% if not allowed_dashes or 6 in allowed_dashes %}<option value="tab6">6. Inscriptions</option>{% endif %}
+          {% if not allowed_dashes or 7 in allowed_dashes %}<option value="tab7">7. Communication</option>{% endif %}
+          {% if not allowed_dashes or 8 in allowed_dashes %}<option value="tab8">8. Salles & Horaires</option>{% endif %}
+          {% if not allowed_dashes or 9 in allowed_dashes %}<option value="tab9">9. Early Warning</option>{% endif %}
+          {% if not allowed_dashes or 10 in allowed_dashes %}<option value="tab10">10. Stratégie & IA</option>{% endif %}
         </select>
       </div>
     </div>
     <ul class="nav nav-pills gap-2 flex-nowrap overflow-x-auto pb-1" id="biTabs" role="tablist">
-      <li class="nav-item"><button class="bi-tab-btn active text-nowrap" id="tab1-btn" data-bi-target="tab1" type="button">📊 1. Vue Globale</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab2-btn" data-bi-target="tab2" type="button">💰 2. Finances</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab3-btn" data-bi-target="tab3" type="button">🎓 3. Pédagogie</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab4-btn" data-bi-target="tab4" type="button">📅 4. Absences</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab5-btn" data-bi-target="tab5" type="button">👨‍🏫 5. RH Enseignants</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab6-btn" data-bi-target="tab6" type="button">🎯 6. Inscriptions</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab7-btn" data-bi-target="tab7" type="button">✉️ 7. Communication</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab8-btn" data-bi-target="tab8" type="button">🏢 8. Salles & Horaires</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap text-danger" id="tab9-btn" data-bi-target="tab9" type="button">🚨 9. Early Warning</button></li>
-      <li class="nav-item"><button class="bi-tab-btn text-nowrap text-primary" id="tab10-btn" data-bi-target="tab10" type="button">🔮 10. Stratégie & IA</button></li>
+      {% if not allowed_dashes or 1 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn active text-nowrap" id="tab1-btn" data-bi-target="tab1" type="button">📊 1. Vue Globale</button></li>{% endif %}
+      {% if not allowed_dashes or 2 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab2-btn" data-bi-target="tab2" type="button">💰 2. Finances</button></li>{% endif %}
+      {% if not allowed_dashes or 3 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab3-btn" data-bi-target="tab3" type="button">🎓 3. Pédagogie</button></li>{% endif %}
+      {% if not allowed_dashes or 4 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab4-btn" data-bi-target="tab4" type="button">📅 4. Absences</button></li>{% endif %}
+      {% if not allowed_dashes or 5 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab5-btn" data-bi-target="tab5" type="button">👨‍🏫 5. RH Enseignants</button></li>{% endif %}
+      {% if not allowed_dashes or 6 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab6-btn" data-bi-target="tab6" type="button">🎯 6. Inscriptions</button></li>{% endif %}
+      {% if not allowed_dashes or 7 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab7-btn" data-bi-target="tab7" type="button">✉️ 7. Communication</button></li>{% endif %}
+      {% if not allowed_dashes or 8 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap" id="tab8-btn" data-bi-target="tab8" type="button">🏢 8. Salles & Horaires</button></li>{% endif %}
+      {% if not allowed_dashes or 9 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap text-danger" id="tab9-btn" data-bi-target="tab9" type="button">🚨 9. Early Warning</button></li>{% endif %}
+      {% if not allowed_dashes or 10 in allowed_dashes %}<li class="nav-item"><button class="bi-tab-btn text-nowrap text-primary" id="tab10-btn" data-bi-target="tab10" type="button">🔮 10. Stratégie & IA</button></li>{% endif %}
     </ul>
   </div>
 
@@ -166,6 +166,7 @@
   <div class="tab-content" id="biTabsContent">
 
     <!-- TAB 1: VUE GLOBALE & CAPACITÉ -->
+    {% if not allowed_dashes or 1 in allowed_dashes %}
     <div class="tab-pane fade show active" id="tab1" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
@@ -294,8 +295,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 2: FINANCES & PAIEMENTS -->
+    {% if not allowed_dashes or 2 in allowed_dashes %}
     <div class="tab-pane fade" id="tab2" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
@@ -414,8 +417,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 3: PÉDAGOGIE & PERFORMANCE -->
+    {% if not allowed_dashes or 3 in allowed_dashes %}
     <div class="tab-pane fade" id="tab3" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
@@ -508,8 +513,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 4: ABSENCES & CORRÉLATIONS -->
+    {% if not allowed_dashes or 4 in allowed_dashes %}
     <div class="tab-pane fade" id="tab4" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-4">
@@ -579,8 +586,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 5: RH & ENSEIGNANTS -->
+    {% if not allowed_dashes or 5 in allowed_dashes %}
     <div class="tab-pane fade" id="tab5" role="tabpanel">
       <div class="card border-0 shadow-sm p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -625,8 +634,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 6: INSCRIPTIONS & RÉTENTION -->
+    {% if not allowed_dashes or 6 in allowed_dashes %}
     <div class="tab-pane fade" id="tab6" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-4">
@@ -683,8 +694,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 7: COMMUNICATION PARENTS -->
+    {% if not allowed_dashes or 7 in allowed_dashes %}
     <div class="tab-pane fade" id="tab7" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-4">
@@ -737,8 +750,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 8: SALLES & HORAIRES -->
+    {% if not allowed_dashes or 8 in allowed_dashes %}
     <div class="tab-pane fade" id="tab8" role="tabpanel">
       <div class="row g-3 mb-4">
         <div class="col-sm-4">
@@ -809,8 +824,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 9: EARLY WARNING SYSTEM (EWS) -->
+    {% if not allowed_dashes or 9 in allowed_dashes %}
     <div class="tab-pane fade" id="tab9" role="tabpanel">
       <div class="alert alert-danger border-0 shadow-sm d-flex flex-wrap justify-content-between align-items-center mb-4 p-3 rounded-4" style="background: #fef2f2; border-left: 6px solid #dc2626 !important;">
         <div class="d-flex align-items-center gap-3">
@@ -879,8 +896,10 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
     <!-- TAB 10: STRATÉGIE, PRÉVISIONS & SIMULATEUR IA -->
+    {% if not allowed_dashes or 10 in allowed_dashes %}
     <div class="tab-pane fade" id="tab10" role="tabpanel">
       <div class="card border-0 shadow-sm p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -957,6 +976,7 @@
         </button>
       </div>
     </div>
+    {% endif %}
 
   </div>
 </div>
@@ -1160,8 +1180,12 @@
       }
     });
 
-    // Initial activation from hash or default to tab1
-    var initial = window.location.hash ? window.location.hash : 'tab1';
+    // Initial activation from hash or first available tab button
+    var initial = window.location.hash ? window.location.hash : null;
+    if (!initial) {
+      var firstBtn = document.querySelector('.bi-tab-btn');
+      initial = firstBtn ? (firstBtn.getAttribute('data-bi-target') || 'tab1') : 'tab1';
+    }
     switchBiTab(initial);
   });
 </script>

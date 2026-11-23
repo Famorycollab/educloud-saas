@@ -13,8 +13,11 @@ Les rôles sont rechargés depuis la base et validés côté serveur par `login_
 | Paiements et tarifs | Gestion | — | Paiements/reçus des enfants | — | Gestion financière | — |
 | Devoirs | Gestion | Devoirs affectés | Classes des enfants | Dépôt de son travail | — | — |
 | Messages/annonces | Administration | Relations pédagogiques affectées | École et enseignants de l'enfant | École et enseignants de sa classe | Parents liés et administration | École et parents |
+| Centre Décisionnel (BI) | Accès complet (10 dashboards) | Pédagogie, assiduité, salles & alertes EWS (1, 3, 4, 8, 9) | Interdit (403) | Interdit (403) | Finances, inscriptions & projections (1, 2, 6, 10) | Inscriptions, assiduité, communication & logistique (1, 4, 6, 7, 8) |
 
 ## Règles métier contrôlées côté serveur
+
+- **Centre Décisionnel & BI** : Cloisonnement strict côté serveur selon le rôle (`BI_ROLE_PERMISSIONS`). Les parents et élèves reçoivent un `403 Forbidden`. Les enseignants accèdent aux tableaux pédagogiques et alertes sans exposer les données financières ni RH. Toute tentative d'accès direct par URL `/bi/dashboard/<id>` non autorisée déclenche une interdiction `403` immédiate.
 
 - Les dossiers parent/élève ne sont accessibles qu'aux comptes explicitement associés.
 - Un enseignant doit avoir une affectation enseignant-classe-matière avant de saisir une note, publier un devoir ou une correction.

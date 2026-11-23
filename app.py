@@ -1337,28 +1337,54 @@ def dashboard():
     return render_template("dashboard.html", totals=totals, recent=recent)
 
 
+BI_ROLE_PERMISSIONS = {
+    # Tableau 1: Vue Globale, 2: Finances, 3: Pédagogie, 4: Absences, 5: RH,
+    # 6: Inscriptions, 7: Communication, 8: Salles, 9: Early Warning, 10: Stratégie & IA
+    "superadmin": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+    "admin": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+    "director": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+    "accountant": {1, 2, 6, 10},               # Finances, Inscriptions/Recouvrement, Stratégie financière
+    "secretary": {1, 4, 6, 7, 8},              # Inscriptions, Absences, Communication, Salles/Logistique
+    "teacher": {1, 3, 4, 8, 9},                # Pédagogie, Absences, Salles, Early Warning (élèves en difficulté)
+}
+
+
 @app.route("/bi")
 @login_required("admin", "director", "superadmin", "accountant", "secretary", "teacher")
 def bi_hub():
     import bi_analytics as bi
     db = get_db()
     school_id = g.get("school_id") or session.get("school_id") or 1
-    d1 = bi.get_dashboard_1_general(db, school_id)
-    d2 = bi.get_dashboard_2_financial(db, school_id)
-    d3 = bi.get_dashboard_3_pedagogical(db, school_id)
-    d4 = bi.get_dashboard_4_absences(db, school_id)
-    d5 = bi.get_dashboard_5_hr(db, school_id)
-    d6 = bi.get_dashboard_6_enrollment(db, school_id)
-    d7 = bi.get_dashboard_7_communication(db, school_id)
-    d8 = bi.get_dashboard_8_resources(db, school_id)
-    d9 = bi.get_dashboard_9_early_warning(db, school_id)
-    d10 = bi.get_dashboard_10_strategic(db, school_id)
-    return render_template("bi_hub.html", d1=d1, d2=d2, d3=d3, d4=d4, d5=d5, d6=d6, d7=d7, d8=d8, d9=d9, d10=d10)
+    role = session.get("role", "")
+    allowed_dashes = BI_ROLE_PERMISSIONS.get(role, {1})
+
+    # Charge uniquement les métriques autorisées pour optimiser les performances et la sécurité
+    d1 = bi.get_dashboard_1_general(db, school_id) if 1 in allowed_dashes else {}
+    d2 = bi.get_dashboard_2_financial(db, school_id) if 2 in allowed_dashes else {}
+    d3 = bi.get_dashboard_3_pedagogical(db, school_id) if 3 in allowed_dashes else {}
+    d4 = bi.get_dashboard_4_absences(db, school_id) if 4 in allowed_dashes else {}
+    d5 = bi.get_dashboard_5_hr(db, school_id) if 5 in allowed_dashes else {}
+    d6 = bi.get_dashboard_6_enrollment(db, school_id) if 6 in allowed_dashes else {}
+    d7 = bi.get_dashboard_7_communication(db, school_id) if 7 in allowed_dashes else {}
+    d8 = bi.get_dashboard_8_resources(db, school_id) if 8 in allowed_dashes else {}
+    d9 = bi.get_dashboard_9_early_warning(db, school_id) if 9 in allowed_dashes else {}
+    d10 = bi.get_dashboard_10_strategic(db, school_id) if 10 in allowed_dashes else {}
+
+    return render_template(
+        "bi_hub.html",
+        allowed_dashes=allowed_dashes,
+        d1=d1, d2=d2, d3=d3, d4=d4, d5=d5,
+        d6=d6, d7=d7, d8=d8, d9=d9, d10=d10
+    )
 
 
 @app.route("/bi/dashboard/<int:dash_id>")
 @login_required("admin", "director", "superadmin", "accountant", "secretary", "teacher")
 def bi_dashboard(dash_id):
+    role = session.get("role", "")
+    allowed_dashes = BI_ROLE_PERMISSIONS.get(role, {1})
+    if dash_id not in allowed_dashes:
+        abort(403)
     return redirect(url_for("bi_hub") + f"#tab{dash_id}")
 
 
