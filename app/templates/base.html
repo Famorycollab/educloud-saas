@@ -57,6 +57,9 @@
         <strong class="brand-title">EduCloud <span class="brand-saas-badge">SaaS</span></strong>
         <small class="brand-sub">PORTAIL SCOLAIRE &amp; BI</small>
       </span>
+      <button class="sidebar-close-btn d-lg-none" type="button" aria-label="Fermer le menu" onclick="event.preventDefault(); document.body.classList.remove('sidebar-open');">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </a>
 
     <!-- Nav -->
@@ -388,6 +391,7 @@
     </div>
 
   </aside>
+  <div class="sidebar-backdrop" onclick="document.body.classList.remove('sidebar-open')" aria-hidden="true"></div>
 
   <!-- ==================== MAIN ==================== -->
   <div class="app-main">
